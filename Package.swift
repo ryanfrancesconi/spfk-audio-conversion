@@ -26,9 +26,11 @@ private let products: [PackageDescription.Product] = [
 
 private let dependencies: [PackageDescription.Package.Dependency] = [
     .package(path: "../SPFKMetadata"),
-    .package(path: "../SPFKUtils")
+    .package(path: "../SPFKUtils"),
     
     // .package(url: "https://github.com/ryanfrancesconi/SPFKUtils", branch: "main"),
+    
+    .package(url: "https://github.com/audiodesigndesk/SimplyCoreAudio", branch: "add"),
 ]
 
 private let targets: [PackageDescription.Target] = [
@@ -38,7 +40,8 @@ private let targets: [PackageDescription.Target] = [
         dependencies: [
             .target(name: nameC),
             .byNameItem(name: "SPFKUtils", condition: nil),
-            .byNameItem(name: "SPFKMetadata", condition: nil)
+            .byNameItem(name: "SPFKMetadata", condition: nil),
+            .byNameItem(name: "SimplyCoreAudio", condition: nil)
         ]
     ),
     

@@ -29,3 +29,5 @@ public enum AudioDefaults {
         systemFormat.sampleRate
     }
 }
+
+let kAudioUnitManufacturer_Spongefork = fourCC("spfk")
