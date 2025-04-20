@@ -1,6 +1,4 @@
-//  AVAudioFile+Extensions.swift
-//  Created by Ryan Francesconi on 7/21/21.
-//  Copyright © 2021 Audio Design Desk. All rights reserved.
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import Accelerate
 import AVFoundation

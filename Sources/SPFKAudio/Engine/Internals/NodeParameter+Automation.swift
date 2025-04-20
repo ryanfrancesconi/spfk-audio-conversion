@@ -1,8 +1,10 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import SPFKAudioC
 import SPFKUtils
 
-// Altered significantly from the AudioKit version as there seems to be some issues there
+// NOTE: Altered significantly from the AudioKit version as there seems to be some issues there
 
 public extension NodeParameter {
     /// the `lastRenderTime` of the avAudioNode or a zero sampleTime AVAudioTime

@@ -1,13 +1,11 @@
-//  SoxWrapper.h
-//  Obj C wrapper for libsox based calls
-//  Created by Ryan Francesconi on 4/24/19.
-//  Copyright © 2019 Audio Design Desk. All rights reserved.
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 #import <Foundation/Foundation.h>
 #import "sox.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
+///  Obj C wrapper for libsox based calls
 @interface SoxWrapper : NSObject
 
 + (void)createMultiChannelWave:(NSArray *)inputs
@@ -18,8 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
       channel:(NSString *)channel;
 
 + (int)demux:(NSString *)input
-       output:(NSString *)output
-      channel:(NSString *)channel;
+      output:(NSString *)output
+     channel:(NSString *)channel;
 
 + (void) trim:(NSString *)input
        output:(NSString *)output

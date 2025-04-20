@@ -1,8 +1,4 @@
-//  DynamicPCMBuffer+Transients.swift
-//  Created by Ryan Francesconi on 6/4/21.
-//  Copyright © 2021 Audio Design Desk. All rights reserved.
-
-// MARK: - Utilities
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
 import Foundation

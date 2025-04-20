@@ -1,3 +1,4 @@
+import Foundation
 import SPFKUtils
 
 /// A small engine for playback tests

@@ -1,6 +1,4 @@
-//  AudioUnitStateC.m
-//  Created by Ryan Francesconi on 3/5/18.
-//  Copyright © 2018 Audio Design Desk. All rights reserved.
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 #import <CoreAudio/AudioHardware.h>
 #import "AudioUnitStateC.h"

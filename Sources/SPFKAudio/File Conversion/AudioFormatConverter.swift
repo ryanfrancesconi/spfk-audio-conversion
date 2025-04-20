@@ -1,24 +1,10 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import Foundation
 import SPFKUtils
 
-/**
- FormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
- ```swift
- let options = FormatConverterOptions()
-
- // any options left nil will adopt the value of the input file
- options.format = "wav"
- options.sampleRate = 48000
- options.bitsPerChannel = 24
-
- let converter = FormatConverter(inputURL: oldURL, outputURL: newURL, options: options)
-
- converter.start { error in
-    // the error will be nil on success
- }
- ```
- */
+/// AudioFormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
 public class AudioFormatConverter {
     /// - Parameter: error This will contain one parameter of type Error which is nil if the conversion was successful.
     public typealias Callback = (_ error: Error?) -> Void

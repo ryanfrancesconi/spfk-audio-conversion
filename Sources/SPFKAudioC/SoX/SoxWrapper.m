@@ -1,6 +1,4 @@
-//  SoxWrapper.m
-//  Created by Ryan Francesconi on 4/24/19.
-//  Copyright © 2019 Audio Design Desk. All rights reserved.
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 #import "sndfile.h"
 #import "SoxWrapper.h"
