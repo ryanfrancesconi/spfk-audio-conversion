@@ -26,7 +26,6 @@ extension AudioFilePlayer {
     }
 
     public func playNode() {
-        // Log.debug("playNode", "faderNode?.gain", faderNode?.gain, "faderNode isBypassed", faderNode?.isBypassed, "volume", volume)
         guard playerNode.engine?.isRunning == true else {
             Log.error("Engine isn't running - aborting playback for", audioFile?.url.lastPathComponent)
             return
@@ -38,8 +37,6 @@ extension AudioFilePlayer {
 
         // play at the previously scheduled time
         playerNode.play(at: nil)
-
-        // Log.debug(lastScheduledTimeInterval, url?.lastPathComponent)
 
         isPlaying = true
     }

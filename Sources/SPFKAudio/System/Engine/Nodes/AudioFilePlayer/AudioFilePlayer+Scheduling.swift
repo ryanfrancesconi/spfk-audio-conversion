@@ -104,8 +104,6 @@ extension AudioFilePlayer {
         )
 
         playerNode.prepare(withFrameCount: frameCount)
-
-        // Log.debug("audioTime", audioTime, "frameCount", frameCount, "isHostTimeValid", audioTime?.isHostTimeValid, "isSampleTimeValid", audioTime?.isSampleTimeValid)
     }
 
     // MARK: - Completion Handlers
@@ -113,7 +111,6 @@ extension AudioFilePlayer {
     // Note that a player node should not be stopped from within a completion handler callback because
     // it can deadlock while trying to unschedule previously scheduled buffers.
     func handleCallbackComplete(completionType: AVAudioPlayerNodeCompletionCallbackType) {
-        Log.debug("handleCallbackComplete", audioFile?.url.lastPathComponent, "Thread", Thread.current)
         isPlaying = false
         completionHandler?()
     }

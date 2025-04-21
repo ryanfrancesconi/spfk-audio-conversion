@@ -1,5 +1,3 @@
-import AppKit
-
 import AVFoundation
 import SimplyCoreAudio
 import SPFKUtils
@@ -70,9 +68,9 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         }
     }
 
+    // TODO: once this model protocol is adopted, won't need this static struct and can keep a class variable here
     public var systemFormat: AVAudioFormat {
         get {
-            // TODO: once this model protocol is adopted, won't need this static struct and can keep a class variable here
             AudioDefaults.systemFormat
         }
 
@@ -201,20 +199,5 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 
         try updatePreferredOutputChannels()
         addOutputDeviceObserver(for: device)
-    }
-}
-
-extension AudioDeviceManager {
-    public static func openAudioMIDISetup() {
-        let bundleID = "com.apple.audio.AudioMIDISetup"
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
-            Log.error("Failed to find", bundleID)
-            return
-        }
-
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = true
-        config.allowsRunningApplicationSubstitution = true
-        NSWorkspace.shared.openApplication(at: url, configuration: config)
     }
 }

@@ -14,6 +14,7 @@ extension AudioFilePlayer: EngineNode {
         detachNodes()
 
         audioFile = nil
+        completionHandler = nil
     }
 }
 
@@ -94,7 +95,7 @@ open class AudioFilePlayer: Mixable {
 
         var normalizedPauseTime = 0.0
 
-        if let pauseTime = pauseTime, pauseTime > editStartTime {
+        if let pauseTime, pauseTime > editStartTime {
             normalizedPauseTime = pauseTime - editStartTime
         }
 
