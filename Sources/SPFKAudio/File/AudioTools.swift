@@ -2,6 +2,8 @@
 
 import AVFoundation
 import Foundation
+import SPFKAudioC
+import SPFKMetadata
 import SPFKUtils
 
 public enum AudioTools {

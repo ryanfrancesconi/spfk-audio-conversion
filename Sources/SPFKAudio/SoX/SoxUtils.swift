@@ -6,7 +6,6 @@ import SPFKAudioC
 import SPFKMetadata
 import SPFKUtils
 
-public typealias SplitStereoPair = (left: URL, right: URL)
 
 /*
  AUDIO FILE FORMATS: 8svx aif aifc aiff aiffc al amb au avr caf cdda cdr cvs cvsd cvu dat dvms f32 f4 f64 f8 fap flac fssd gsm gsrt hcom htk ima ircam la lpc lpc10 lu mat mat4 mat5 maud mp2 mp3 nist ogg paf prc pvf raw s1 s16 s2 s24 s3 s32 s4 s8 sb sd2 sds sf sl sln smp snd sndfile sndr sndt sou sox sph sw txw u1 u16 u2 u24 u3 u32 u4 u8 ub ul uw vms voc vorbis vox w64 wav wavpcm wve xa xi
@@ -92,9 +91,9 @@ public enum SoxUtils {
         return FileManager.default.fileExists(atPath: output)
     }
 
-    // Split stereo files to dual mono
-    //        sox infile.wav outfile.L.wav remix 1
-    //        sox infile.wav outfile.R.wav remix 2
+    /// Split stereo files to dual mono
+    ///        sox infile.wav outfile.L.wav remix 1
+    ///        sox infile.wav outfile.R.wav remix 2
     public static func exportSplitStereo(input source: URL,
                                          destination: URL? = nil,
                                          newName: String? = nil,
@@ -168,7 +167,7 @@ public enum SoxUtils {
         return urls
     }
 
-    // Mix a stereo file to mono
+    /// Mix a stereo file to mono
     public static func stereoToMono(source: URL, destination: URL? = nil, newName: String? = nil, overwrite: Bool = true) -> URL? {
         var outputBin = source.deletingLastPathComponent()
 
@@ -191,7 +190,7 @@ public enum SoxUtils {
         return url1
     }
 
-    // sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
+    /// sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
     public static func createMultiChannelWave(input files: [String], output: String) -> Bool {
         let inputs = files.filter {
             FileManager.default.fileExists(atPath: $0)
