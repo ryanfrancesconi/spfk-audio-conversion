@@ -6,9 +6,27 @@ import SPFKAudioC
 import SPFKMetadata
 import SPFKUtils
 
+// NOTE: this is here until a more suitable place is found for it
+
 public enum AudioTools {
-    // NOTE: this is here until a more suitable place is found for it
+    public static func createLoopedAudio(input: URL, minimumDuration: TimeInterval) async throws -> URL {
+        guard input.exists else {
+            throw NSError(description: "\(input.path) is missing")
+        }
+
+        let tmpname = input.deletingPathExtension().lastPathComponent + "_\(Entropy.uniqueId)"
+        let tmpfile = input.deletingLastPathComponent().appendingPathComponent(tmpname)
+
+        let output = try await createLoopedAudio(input: input, output: tmpfile, minimumDuration: minimumDuration)
+
+        return output
+    }
+
     public static func createLoopedAudio(input: URL, output: URL, minimumDuration: TimeInterval) async throws -> URL {
+        guard input.exists else {
+            throw NSError(description: "\(input.path) is missing")
+        }
+
         guard input != output else {
             throw NSError(description: "Input shoud be different than the output")
         }

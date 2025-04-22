@@ -7,22 +7,13 @@ import SPFKUtils
 
 public enum Loudness {
     public static func analyze(url: URL) async throws -> LoudnessDescription {
-        var tmpfile: URL?
+        let tmpfile: URL? = try? await AudioTools.createLoopedAudio(input: url, minimumDuration: 5)
 
         defer {
             if let tmpfile, tmpfile.exists {
-                Log.debug("Removing tmpfile at", tmpfile.path)
                 try? tmpfile.delete()
+                Log.debug("Removed tmpfile at", tmpfile.path)
             }
-        }
-
-        do {
-            let tmpname = url.deletingPathExtension().lastPathComponent + "_\(Entropy.uniqueId)"
-            let tmpfileOutput = url.deletingLastPathComponent().appendingPathComponent(tmpname)
-            tmpfile = try await AudioTools.createLoopedAudio(input: url, output: tmpfileOutput, minimumDuration: 5)
-
-        } catch {
-            // Log.error(error)
         }
 
         let url = tmpfile ?? url

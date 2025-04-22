@@ -29,6 +29,7 @@ private let dependencies: [PackageDescription.Package.Dependency] = [
     .package(path: "../SPFKUtils"),
     .package(path: "../SPFKMetadata"),
     
+    // .package(url: "https://github.com/ryanfrancesconi/SPFKTesting", branch: "main"),
     // .package(url: "https://github.com/ryanfrancesconi/SPFKUtils", branch: "main"),
     // .package(url: "https://github.com/ryanfrancesconi/SPFKMetadata", branch: "main"),
 
