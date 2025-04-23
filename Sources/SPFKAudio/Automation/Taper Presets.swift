@@ -1,5 +1,6 @@
 import AudioToolbox
 
+/// straight line
 public enum LinearTaper {
     public static var taper = (in: AUValue(1.0), out: AUValue(1.0))
     public static var skew = (in: AUValue(0), out: AUValue(0))

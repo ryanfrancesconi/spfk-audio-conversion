@@ -67,7 +67,6 @@ extension FadeDescription {
         // when the start of the fade out should occur
         let timeTillFadeOut = Float(playerEditedDuration - outTime) / timeRatio
         let rampDurationOut = outTime.float / timeRatio
-
         var startTime = timeTillFadeOut.float
         var adjustedRampDuration = rampDurationOut
         var initialValue = maximumGain
@@ -88,8 +87,6 @@ extension FadeDescription {
                             rampDuration: 0.02),
         ]
 
-        // Log.debug("timeTillFadeOut", timeTillFadeOut, "startTime", startTime, "adjustedRampDuration", adjustedRampDuration, "rampDurationOut", rampDurationOut)
-
         let curve = AutomationCurve(points: [
             ParameterAutomationPoint(targetValue: FadeDescription.minimumGain,
                                      startTime: startTime,
@@ -104,6 +101,7 @@ extension FadeDescription {
         if outTime.float < resolution * 3 {
             resolution = outTime.float / 3
         }
+        
         events += curve.evaluate(initialValue: initialValue, resolution: resolution)
 
         // Log.debug(events)

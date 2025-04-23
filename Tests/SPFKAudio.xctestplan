@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "949D1F07-A6B8-4654-AB5D-C9307CDB6A7C",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SPFKAudioTests",
+        "name" : "SPFKAudioTests"
+      }
+    }
+  ],
+  "version" : 1
+}

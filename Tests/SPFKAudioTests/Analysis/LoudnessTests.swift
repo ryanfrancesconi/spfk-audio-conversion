@@ -18,6 +18,7 @@ final class LoudnessTests: BinTestCase {
         #expect(loudness.truePeak == -0.1)
     }
 
+    /// Will also test looped audio
     @Test func testMeasureLoudnessShortFile() async throws {
         let url = BundleResources.shared.cowbell_wav
 

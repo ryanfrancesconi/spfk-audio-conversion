@@ -8,7 +8,7 @@ import SPFKUtils
 extension AVAudioPCMBuffer {
     /// Read the contents of the url into this buffer
     public convenience init?(url: URL) throws {
-        guard let file = try? AVAudioFile(forReading: url) else { return nil }
+        let file = try AVAudioFile(forReading: url)
         try self.init(file: file)
     }
 
@@ -16,8 +16,10 @@ extension AVAudioPCMBuffer {
     public convenience init?(file: AVAudioFile) throws {
         file.framePosition = 0
 
-        self.init(pcmFormat: file.processingFormat,
-                  frameCapacity: AVAudioFrameCount(file.length))
+        self.init(
+            pcmFormat: file.processingFormat,
+            frameCapacity: AVAudioFrameCount(file.length)
+        )
 
         try file.read(into: self)
     }
@@ -109,8 +111,10 @@ extension AVAudioPCMBuffer {
     public func normalize() -> AVAudioPCMBuffer? {
         guard let floatData = floatChannelData else { return self }
 
-        let normalizedBuffer = AVAudioPCMBuffer(pcmFormat: format,
-                                                frameCapacity: frameCapacity)
+        let normalizedBuffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: frameCapacity
+        )
 
         let length: AVAudioFrameCount = frameLength
         let channelCount = Int(format.channelCount)
@@ -137,8 +141,10 @@ extension AVAudioPCMBuffer {
 
     /// - Returns: A reversed buffer
     public func reverse() -> AVAudioPCMBuffer? {
-        guard let reversedBuffer = AVAudioPCMBuffer(pcmFormat: format,
-                                                    frameCapacity: frameCapacity) else { return nil }
+        guard let reversedBuffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: frameCapacity
+        ) else { return nil }
 
         var j: Int = 0
         let length: AVAudioFrameCount = frameLength
@@ -163,21 +169,25 @@ extension AVAudioPCMBuffer {
     ///   - outTime: Fade Out time
     ///   - linearRamp: use a linear ramp, will be exponential by default
     /// - Returns: A new buffer from this one that has fades applied to it
-    public func fade(inTime: Double = 0,
-                     outTime: Double = 0,
-                     linearRamp: Bool = false) -> AVAudioPCMBuffer? {
+    public func fade(
+        inTime: Double = 0,
+        outTime: Double = 0,
+        linearRamp: Bool = false
+    ) -> AVAudioPCMBuffer? {
         guard inTime > 0 || outTime > 0 else {
             Log.error("Error fading buffer, inTime or outTime must be > 0")
             return nil
         }
 
-        guard let floatData = floatChannelData else {
+        guard let floatChannelData else {
             Log.error("floatChannelData is nil")
             return nil
         }
 
-        let fadeBuffer = AVAudioPCMBuffer(pcmFormat: format,
-                                          frameCapacity: frameCapacity)
+        let fadeBuffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: frameCapacity
+        )
 
         let length: UInt32 = frameLength
         let sampleRate = format.sampleRate
@@ -233,16 +243,14 @@ extension AVAudioPCMBuffer {
                 }
 
                 // sanity check
-                if gain > 1 {
-                    gain = 1
-                } else if gain < 0 {
-                    gain = 0
-                }
+                gain = gain.clamped(to: 0 ... 1)
 
-                let sample = floatData[n][i] * Float(gain)
-                fadeBuffer?.floatChannelData?[n][i] = sample
+                let adjustedSample = floatChannelData[n][i] * Float(gain)
+
+                fadeBuffer?.floatChannelData?[n][i] = adjustedSample
             }
         }
+
         // update this
         fadeBuffer?.frameLength = length
 
@@ -285,12 +293,15 @@ extension AVAudioPCMBuffer {
             /// contains as much as could be converted.
             Log.error("inputRanDry")
             return outBuffer
+
         case .endOfStream:
             /// The end of stream has been reached. No data was returned.
             throw NSError(description: "endOfStream")
+
         case .error:
             /// An error occurred.
             throw error ?? NSError(description: "Unknown error")
+
         @unknown default:
             throw NSError(description: "Unknown status returned")
         }
@@ -302,16 +313,13 @@ extension AVAudioPCMBuffer {
         var settings = format.settings
         settings[AVLinearPCMIsNonInterleaved] = false
 
-        do {
-            let output = try AVAudioFile(
-                forWriting: url,
-                settings: settings,
-                commonFormat: format.commonFormat,
-                interleaved: format.isInterleaved
-            )
-            try output.write(from: self)
-        } catch {
-            throw error
-        }
+        let output = try AVAudioFile(
+            forWriting: url,
+            settings: settings,
+            commonFormat: format.commonFormat,
+            interleaved: format.isInterleaved
+        )
+
+        try output.write(from: self)
     }
 }

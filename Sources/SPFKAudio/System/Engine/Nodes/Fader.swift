@@ -1,7 +1,7 @@
 // Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
-import SPFKAudioC
 import AVFoundation
+import SPFKAudioC
 
 extension Fader: EngineNode {
     public var inputNode: AVAudioNode? { avAudioNode }

@@ -1,12 +1,13 @@
 import SoundAnalysis
 @testable import SPFKAudio
+import SPFKTesting
 import SPFKUtils
 import Testing
 
-// MARK: - development tests
+// MARK: - example of how to compile a MLModel
 
 struct ModelCompilation {
-    @Test func compileCustomModel() async throws {
+    @Test(.tags(.development)) func compileCustomModel() async throws {
         let modelURL = URL(fileURLWithPath: "/Volumes/ADD2/CreateML/SoundDesign101 1.mlpackage")
 
         guard modelURL.exists else {

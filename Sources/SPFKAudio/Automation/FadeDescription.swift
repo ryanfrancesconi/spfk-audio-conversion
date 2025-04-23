@@ -8,7 +8,7 @@ public struct FadeDescription {
     /// a constant
     public static var minimumGain: AUValue = 0
 
-    /// the value that the fader should fade to, settable
+    /// the value that the fade should fade to
     public var maximumGain: AUValue = 1
 
     // In properties
@@ -40,7 +40,7 @@ public struct FadeDescription {
         }
     }
 
-    // the slope adjustment in the taper
+    /// the slope adjustment in the taper
     public var outSkew: AUValue = 1
 
     // the needsUpdate flag is used by the buffering scheme

@@ -23,9 +23,11 @@ public enum SoundClassification {
         let request = try SNClassifySoundRequest(mlModel: mlModel)
         return try await process(request: request, url: url, overlapFactor: overlapFactor, minimumConfidence: minimumConfidence)
     }
+}
 
+extension SoundClassification {
     /// process audio using Apple's default `.version1` classifier
-    private static func processDefault(
+    fileprivate static func processDefault(
         url: URL,
         overlapFactor: Double = defaultOverlap,
         minimumConfidence: Double = defaultConfidence
@@ -35,7 +37,7 @@ public enum SoundClassification {
         return try await process(request: request, url: url, overlapFactor: overlapFactor, minimumConfidence: minimumConfidence)
     }
 
-    private static func process(
+    fileprivate static func process(
         request: SNClassifySoundRequest,
         url: URL,
         overlapFactor: Double = defaultOverlap,

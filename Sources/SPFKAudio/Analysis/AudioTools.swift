@@ -6,8 +6,8 @@ import SPFKAudioC
 import SPFKMetadata
 import SPFKUtils
 
-// NOTE: this is here until a more suitable place is found for it
-
+/// For both SoundClassification and Loudness analysis, sometimes the source audio is too short.
+/// In this case it works to created a looped version of it so that the analysis windows have more time.
 public enum AudioTools {
     public static func createLoopedAudio(input: URL, minimumDuration: TimeInterval) async throws -> URL {
         guard input.exists else {
