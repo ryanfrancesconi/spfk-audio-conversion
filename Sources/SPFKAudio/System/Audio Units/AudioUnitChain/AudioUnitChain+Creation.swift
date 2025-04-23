@@ -6,14 +6,14 @@ import AVFoundation
 import SPFKUtils
 
 extension AudioUnitChain {
-    static func isAvailable(componentDescription: AudioComponentDescription) -> Bool {
+    public static func isAvailable(componentDescription: AudioComponentDescription) -> Bool {
         AVAudioUnitComponentManager
             .shared()
             .components(matching: componentDescription)
             .isNotEmpty
     }
 
-    static func createEffect(
+    public static func createEffect(
         componentDescription: AudioComponentDescription
     ) async throws -> AVAudioUnit? {
         //
@@ -40,7 +40,7 @@ extension AudioUnitChain {
         return nil
     }
 
-    static func createEffect(
+    public static func createEffect(
         componentDescription: AudioComponentDescription,
         options: AudioComponentInstantiationOptions
     ) async throws -> AVAudioUnit? {
@@ -52,7 +52,7 @@ extension AudioUnitChain {
         return avAudioUnit
     }
 
-    static func createInstrument(
+    public static func createInstrument(
         componentDescription: AudioComponentDescription
     ) async throws -> AVAudioUnitMIDIInstrument? {
         if let value = try? await Self.createInstrument(
@@ -74,7 +74,7 @@ extension AudioUnitChain {
         return nil
     }
 
-    static func createInstrument(
+    public static func createInstrument(
         componentDescription: AudioComponentDescription,
         options: AudioComponentInstantiationOptions
     ) async throws -> AVAudioUnitMIDIInstrument? {

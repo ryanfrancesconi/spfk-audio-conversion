@@ -165,8 +165,8 @@ public extension Fader {
     func taperedRamp(from start: AUValue,
                      to target: AUValue,
                      duration: AUValue,
-                     rampTaper: AUValue = FadeDescription.AudioTaper.taper.in,
-                     rampSkew: AUValue = FadeDescription.AudioTaper.skew.in,
+                     rampTaper: AUValue = AudioTaper.taper.in,
+                     rampSkew: AUValue = AudioTaper.skew.in,
                      resolution: AUValue = 0.02,
                      startTime scheduledTime: AVAudioTime? = nil) {
         stopAutomation()

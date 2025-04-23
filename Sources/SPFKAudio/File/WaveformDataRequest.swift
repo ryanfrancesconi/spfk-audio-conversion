@@ -10,18 +10,26 @@ import SPFKUtils
 public struct WaveformDataRequest {
     /// Determines if the returned amplitude value is the rms or peak value
     public var analysisMode: AnalysisMode = .rms
-    public var taper: AUValue = FadeDescription.AudioTaper.taper.in
+    public var taper: AUValue = AudioTaper.taper.in
 
     private var dataTask: Task<FloatChannelData, Error>?
 
     public init() {}
 
-    public mutating func getData(url: URL, samplesPerPixel: Int) async throws -> FloatChannelData {
+    public mutating func getData(
+        url: URL,
+        samplesPerPixel: Int
+    ) async throws -> FloatChannelData {
         let audioFile = try AVAudioFile(forReading: url)
         return try await getData(audioFile: audioFile, samplesPerPixel: samplesPerPixel)
     }
 
-    public mutating func getData(audioFile: AVAudioFile, samplesPerPixel: Int, analysisMode: AnalysisMode? = nil, taper: AUValue? = nil) async throws -> FloatChannelData {
+    public mutating func getData(
+        audioFile: AVAudioFile,
+        samplesPerPixel: Int,
+        analysisMode: AnalysisMode? = nil,
+        taper: AUValue? = nil
+    ) async throws -> FloatChannelData {
         // store the current frame
         let currentFrame = audioFile.framePosition
 

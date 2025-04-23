@@ -17,7 +17,7 @@ public struct AutomationPoint: Equatable, Comparable, Codable {
 
     public var linearRange: ClosedRange<AUValue> = Fader.defaultGainRange
 
-    public var taper: AUValue = FadeDescription.AudioTaper.taper.in
+    public var taper: AUValue = AudioTaper.taper.in
 
     public var time: Double = 0 {
         didSet {

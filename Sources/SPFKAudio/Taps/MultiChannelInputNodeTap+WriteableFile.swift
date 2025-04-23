@@ -103,10 +103,6 @@ extension MultiChannelInputNodeTap {
             }
 
             if !ioLatencyHandled, ioLatency > 0 {
-//                Log.debug("Actual buffer size is", buffer.frameLength,
-//                            "totalFramesRead", totalFramesRead,
-//                            "Attempting to skip", ioLatency, "frames for latency compensation")
-
                 if totalFramesRead > ioLatency {
                     let latencyOffset: AVAudioFrameCount = totalFramesRead - ioLatency
                     let startSample = buffer.frameLength - latencyOffset
@@ -115,11 +111,8 @@ extension MultiChannelInputNodeTap {
                     if buffer.frameLength > latencyOffset,
                        let offsetBuffer = try buffer.copyFrom(startSample: startSample) {
                         buffer = offsetBuffer
-
-                        // Log.debug("Writing partial buffer", offsetBuffer.frameLength, "frames, ioLatency is", ioLatency, "latencyOffset", latencyOffset)
-                    } else {
-                        // Log.debug("Unexpected buffer size of", buffer.frameLength)
                     }
+
                     ioLatencyHandled = true
 
                 } else {
@@ -131,7 +124,7 @@ extension MultiChannelInputNodeTap {
             try file.write(from: buffer)
 
             amplitudeArray.append(
-                amplitude.normalized(from: 0 ... 1, taper: FadeDescription.AudioTaper.taper.in)
+                amplitude.normalized(from: 0 ... 1, taper: AudioTaper.taper.in)
             )
 
             totalFramesWritten = file.length
@@ -139,11 +132,6 @@ extension MultiChannelInputNodeTap {
 
         /// Release the file
         public func close() {
-//            Log.debug("recorded duration is", duration,
-//                        "initial timestamp is", timestamp,
-//                        "totalFramesRead", totalFramesRead,
-//                        "file.length", file?.length)
-
             file = nil
             amplitudeArray.removeAll()
         }

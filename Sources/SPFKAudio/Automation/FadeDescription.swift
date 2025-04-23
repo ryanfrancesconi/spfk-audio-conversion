@@ -5,24 +5,6 @@ import SPFKAudioC
 public struct FadeDescription {
     public init() {}
 
-    public enum Linear {
-        // a few presets for lack of a better place to put them at the moment
-        public static var taper = (in: AUValue(1.0), out: AUValue(1.0))
-        public static var skew = (in: AUValue(0), out: AUValue(0))
-    }
-
-    public enum AudioTaper {
-        // half pipe
-        public static var taper = (in: AUValue(3.0), out: AUValue(0.333))
-        public static var skew = (in: AUValue(0.333), out: AUValue(1))
-    }
-
-    public enum ReverseAudioTaper {
-        // flipped half pipe
-        public static var taper = (in: AUValue(0.333), out: AUValue(3.0))
-        public static var skew = (in: AUValue(1), out: AUValue(0.333))
-    }
-
     /// a constant
     public static var minimumGain: AUValue = 0
 
