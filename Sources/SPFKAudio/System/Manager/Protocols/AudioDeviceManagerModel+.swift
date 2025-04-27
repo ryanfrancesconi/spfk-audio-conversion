@@ -1,7 +1,7 @@
-import SPFKUtils
 import AVFoundation
 import Foundation
 import SimplyCoreAudio
+import SPFKUtils
 
 extension AudioDeviceManagerModel {
     public var systemSampleRate: Double {

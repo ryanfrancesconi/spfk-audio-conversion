@@ -2,11 +2,7 @@ import AVFoundation
 import Foundation
 import SimplyCoreAudio
 
-public protocol DeviceAccess: AnyObject {
-    var deviceManager: (any AudioDeviceManagerModel)? { get }
-}
-
-/// Device options available for public access
+/// Primary audio device access
 public protocol AudioDeviceManagerModel {
     var systemFormat: AVAudioFormat { get set }
     var engineOutputNode: AVAudioOutputNode? { get }

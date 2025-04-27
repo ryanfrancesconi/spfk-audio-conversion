@@ -40,34 +40,15 @@ public class AudioUnitChain {
     public internal(set) var effectsCount: Int = 0
     public internal(set) var effectsLatency: TimeInterval = 0
 
-    /// Bypass entire effects chain
+    /// flag if the entire effects chain is bypassed
     public internal(set) var isChainBypassed: Bool = false
-    
-    
-//    private var _isChainBypassed: Bool = false
-//    public internal(set) var isChainBypassed: Bool {
-//        get { _isChainBypassed }
-//        set {
-//            _isChainBypassed = newValue
-//
-//            Task {
-//                guard await data.effectsCount > 0 else { return }
-//
-//                do {
-//                    try await connect()
-//                } catch {
-//                    Log.error(error.localizedDescription)
-//                }
-//            }
-//        }
-//    }
 
     /// Amount of inserts available in this instance
     public private(set) var insertCount = AudioUnitChain.defaultInsertCount
 
     // MARK: - Initialization
 
-    /// Create a manager with the default number of inserts
+    /// Create a chain with the default number of inserts
     public init() {
         data = AudioUnitChainData(insertCount: AudioUnitChain.defaultInsertCount)
     }
@@ -79,6 +60,7 @@ public class AudioUnitChain {
 
     public init(input: AVAudioNode, output: AVAudioNode, delegate: AudioUnitChainDelegate) async throws {
         data = AudioUnitChainData(insertCount: AudioUnitChain.defaultInsertCount)
+
         self.delegate = delegate
         try await update(input: input, output: output)
     }
@@ -86,6 +68,7 @@ public class AudioUnitChain {
     public func update(input: AVAudioNode, output: AVAudioNode) async throws {
         self.input = input
         self.output = output
+        
         try await connect()
     }
 
