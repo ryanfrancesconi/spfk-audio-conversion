@@ -31,3 +31,4 @@ public enum AudioDefaults {
 }
 
 let kAudioUnitManufacturer_Spongefork = fourCC("spfk")
+let kAudioUnitManufacturer_AudioKit = fourCC("AuKt")

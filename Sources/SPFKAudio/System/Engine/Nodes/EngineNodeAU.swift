@@ -7,9 +7,9 @@ public protocol EngineNodeAU: EngineNode {
     var avAudioNode: AVAudioNode { get }
 }
 
-public extension EngineNodeAU {
+extension EngineNodeAU {
     /// All parameters on the Node
-    var parameters: [NodeParameter] {
+    public var parameters: [NodeParameter] {
         let mirror = Mirror(reflecting: self)
         var params: [NodeParameter] = []
 
@@ -23,7 +23,7 @@ public extension EngineNodeAU {
     }
 
     /// Set up node parameters using reflection
-    func setupParameters() {
+    public func setupParameters() {
         let mirror = Mirror(reflecting: self)
         var params: [AUParameter] = []
 

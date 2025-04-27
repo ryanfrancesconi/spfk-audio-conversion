@@ -35,7 +35,6 @@ public class EngineRenderer {
     ///         - prerender: Closure called before rendering starts, used to start players, set initial parameters, etc.
     ///         - progress: Closure called while rendering, use this to fetch render progress. 0 ... 1
     ///
-    @available(iOS 11.0, macOS 10.13, tvOS 11.0, *)
     public func render(
         engine: AVAudioEngine,
         to audioFile: AVAudioFile,
@@ -48,7 +47,7 @@ public class EngineRenderer {
         progress progressHandler: ((ProgressValue1) -> Void)? = nil
     ) throws {
         guard duration >= 0 else {
-            throw NSError(description: "Seconds needs to be a positive value")
+            throw NSError(description: "duration needs to be a positive value")
         }
 
         abortFlag = false
@@ -72,6 +71,7 @@ public class EngineRenderer {
         engine.reset()
 
         Log.debug("Starting engine...")
+
         try engine.start()
 
         guard let buffer = AVAudioPCMBuffer(
@@ -147,6 +147,7 @@ public class EngineRenderer {
             if renderUntilSilent,
                progressValue == 1,
                let data = buffer.floatChannelData {
+                //
                 guard tailTimeRendered <= maxTailToRender else {
                     Log.error("🛑🍙 Exceeded max tail to render", tailTimeRendered, "vs", maxTailToRender)
                     isWriting = false
@@ -182,10 +183,10 @@ public class EngineRenderer {
         }
 
         Log.debug("🍙🏁 Stopping engine")
+
         engine.stop()
 
-        if isCanceled,
-           audioFile.url.exists {
+        if isCanceled, audioFile.url.exists {
             Log.debug("🛑🍙 User Canceled Render - Removing file at", audioFile.url.path)
             try? audioFile.url.delete()
         }

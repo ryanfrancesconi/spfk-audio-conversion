@@ -6,8 +6,9 @@ import Testing
 
 // MARK: - example of how to compile a MLModel
 
+@Suite(.tags(.development))
 struct ModelCompilation {
-    @Test(.tags(.development)) func compileCustomModel() async throws {
+    @Test func compileCustomModel() async throws {
         let modelURL = URL(fileURLWithPath: "/Volumes/ADD2/CreateML/SoundDesign101 1.mlpackage")
 
         guard modelURL.exists else {

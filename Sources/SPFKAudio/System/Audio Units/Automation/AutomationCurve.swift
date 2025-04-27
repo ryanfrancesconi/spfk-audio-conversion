@@ -1,8 +1,8 @@
 // Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
-import SPFKAudioC
 import AVFoundation
 import Foundation
+import SPFKAudioC
 
 /// An automation curve (with curved segments) suitable for any time varying parameter.
 /// Includes functions for manipulating automation curves and conversion to linear automation ramps
@@ -76,10 +76,12 @@ public struct AutomationCurve {
                 // March t along the segment
                 // this is effectively `while t <= endTime - resolution` without potentional for rounding errors
                 for _ in 0 ..< Int(round(endTime / resolution)) {
-                    value = AutomationCurve.evalRamp(start: start,
-                                                     segment: point,
-                                                     time: t + resolution,
-                                                     endTime: point.startTime + point.rampDuration)
+                    value = AutomationCurve.evalRamp(
+                        start: start,
+                        segment: point,
+                        time: t + resolution,
+                        endTime: point.startTime + point.rampDuration
+                    )
 
                     result.append(AutomationEvent(targetValue: value,
                                                   startTime: t,

@@ -4,8 +4,9 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
+@Suite(.tags(.development))
 class SoundClassificationDevelopmentTests: BinTestCase {
-    @Test(.tags(.development)) func analyze() async throws {
+    @Test func analyze() async throws {
         let urls = [
             "/Volumes/ADD2/Import Tests/untitled folder/Untitled 2.wav",
             "/Volumes/ADD2/Import Tests/untitled folder/Untitled 3.wav",
@@ -22,7 +23,7 @@ class SoundClassificationDevelopmentTests: BinTestCase {
         }
     }
 
-    @Test(.tags(.development)) func knownClassificationsForVersion1() throws {
+    @Test func knownClassificationsForVersion1() throws {
         let list = try SoundClassification.knownClassificationsForVersion1().sorted()
         Swift.print(list)
     }

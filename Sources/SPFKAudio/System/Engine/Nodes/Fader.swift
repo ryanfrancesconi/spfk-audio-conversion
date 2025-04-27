@@ -2,6 +2,7 @@
 
 import AVFoundation
 import SPFKAudioC
+import SPFKUtils
 
 extension Fader: EngineNode {
     public var inputNode: AVAudioNode? { avAudioNode }
@@ -22,8 +23,16 @@ extension Fader: EngineNodeAU {
 }
 
 /// Stereo Fader.
-public class Fader {
+public class Fader: TypeDescribable {
     public static let subType = fourCC("fder")
+
+    public static let audioComponentDescription = AudioComponentDescription(
+        componentType: kAudioUnitType_MusicEffect,
+        componentSubType: Fader.subType,
+        componentManufacturer: kAudioUnitManufacturer_Spongefork,
+        componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
+        componentFlagsMask: 0
+    )
 
     /// Underlying AVAudioNode
     private(set) var faderNode: AVAudioNode
@@ -104,30 +113,18 @@ public class Fader {
     ///   - input: Node whose output will be amplified
     ///   - gain: Amplification factor (Default: 1, Minimum: 0)
     ///
-    public init?(gain: AUValue = 1) {
-        let acd = AudioComponentDescription(
-            componentType: kAudioUnitType_MusicEffect,
-            componentSubType: Self.subType,
-            componentManufacturer: kAudioUnitManufacturer_Spongefork,
-            componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
-            componentFlagsMask: 0
+    public init(gain: AUValue = 1) async throws {
+        faderNode = try await AVAudioUnit.instantiateLocal(
+            componentDescription: Self.audioComponentDescription,
+            named: "Fader"
         )
 
-        guard let node = AudioKitAU.instantiate(componentDescription: acd, localName: "Fader") else {
-            return nil
-        }
-
-        faderNode = node
         setupParameters()
 
         leftGain = gain
         rightGain = gain
         flipStereo = false
         mixToMono = false
-    }
-
-    deinit {
-        // Log.debug("* { Fader }")
     }
 }
 

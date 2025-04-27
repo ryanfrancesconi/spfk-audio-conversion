@@ -60,8 +60,7 @@ AURenderObserver ParameterAutomationGetRenderObserver(AUParameterAddress        
                                           0,
                                           address,
                                           initial);
-                   // std::cout << "__C AUEventSampleTimeImmediate: initial value is: " << initial << std::endl;
-               }
+                }
 
                // Apply parameter automation for the segment.
                while (index < count) {
@@ -86,11 +85,6 @@ AURenderObserver ParameterAutomationGetRenderObserver(AUParameterAddress        
                                           address,
                                           event.targetValue);
 
-// debug
-//			       if (index == 0 || index == count - 1) {
-//				       std::cout << "__C (" << index << "/" << count - 1 << ") startTime " <<
-//				               startTime << " duration " << duration << " targetValue " << event.targetValue << std::endl;
-//			       }
                    index++;
                }
            };

@@ -40,25 +40,27 @@ public class AudioUnitChain {
     public internal(set) var effectsCount: Int = 0
     public internal(set) var effectsLatency: TimeInterval = 0
 
-    // TODO: REFACTOR: make this an async func
     /// Bypass entire effects chain
-    private var _isChainBypassed: Bool = false
-    public var isChainBypassed: Bool {
-        get { _isChainBypassed }
-        set {
-            _isChainBypassed = newValue
-
-            Task {
-                guard await data.effectsCount > 0 else { return }
-
-                do {
-                    try await connect()
-                } catch {
-                    Log.error(error.localizedDescription)
-                }
-            }
-        }
-    }
+    public internal(set) var isChainBypassed: Bool = false
+    
+    
+//    private var _isChainBypassed: Bool = false
+//    public internal(set) var isChainBypassed: Bool {
+//        get { _isChainBypassed }
+//        set {
+//            _isChainBypassed = newValue
+//
+//            Task {
+//                guard await data.effectsCount > 0 else { return }
+//
+//                do {
+//                    try await connect()
+//                } catch {
+//                    Log.error(error.localizedDescription)
+//                }
+//            }
+//        }
+//    }
 
     /// Amount of inserts available in this instance
     public private(set) var insertCount = AudioUnitChain.defaultInsertCount
@@ -102,8 +104,4 @@ public class AudioUnitChain {
         output = nil
         delegate = nil
     }
-}
-
-public protocol AudioUnitChainDelegate: EngineAccess, AudioUnitAvailability {
-    func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event)
 }

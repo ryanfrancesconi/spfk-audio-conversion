@@ -2,59 +2,56 @@
 
 import SPFKAudioC
 
-public struct FadeDescription {
-    public init() {}
-
+/// An object representing a fade in and out on a region of audio in a timeline
+public struct RegionFadeDescription {
     /// a constant
     public static var minimumGain: AUValue = 0
 
     /// the value that the fade should fade to
     public var maximumGain: AUValue = 1
 
-    // In properties
+    public var stepResolution: Float = 0.2
+
+    /// How long the fade in is
     public var inTime: TimeInterval = 0 {
         willSet {
-            if newValue != inTime { needsUpdate = true }
+            if newValue != inTime { inEvents = nil }
         }
     }
 
     public var inTaper: AUValue = AudioTaper.taper.in {
         willSet {
-            if newValue != inTaper { needsUpdate = true }
+            if newValue != inTaper { inEvents = nil }
         }
     }
 
-    // the slope adjustment in the taper
+    /// the slope adjustment in the taper
     public var inSkew: AUValue = AudioTaper.skew.in
 
-    // Out properties
+    /// How long the fade out is
     public var outTime: TimeInterval = 0 {
         willSet {
-            if newValue != outTime { needsUpdate = true }
+            if newValue != outTime { outEvents = nil }
         }
     }
 
     public var outTaper: AUValue = AudioTaper.taper.out {
         willSet {
-            if newValue != outTaper { needsUpdate = true }
+            if newValue != outTaper { outEvents = nil }
         }
     }
 
     /// the slope adjustment in the taper
     public var outSkew: AUValue = 1
 
-    // the needsUpdate flag is used by the buffering scheme
-    // and the cache
-    public var needsUpdate: Bool = false {
-        didSet {
-            // clear the fade cache so it will be regenerated with the new values
-            cache = nil
-        }
-    }
-
     public var isFaded: Bool {
         inTime > 0 || outTime > 0
     }
 
-    public var cache: [AutomationEvent]?
+    // MARK: Event cache
+
+    var inEvents: [AutomationEvent]?
+    var outEvents: [AutomationEvent]?
+
+    public init() {}
 }

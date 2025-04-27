@@ -5,6 +5,15 @@ import SPFKUtils
 
 /// Effects Chain management
 extension AudioUnitChain {
+    /// Bypass entire effects chain
+    public func bypassEffects(state: Bool) async throws {
+        guard await data.effectsCount > 0 else { return }
+
+        isChainBypassed = state
+
+        try await connect()
+    }
+
     func resetEffectsChain() async throws {
         try await removeEffects()
     }
@@ -64,11 +73,6 @@ extension AudioUnitChain {
     ///   - firstNode: optional assign initial input node
     ///   - lastNode: final output node
     public func connect() async throws {
-        guard let engineManager else {
-            assertionFailure("engineManager is nil, connection won't be made")
-            return
-        }
-
         guard let input else {
             throw NSError(description: "input is nil - no connection will be made")
         }
@@ -81,7 +85,7 @@ extension AudioUnitChain {
 
         // if there are no fx or the chain is bypassed connect input to output directly
         if isChainBypassed || unbypassedEffects.isEmpty {
-            try connectIO(input: input, output: output)
+            try connectIO(input, to: output)
             return
         }
 
@@ -98,7 +102,7 @@ extension AudioUnitChain {
         Log.debug("🔌 Connecting \(unbypassedEffects.count) unbypassed, \(await data.linkedEffects.count) total.")
 
         // connect the input to the first effect
-        try connectIO(input: input, output: firstEffect.avAudioUnit)
+        try connectIO(input, to: firstEffect.avAudioUnit)
 
         // if there are more effects, loop and connect them
         if unbypassedEffects.count > 1 {
@@ -108,15 +112,12 @@ extension AudioUnitChain {
 
                 Log.debug("Connecting", auInput.name, "to", auOutput.name)
 
-                try engineManager.connectAndAttach(
-                    auInput,
-                    to: auOutput
-                )
+                try connectIO(auInput, to: auOutput)
             }
         }
 
         // connect the last effect (which could also be the first) to the output
-        try engineManager.connectAndAttach(lastEffect.avAudioUnit, to: output)
+        try connectIO(lastEffect.avAudioUnit, to: output)
 
         await data.allocateRenderResourcesIfNeeded()
 
@@ -126,7 +127,7 @@ extension AudioUnitChain {
         effectsLatency = await totalLatency()
     }
 
-    private func connectIO(input: AVAudioNode, output: AVAudioNode) throws {
+    private func connectIO(_ input: AVAudioNode, to output: AVAudioNode) throws {
         guard let engineManager else {
             throw NSError(description: "engine manager is nil")
         }
