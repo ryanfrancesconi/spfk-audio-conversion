@@ -4,8 +4,6 @@ import SPFKUtils
 import SPFKUtilsC
 
 extension AudioEngineManager: AudioEngineManagerModel {
-    public var engine: AVAudioEngine { _engine }
-
     public var systemFormat: AVAudioFormat {
         get { deviceManager.systemFormat }
         set {
@@ -15,8 +13,8 @@ extension AudioEngineManager: AudioEngineManagerModel {
 
     public var allowInput: Bool { deviceManager.allowInput }
 
-    /// Don't access the engine.inputNode if input is disabled as the node is created on demand.
-    /// This is the only point in the ADD codebase where the AVAudioEngine inputNode is referenced
+    /// Don't access the engine.inputNode if input is disabled as the node is lazily created.
+    /// This is the only point in the codebase where AVAudioEngine's inputNode is referenced
     public var inputNode: AVAudioInputNode? {
         guard allowInput else { return nil }
         return engine.inputNode

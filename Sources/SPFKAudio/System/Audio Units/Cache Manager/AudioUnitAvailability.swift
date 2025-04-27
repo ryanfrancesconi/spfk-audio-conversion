@@ -2,7 +2,7 @@ import AVFoundation
 import Foundation
 import SPFKUtils
 
-public protocol AudioUnitAvailability: AnyObject {
+public protocol AudioUnitAvailability {
     var availableAudioUnitComponents: [AVAudioUnitComponent]? { get }
     var audioUnitManufactererCollection: [AudioUnitManufacturerCollection] { get }
 }
@@ -33,8 +33,6 @@ extension AudioUnitAvailability {
         componentManufacturers = componentManufacturers.sorted {
             $0.name.standardCompare(with: $1.name)
         }
-
-        Log.debug(componentManufacturers.map { $0.name })
 
         return componentManufacturers
     }

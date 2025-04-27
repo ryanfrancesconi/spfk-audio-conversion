@@ -43,7 +43,7 @@ extension AudioEngineManagerModel {
 // MARK: Formats
 
 extension AudioEngineManagerModel {
-    /// render at 32bit PCM then convert after
+    /// Files will render at 32bit PCM then convert after
     public var renderFormat: AVAudioFormat? {
         AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
@@ -57,7 +57,7 @@ extension AudioEngineManagerModel {
         guard let inputNode else {
             return nil
         }
-        // accessing inputNode will lazy create it
+        // accessing this inputNode will lazy create it
         return inputNode.outputFormat(forBus: 0)
     }
 

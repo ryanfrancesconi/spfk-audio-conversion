@@ -1,8 +1,8 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import Foundation
 import SPFKUtils
-
-// TODO: create view and window data actor that lives in ADDAudioUI
 
 public actor AudioUnitChainData {
     public private(set) var effectsChain: [AudioUnitDescription?]

@@ -1,14 +1,10 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AudioToolbox
 import AVFoundation
 import SPFKUtils
 
-/// Effects Chain management
 extension AudioUnitChain {
-    func resetEffectsChain() async throws {
-        try await removeEffects()
-    }
-
     /// Removes all effects from the effectsChain and detach Audio Units from the engine
     public func removeEffects(reconnectChain: Bool = true, sendEvent: Bool = true) async throws {
         try await data.removeAll()
@@ -19,8 +15,6 @@ extension AudioUnitChain {
     }
 
     public func removeEffect(at index: Int, reconnectChain: Bool = true, sendEvent: Bool = true) async throws {
-        Log.debug("- Remove Effect at", index)
-
         if sendEvent {
             delegate?.audioUnitChain(self, event: .willRemove(index: index))
         }
@@ -121,10 +115,10 @@ extension AudioUnitChain {
 
         await data.allocateRenderResourcesIfNeeded()
 
-        // MARK: copy out of concurrency
+        // NOTE: copy values out of concurrency
 
         effectsCount = await data.effectsCount
-        effectsLatency = await totalLatency()
+        effectsLatency = await data.totalLatency
     }
 
     private func connect(_ firstNode: AVAudioNode, to secondNode: AVAudioNode) throws {

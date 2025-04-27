@@ -2,7 +2,7 @@
 import AVFoundation
 import Foundation
 
-/// AVAudioUnitComponent grouped by Manufacturer name
+/// AVAudioUnitComponent collection grouped by Manufacturer
 public struct AudioUnitManufacturerCollection: Equatable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.componentManufacturer == rhs.componentManufacturer

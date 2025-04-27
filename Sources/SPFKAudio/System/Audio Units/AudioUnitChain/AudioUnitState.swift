@@ -1,11 +1,10 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
-
+import AEXML
 import AVFoundation
 import Foundation
-import OTCore
 import SPFKAudioC
 import SPFKUtils
-import AEXML
 
 // This subclass exists because these things are simpler to do in Swift, whereas the AudioUnitStateC things are easier in C.
 // TODO: review apis added after this class was written for preset management (if os available)

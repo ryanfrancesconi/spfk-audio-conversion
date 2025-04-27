@@ -65,7 +65,7 @@ public class AudioUnitCacheManager {
         scanTask?.cancel()
     }
 
-    /// load effects cache document - called from ADDAudioSystem
+    /// load effects cache document
     public func load() async {
         guard componentCollection == nil else {
             // already loaded

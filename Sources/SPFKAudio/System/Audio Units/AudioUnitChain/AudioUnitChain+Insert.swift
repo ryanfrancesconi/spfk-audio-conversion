@@ -1,4 +1,5 @@
-import AEXML
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import Foundation
 import SPFKMetadata

@@ -6,23 +6,7 @@ import SPFKUtils
 
 extension AudioUnitCacheManager {
     public var validationIsNeeded: Bool {
-        guard let cachedComponentCount else { return true }
-
-        // ask the system for the amount of components
-        let audioComponentCount = AudioUnitCacheManager.compatibleComponents.count
-
-        let needsValidation = audioComponentCount != cachedComponentCount
-
-        if needsValidation {
-            Log.error("*AU Need to regenerate cache file as validation count doesn't match",
-                      "componentCountOnDisk:", audioComponentCount,
-                      "vs cachedComponentCount:", cachedComponentCount)
-        } else {
-            Log.debug("*AU No validation is needed: componentCountOnDisk:", audioComponentCount,
-                      "vs cachedComponentCount:", cachedComponentCount)
-        }
-
-        return needsValidation
+        AudioUnitCacheManager.compatibleComponents.count != cachedComponentCount
     }
 
     var cacheURL: URL? {
@@ -47,6 +31,10 @@ extension AudioUnitCacheManager {
         }
         return folder.appendingPathComponent(filename)
     }
+    
+    var cacheExists: Bool {
+        cacheURL?.exists == true
+    }
 
     var cacheDocument: AEXMLDocument? {
         guard let cacheURL else {
@@ -67,10 +55,6 @@ extension AudioUnitCacheManager {
         Log.debug("*AU Parsed", cacheURL.path)
 
         return doc
-    }
-
-    var cacheExists: Bool {
-        cacheURL?.exists == true
     }
 
     // MARK: - loading effects

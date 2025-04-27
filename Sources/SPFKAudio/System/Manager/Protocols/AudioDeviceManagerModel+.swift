@@ -54,12 +54,6 @@ extension AudioDeviceManagerModel {
         let seconds = TimeInterval(inputLatency) / inputDeviceSampleRate
         return seconds
     }
-
-    public var outputLatencyInSeconds: TimeInterval? {
-        guard let outputLatency, let outputDeviceSampleRate else { return nil }
-        let seconds = TimeInterval(outputLatency) / outputDeviceSampleRate
-        return seconds
-    }
 }
 
 extension AudioDeviceManagerModel {

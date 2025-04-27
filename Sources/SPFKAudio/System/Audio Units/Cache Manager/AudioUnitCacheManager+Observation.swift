@@ -1,6 +1,6 @@
-import SPFKUtils
 import AVFoundation
 import Foundation
+import SPFKUtils
 
 extension AudioUnitCacheManager {
     internal func sendEvent(_ kind: Event) {
@@ -32,6 +32,7 @@ extension AudioUnitCacheManager {
 
     func removeObservers() {
         guard isObserving else { return }
+
         NotificationCenter.default.removeObserver(componentRegistrationObserver)
         NotificationCenter.default.removeObserver(componentInstanceObserver)
         isObserving = false
@@ -51,7 +52,7 @@ extension AudioUnitCacheManager {
         triggerComponentRegistrationEvent()
     }
 
-    public func triggerComponentRegistrationEvent() {
+    private func triggerComponentRegistrationEvent() {
         Log.debug("*AU Triggering: componentRegistrationsChanged event *")
 
         guard sendNotifications else {

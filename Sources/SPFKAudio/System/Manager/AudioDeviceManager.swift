@@ -1,3 +1,5 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import SimplyCoreAudio
 import SPFKUtils
@@ -6,8 +8,8 @@ import SPFKUtils
 // to incompatibilities with AVAudioEngine and its inputNode inflexibility.
 // The exception is: if input is disabled, still use
 // the engine audioUnit output directly to the output device selection.
-// NOTE: this method of direct setting of the device with no input doesn't work with airpods -
-// potentially other blue tooth headsets as well.
+// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
+// potentially other bluetooth I/O headsets as well.
 
 public class AudioDeviceManager: AudioDeviceManagerModel {
     public enum Event {
@@ -42,14 +44,6 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         return _inputLatency
     }
 
-    // Cache this value for the selected device
-    internal var _outputLatency: UInt32?
-    public var outputLatency: UInt32? {
-        if let _outputLatency { return _outputLatency }
-        _outputLatency = inputDeviceLatency
-        return _outputLatency
-    }
-
     private var _bufferSize: UInt32 = 256
     public var bufferSize: UInt32 {
         get { _bufferSize }
@@ -70,9 +64,7 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 
     // TODO: once this model protocol is adopted, won't need this static struct and can keep a class variable here
     public var systemFormat: AVAudioFormat {
-        get {
-            AudioDefaults.systemFormat
-        }
+        get { AudioDefaults.systemFormat }
 
         set {
             AudioDefaults.systemFormat = newValue

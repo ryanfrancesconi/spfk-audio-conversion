@@ -1,5 +1,5 @@
+import AudioToolbox
 import AVFoundation
-
 
 public extension Notification.Name {
     /// Notification generated when the set of available AudioComponents changes.
@@ -17,7 +17,7 @@ public extension Notification.Name {
     )
 
     static let effectsCacheUpdated = Notification.Name(
-        rawValue: "com.audiodesigndesk.ADD.effectsCacheUpdated"
+        rawValue: "com.spongefork.effectsCacheUpdated"
     )
 }
 
@@ -26,16 +26,16 @@ extension AudioUnitCacheManager {
 
     public enum Event {
         case cachingStarted
-        
+
         case cacheUpdated
-        
+
         case cacheLoaded(SystemComponentsResponse)
 
         /// Name of AU being currently validated
         case validating(name: String, index: Int, count: Int)
 
         case componentRegistrationsChanged
-        
+
         case componentInvalidated(AUAudioUnit)
     }
 

@@ -1,8 +1,6 @@
-import AEXML
-import AppKit
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
-import OTAtomics
-import OTCore
 import SPFKUtils
 
 /// Audio Unit v3 Host for loading external Audio Units and connecting them together
@@ -68,7 +66,7 @@ public class AudioUnitChain {
     public func update(input: AVAudioNode, output: AVAudioNode) async throws {
         self.input = input
         self.output = output
-        
+
         try await connect()
     }
 
@@ -86,5 +84,26 @@ public class AudioUnitChain {
         input = nil
         output = nil
         delegate = nil
+    }
+}
+
+extension AudioUnitChain: EngineAccess {
+    public var engineManager: AudioEngineManagerModel? { delegate?.engineManager }
+}
+
+extension AudioUnitChain {
+    public var description: String {
+        get async {
+            let effects = await data.linkedEffects
+            let audioUnitNames: [String] = effects.compactMap { $0.name }
+
+            var value = "\(effects.count) Audio Unit\(effects.pluralString)"
+
+            if effects.count > 0 {
+                value += ": \(audioUnitNames.joined(separator: ", "))"
+            }
+
+            return value
+        }
     }
 }

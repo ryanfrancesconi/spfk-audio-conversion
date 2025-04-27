@@ -22,7 +22,8 @@ public class AudioEngineManager {
 
     // MARK: -
 
-    public var _engine: AVAudioEngine = AVAudioEngine()
+    // AudioEngineManagerModel
+    public var engine = AVAudioEngine()
 
     var engineObserver: NSObjectProtocol?
 
@@ -31,15 +32,15 @@ public class AudioEngineManager {
         engine.manualRenderingMode
     }
 
-    public private(set) var renderer = EngineRenderer()
-
     public var isRendering: Bool {
         engine.isInManualRenderingMode
     }
 
+    public private(set) var renderer = EngineRenderer()
+
     public var deviceManager: AudioDeviceManager
 
-    public init(settings: DeviceSettings = DeviceSettings()) {
+    public init(settings: DeviceSettings = .init()) {
         deviceManager = AudioDeviceManager(settings: settings)
 
         // returns the current engine ref in this block
