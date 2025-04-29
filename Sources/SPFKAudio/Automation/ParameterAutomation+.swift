@@ -1,17 +1,25 @@
 import Foundation
 import SPFKAudioC
 
-// MARK: These is extending the C struct in ParameterAutomation.h
+// MARK: These are extending the C struct in ParameterAutomation.h
 
 extension AutomationEvent: @retroactive Equatable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.startTime == rhs.startTime &&
             lhs.rampDuration == rhs.rampDuration &&
-            lhs.startTime == rhs.startTime
+            lhs.targetValue == rhs.targetValue
     }
 }
 
-extension ParameterAutomationPoint {
+extension ParameterAutomationPoint: @retroactive Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.startTime == rhs.startTime &&
+            lhs.rampDuration == rhs.rampDuration &&
+            lhs.targetValue == rhs.targetValue &&
+            lhs.rampTaper == rhs.rampTaper &&
+            lhs.rampSkew == rhs.rampSkew
+    }
+
     /// Initialize with value, time, and duration
     /// - Parameters:
     ///   - targetValue: Target value

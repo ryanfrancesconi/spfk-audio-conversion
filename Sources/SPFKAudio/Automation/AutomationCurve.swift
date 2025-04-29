@@ -1,4 +1,5 @@
-// Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Heavily based on the AudioKit version. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AVFoundation
 import Foundation
@@ -29,76 +30,98 @@ public struct AutomationCurve {
     public func evaluate(initialValue: AUValue, resolution: Float = 0.1) -> [AutomationEvent] {
         guard points.isNotEmpty else { return [] }
 
-        var resolution = resolution
-
         var result = [AutomationEvent]()
 
         // The last evaluated value, updated during the loop
         var currentValue = initialValue
 
         for i in 0 ..< points.count {
-            let point = points[i]
-
-            if point.isLinear() {
-                result.append(
-                    AutomationEvent(
-                        targetValue: point.targetValue,
-                        startTime: point.startTime,
-                        rampDuration: point.rampDuration
-                    )
+            do {
+                result = try evaluateCurve(
+                    index: i,
+                    currentValue: currentValue,
+                    resolution: resolution
                 )
 
-                currentValue = point.targetValue
-
-            } else {
-                // Cut off the end if another point comes along.
-                let nextPointStart = i < points.count - 1 ?
-                    points[i + 1].startTime :
-                    Float.greatestFiniteMagnitude
-
-                let endTime: Float = min(
-                    nextPointStart,
-                    point.startTime + point.rampDuration
-                )
-
-                var position = point.startTime
-                let start = currentValue
-
-                // March t along the segment
-                // this is effectively `while t <= endTime - resolution` without potentional for rounding errors
-                let eventCount = Int(round(endTime / resolution))
-
-                for _ in 0 ..< eventCount {
-                    let isLastPoint = position + resolution >= endTime
-
-                    if isLastPoint {
-                        // if the time + resolution is past the endTime, truncate it to end exactly at endTime
-                        resolution = endTime - position
-                    }
-
-                    currentValue = AutomationCurve.evalRamp(
-                        start: start,
-                        segment: point,
-                        time: position + resolution,
-                        endTime: point.startTime + point.rampDuration
-                    )
-
-                    result.append(
-                        AutomationEvent(
-                            targetValue: currentValue,
-                            startTime: position,
-                            rampDuration: resolution
-                        )
-                    )
-
-                    position += resolution
-
-                    // final point should always end exactly at endTime
-                    // safety check to not run past the final target value
-                    guard position < endTime else {
-                        break
-                    }
+                if let lastValue = result.last?.targetValue {
+                    currentValue = lastValue
                 }
+
+            } catch {
+                Log.error(error)
+            }
+        }
+
+        return result
+    }
+
+    private func evaluateCurve(index i: Int, currentValue: Float, resolution: Float) throws -> [AutomationEvent] {
+        guard points.indices.contains(i) else {
+            throw NSError(description: "index \(i) is out of bounds")
+        }
+
+        let point = points[i]
+
+        guard !point.isLinear() else {
+            return [
+                AutomationEvent(
+                    targetValue: point.targetValue,
+                    startTime: point.startTime,
+                    rampDuration: point.rampDuration
+                ),
+            ]
+        }
+
+        var resolution = resolution
+        var currentValue = currentValue
+        var result = [AutomationEvent]()
+
+        // Cut off the end if another point comes along.
+        let nextPointStart = i < points.count - 1 ?
+            points[i + 1].startTime :
+            Float.greatestFiniteMagnitude
+
+        let endTime: Float = min(
+            nextPointStart,
+            point.startTime + point.rampDuration
+        )
+
+        var position = point.startTime
+        let startValue = currentValue
+
+        // March position along the segment
+        // this is effectively `while t <= endTime - resolution` without potentional for rounding errors
+        let eventCount = Int(round(endTime / resolution))
+
+        for _ in 0 ..< eventCount {
+            let isLastPoint = position + resolution >= endTime
+
+            if isLastPoint {
+                // if the time + resolution is past the endTime, truncate it to end exactly at endTime
+                resolution = endTime - position
+            }
+
+            currentValue = AutomationCurve.evalRamp(
+                start: startValue,
+                segment: point,
+                time: position + resolution,
+                endTime: point.startTime + point.rampDuration
+            )
+
+            result.append(
+                AutomationEvent(
+                    targetValue: currentValue,
+                    startTime: position,
+                    rampDuration: resolution
+                )
+            )
+
+            position += resolution
+
+            // final point should always end exactly at endTime
+            // safety check to not run past the final target value
+            guard position < endTime else {
+                break
             }
         }
 
