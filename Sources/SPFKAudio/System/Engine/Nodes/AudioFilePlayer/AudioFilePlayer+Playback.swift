@@ -4,8 +4,7 @@ import Foundation
 import SPFKUtils
 
 extension AudioFilePlayer {
-    /// Sets the edit points and enables the fader if the region
-    /// has fade in or out applied to it.
+    /// Update the edit points
     public func preroll(from startingTime: TimeInterval = 0, to endingTime: TimeInterval = 0) {
         var startingTime = startingTime
         var endingTime = endingTime
@@ -25,17 +24,16 @@ extension AudioFilePlayer {
         editEndTime = endingTime
     }
 
-    public func playNode() {
+    public func play() throws {
         guard playerNode.engine?.isRunning == true else {
-            Log.error("Engine isn't running - aborting playback for", audioFile?.url.lastPathComponent)
-            return
+            throw NSError(description: "Engine isn't running or available - play() canceled for \(audioFile?.url.lastPathComponent ?? "nil")")
         }
 
         if isPlaying {
-            stopNode()
+            playerNode.stop()
         }
 
-        // play at the previously scheduled time
+        // plays at the previously scheduled time, nil sigifies now
         playerNode.play(at: nil)
 
         isPlaying = true
@@ -43,47 +41,11 @@ extension AudioFilePlayer {
 
     /// Stop playback and cancel any pending scheduled playback or completion events
     public func stop() {
-        guard isPlaying else {
-            return
-        }
+        guard isPlaying else { return }
 
-        stopNode()
-
-        isPlaying = false
-        pauseTime = nil
-    }
-
-    func stopNode() {
         playerNode.stop()
         lastScheduledTime = nil
-        lastScheduledTimeInterval = nil
-    }
 
-    func pause() {
-        pauseTime = currentTime
-        stopNode()
-        isPaused = true
-    }
-
-    func resume() {
-        // save the last set startTime as resume will overwrite it
-        let previousStartTime = editStartTime
-
-        var time = pauseTime ?? 0
-
-        // bounds check
-        if time >= duration {
-            time = 0
-        }
-        // clear the frame count in the player
-        stopNode()
-        schedule(from: time)
-        playNode()
-
-        // restore that startTime as it might be a selection
-        editStartTime = previousStartTime
-        // restore the pauseTime cleared by play and preserve it by setting _isPaused to false manually
-        pauseTime = time
-        isPaused = false
+        isPlaying = false
     }
 }

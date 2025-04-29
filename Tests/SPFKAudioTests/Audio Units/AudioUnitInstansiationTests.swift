@@ -1,30 +1,21 @@
 import AVFoundation
 import Foundation
-import Numerics
 @testable import SPFKAudio
-import SPFKMetadata
-import SPFKTesting
 import SPFKUtils
 import Testing
-
-/**
- AudioUnitInstansiationTests.swift:register() took 0.0069062916591065004 seconds.
- AudioUnitInstansiationTests.swift:instantiateAsync() took 0.0007763750036247075 seconds.
- AudioUnitInstansiationTests.swift:instantiateAndBlockWithSemaphore() took 0.00013404166384134442 seconds.
- AudioUnitInstansiationTests.swift:instantiateAndBlockRunLoop() took 0.012704916662187316 seconds.
- */
 
 @Suite(.serialized, .tags(.development))
 final class AudioUnitInstansiationTests {
     let audioComponentDescription = Fader.audioComponentDescription
 
+    // register first so the instansiates will find it all at the same time
     @Test func register() async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
 
         AUAudioUnit.registerSubclass(
             AudioKitAU.self,
             as: audioComponentDescription,
-            name: "test",
+            name: Fader.typeName,
             version: .max
         )
     }
@@ -34,7 +25,7 @@ final class AudioUnitInstansiationTests {
 
         _ = try await AVAudioUnit.instantiateLocal(
             componentDescription: audioComponentDescription,
-            named: "test"
+            named: Fader.typeName
         )
     }
 
@@ -43,8 +34,10 @@ final class AudioUnitInstansiationTests {
 
         _ = try AVAudioUnit.instantiateLocalAndBlockWithSemaphore(
             componentDescription: audioComponentDescription,
-            named: "test"
+            named: Fader.typeName
         )
+        
+        Log.debug("done")
     }
 
     @Test func instantiateAndBlockRunLoop() async throws {
@@ -52,7 +45,7 @@ final class AudioUnitInstansiationTests {
 
         _ = try AVAudioUnit.instantiateLocalAndBlockRunLoop(
             componentDescription: audioComponentDescription,
-            named: "test"
+            named: Fader.typeName
         )
     }
 }

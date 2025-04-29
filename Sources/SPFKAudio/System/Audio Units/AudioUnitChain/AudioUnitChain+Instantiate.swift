@@ -6,10 +6,7 @@ import SPFKUtils
 
 extension AudioUnitChain {
     public static func isAvailable(componentDescription: AudioComponentDescription) -> Bool {
-        AVAudioUnitComponentManager
-            .shared()
-            .components(matching: componentDescription)
-            .isNotEmpty
+        AVAudioUnitComponent.component(matching: componentDescription) != nil
     }
 
     /// Will attempt to create an out of process effect first and if that fails will

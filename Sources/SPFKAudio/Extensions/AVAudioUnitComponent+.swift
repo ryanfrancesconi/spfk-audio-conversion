@@ -18,4 +18,12 @@ extension AVAudioUnitComponent {
 
         return name
     }
+
+    public static func component(matching componentDescription: AudioComponentDescription) -> AVAudioUnitComponent? {
+        AVAudioUnitComponentManager
+            .shared()
+            .components(matching: componentDescription)
+            .compactMap { $0 }
+            .first
+    }
 }

@@ -1,30 +1,16 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
-import OTAtomics
 import SPFKUtils
 
-extension AudioFilePlayer: EngineNode {
-    public var outputNode: AVAudioNode? { playerNode }
-
-    public func detach() {
-        stop()
-        engine?.safeDetach(nodes: [playerNode])
-
-        detachNodes()
-
-        audioFile = nil
-        completionHandler = nil
-    }
-}
-
 /// An audio player which is associated with a single file
-open class AudioFilePlayer: Mixable {
+open class AudioFilePlayer: EngineNodeAU, Mixable {
     // MARK: - Nodes
 
+    public var avAudioNode: AVAudioNode { playerNode }
+
     /// The underlying player node
-    @OTAtomicsThreadSafe
-    public private(set) var playerNode = AVAudioPlayerNode()
+    private(set) var playerNode = AVAudioPlayerNode()
 
     // MARK: REVIEW
 
@@ -46,11 +32,11 @@ open class AudioFilePlayer: Mixable {
     // MARK: - Public Properties
 
     /// Completion handler to be called when Audio is done playing. The handler won't be called if
-    /// stop() is called while playing or when looping from a buffer. Requires iOS 11, macOS 10.13.
+    /// stop() is called while playing or when looping from a buffer.
     public var completionHandler: (() -> Void)?
 
     /// The internal audio file
-    public var audioFile: AVAudioFile?
+    public private(set) var audioFile: AVAudioFile?
 
     public var url: URL? { audioFile?.url }
 
@@ -73,11 +59,6 @@ open class AudioFilePlayer: Mixable {
         playerNode.outputFormat(forBus: 0).sampleRate
     }
 
-    /// - Returns: The total frame count that is being playing.
-    /// Differs from the audioFile.length as this will be updated with the edited amount
-    /// of frames based on startTime and endTime
-    public internal(set) var frameCount: AVAudioFrameCount = 0
-
     /// - Returns: The current frame while playing. It will return 0 on error.
     public var currentFrame: AVAudioFramePosition {
         guard playerNode.engine != nil,
@@ -92,25 +73,10 @@ open class AudioFilePlayer: Mixable {
     /// - Returns: Current time of the player in seconds while playing.
     public var currentTime: TimeInterval {
         let currentDuration = (editEndTime - editStartTime == 0) ? duration : (editEndTime - editStartTime)
-
-        var normalizedPauseTime = 0.0
-
-        if let pauseTime, pauseTime > editStartTime {
-            normalizedPauseTime = pauseTime - editStartTime
-        }
-
-        let current = editStartTime + normalizedPauseTime + playerTime.truncatingRemainder(dividingBy: currentDuration)
+        let current = editStartTime + playerTime.truncatingRemainder(dividingBy: currentDuration)
 
         return current
     }
-
-    public var pauseTime: TimeInterval? {
-        didSet {
-            isPaused = pauseTime != nil
-        }
-    }
-
-    // MARK: REVIEW These can be optionals instead of zero
 
     private var _editStartTime: TimeInterval = 0
 
@@ -148,7 +114,7 @@ open class AudioFilePlayer: Mixable {
     ///  - Returns: the internal processingFormat
     public private(set) var processingFormat: AVAudioFormat?
 
-    // MARK: - Dynamic Options
+    // MARK: -
 
     /// Volume 0.0 -> ?, default 1.0, > 1 applies gain
     /// This is different than gain
@@ -167,28 +133,9 @@ open class AudioFilePlayer: Mixable {
         }
     }
 
-    private var lastKnownVolume: AUValue = 1
-
-    /// not really bypassed in this case, just unity volume
-    public var isBypassed: Bool = false {
-        didSet {
-            if isBypassed {
-                lastKnownVolume = volume
-                volume = 1
-            } else {
-                volume = lastKnownVolume
-            }
-        }
-    }
-
-    /// Returns if the player is currently paused
-    public internal(set) var isPaused: Bool = false
-
     // MARK: - Public Options
 
     public internal(set) var isPlaying: Bool = false
-
-    public var isLooping: Bool = false
 
     // MARK: - Initialization
 
@@ -196,8 +143,7 @@ open class AudioFilePlayer: Mixable {
 
     /// Create a player from a URL
     public convenience init(url: URL) throws {
-        let avfile = try AVAudioFile(forReading: url)
-        self.init(audioFile: avfile)
+        self.init(audioFile: try AVAudioFile(forReading: url))
     }
 
     /// Create a player from an AVAudioFile.
@@ -211,8 +157,7 @@ open class AudioFilePlayer: Mixable {
     /// you should dispose this Player and create a new one instead.
     /// Note, the same URL could be loaded over and over again in the case of renders.
     public func load(url: URL) throws {
-        let file = try AVAudioFile(forReading: url)
-        try load(audioFile: file)
+        try load(audioFile: try AVAudioFile(forReading: url))
     }
 
     /// Load a new audio file into this player. Note that if your processingFormat changes
@@ -233,5 +178,23 @@ open class AudioFilePlayer: Mixable {
         processingFormat = audioFile.processingFormat
 
         preroll()
+    }
+
+    public func unload() {
+        audioFile = nil
+    }
+}
+
+extension AudioFilePlayer: EngineNode {
+    public var outputNode: AVAudioNode? { playerNode }
+
+    public func detach() throws {
+        stop()
+        engine?.safeDetach(nodes: [playerNode])
+
+        try detachNodes()
+
+        audioFile = nil
+        completionHandler = nil
     }
 }

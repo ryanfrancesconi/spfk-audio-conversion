@@ -6,8 +6,8 @@ extension MixerWrapper: EngineNode {
     public var inputNode: AVAudioNode? { mixerNode }
     public var outputNode: AVAudioNode? { mixerNode }
 
-    public func detach() {
-        detachNodes()
+    public func detach() throws {
+        try detachNodes()
     }
 }
 
@@ -47,7 +47,7 @@ public class MixerWrapper: Mixable {
     }
 
     /// Not really bypassed in this case, just unity volume and centered.
-    /// Used for neutral rendering where this mixer is in line of the signal
+    /// Used for neutral rendering where this mixer is in line in the signal
     /// path.
     public var isBypassed: Bool = false {
         didSet {

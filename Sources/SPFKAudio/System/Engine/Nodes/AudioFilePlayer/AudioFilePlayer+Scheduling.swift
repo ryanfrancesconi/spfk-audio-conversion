@@ -4,82 +4,37 @@ import AVFoundation
 import SPFKUtils
 
 extension AudioFilePlayer {
-    var useCompletionHandler: Bool {
-        isLooping || completionHandler != nil
-    }
-
-    /// Play segments of a file
-    func schedule(from startingTime: TimeInterval,
-                  to endingTime: TimeInterval = 0) {
-        var to = endingTime
-        if to == 0 {
-            to = editEndTime
-        }
-        schedule(from: startingTime, to: to, at: nil)
-    }
-
-    // AudioRegionView using this +Playback
     @discardableResult
-    public func schedule(when scheduledTime: TimeInterval,
-                         hostTime: UInt64? = nil) -> AVAudioTime {
-        schedule(from: editStartTime,
-                 to: editEndTime,
-                 when: scheduledTime,
-                 hostTime: hostTime)
-    }
+    public func schedule(
+        from startingTime: TimeInterval? = nil,
+        to endingTime: TimeInterval? = nil,
+        when scheduledTime: TimeInterval = 0,
+        hostTime: UInt64? = nil
+    ) throws -> AVAudioTime {
+        let startingTime = startingTime ?? editStartTime
+        let endingTime = endingTime ?? editEndTime
 
-    @discardableResult
-    public func schedule(from startingTime: TimeInterval,
-                         to endingTime: TimeInterval,
-                         when scheduledTime: TimeInterval,
-                         hostTime: UInt64? = nil) -> AVAudioTime {
-        let refTime = hostTime ?? mach_absolute_time()
+        let hostTime = hostTime ?? mach_absolute_time()
+        let audioTime: AVAudioTime = audioTime(scheduledTime: scheduledTime, hostTime: hostTime)
 
+        lastScheduledTime = audioTime
         lastScheduledTimeInterval = scheduledTime
 
-        var avTime: AVAudioTime
+        preroll(from: startingTime, to: endingTime)
+        try scheduleSegment(at: audioTime)
 
-        if renderingMode == .offline {
-            // needs to be a sample based schedule for offline rendering
-            let sampleTime = AVAudioFramePosition(scheduledTime * sampleRate)
-            let sampleAVTime = AVAudioTime(hostTime: refTime,
-                                           sampleTime: sampleTime,
-                                           atRate: sampleRate)
-            avTime = sampleAVTime
+        return audioTime
+    }
 
-        } else {
-            avTime = AVAudioTime(hostTime: refTime).offset(seconds: scheduledTime)
+    /// a segment must be scheduled before you can play
+    public func scheduleSegment(at audioTime: AVAudioTime?) throws {
+        guard let audioFile else {
+            throw NSError(description: "No audio file is loaded")
         }
 
-        schedule(from: startingTime,
-                 to: endingTime,
-                 at: avTime)
-
-        return avTime
-    }
-
-    /// Play using full options. Last in the convenience play chain, all schedule commands will end up here
-    func schedule(from startingTime: TimeInterval,
-                  to endingTime: TimeInterval,
-                  at audioTime: AVAudioTime?) {
-        let audioTime = audioTime ?? AVAudioTime.now()
-
-        preroll(from: startingTime, to: endingTime)
-        schedulePlayer(at: audioTime)
-        pauseTime = nil
-    }
-
-    public func schedulePlayer(at audioTime: AVAudioTime) {
-        lastScheduledTime = audioTime
-        scheduleSegment(at: audioTime)
-    }
-
-    // play from disk rather than ram
-    private func scheduleSegment(at audioTime: AVAudioTime?) {
-        guard let audioFile else { return }
-
-        let startFrame = AVAudioFramePosition(editStartTime * audioFile.fileFormat.sampleRate)
-        var endFrame = AVAudioFramePosition(editEndTime * audioFile.fileFormat.sampleRate)
+        let sampleRate: Double = audioFile.fileFormat.sampleRate
+        let startFrame = AVAudioFramePosition(editStartTime * sampleRate)
+        var endFrame = AVAudioFramePosition(editEndTime * sampleRate)
 
         if endFrame == 0 {
             endFrame = audioFile.length
@@ -88,11 +43,10 @@ extension AudioFilePlayer {
         let totalFrames = (audioFile.length - startFrame) - (audioFile.length - endFrame)
 
         guard totalFrames > 0 else {
-            Log.error("Unable to schedule file. totalFrames to play: \(totalFrames). audioFile.length: \(audioFile.length)")
-            return
+            throw NSError(description: "Unable to schedule file. totalFrames to play: \(totalFrames). audioFile.length: \(audioFile.length)")
         }
 
-        frameCount = AVAudioFrameCount(totalFrames)
+        let frameCount = AVAudioFrameCount(totalFrames)
 
         playerNode.scheduleSegment(
             audioFile,
@@ -100,17 +54,35 @@ extension AudioFilePlayer {
             frameCount: frameCount,
             at: audioTime,
             completionCallbackType: .dataPlayedBack,
-            completionHandler: useCompletionHandler ? handleCallbackComplete : nil
+            completionHandler: completionHandler != nil ? handleCallbackComplete : nil
         )
 
         playerNode.prepare(withFrameCount: frameCount)
     }
 
-    // MARK: - Completion Handlers
+    // MARK: - Helpers
+
+    private func audioTime(scheduledTime: TimeInterval, hostTime: UInt64) -> AVAudioTime {
+        if renderingMode == .offline {
+            // needs to be a sample based AVAudioTime for offline rendering
+            let sampleTime = AVAudioFramePosition(scheduledTime * sampleRate)
+
+            let sampleAVTime = AVAudioTime(
+                hostTime: hostTime,
+                sampleTime: sampleTime,
+                atRate: sampleRate
+            )
+
+            return sampleAVTime
+
+        } else {
+            return AVAudioTime(hostTime: hostTime).offset(seconds: scheduledTime)
+        }
+    }
 
     // Note that a player node should not be stopped from within a completion handler callback because
     // it can deadlock while trying to unschedule previously scheduled buffers.
-    func handleCallbackComplete(completionType: AVAudioPlayerNodeCompletionCallbackType) {
+    private func handleCallbackComplete(completionType: AVAudioPlayerNodeCompletionCallbackType) {
         isPlaying = false
         completionHandler?()
     }

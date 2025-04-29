@@ -54,9 +54,8 @@ extension AudioEngineManagerModel {
     }
 
     public var inputFormat: AVAudioFormat? {
-        guard let inputNode else {
-            return nil
-        }
+        guard let inputNode else { return nil }
+
         // accessing this inputNode will lazy create it
         return inputNode.outputFormat(forBus: 0)
     }

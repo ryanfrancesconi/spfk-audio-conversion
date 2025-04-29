@@ -1,10 +1,16 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
+import AVFoundation
 import SPFKUtils
 import SPFKUtilsC
-import AVFoundation
 
-extension AVAudioNode {
+extension AVAudioNode: TypeDescribable {
+    private func error(function: String, string: String) -> NSError {
+        Log.printCallStack()
+        
+        return NSError(description: "\(self.typeName).\(function) Error: \(string)")
+    }
+
     public var ioConnectionDescription: String {
         let name = auAudioUnit.audioUnitName ?? className
 
@@ -42,44 +48,77 @@ extension AVAudioNode {
 
 extension AVAudioNode {
     /// Convenience to disconnect via the engine if it's non nil
-    public func disconnectOutput() {
+    public func disconnectOutput() throws {
+        guard let engine else {
+            throw error(function: #function, string: "engine is nil")
+        }
+
+        var error: Error?
+
         ExceptionCatcherOperation({ [weak self] in
             guard let self else { return }
 
-            engine?.disconnectNodeOutput(self)
+            engine.disconnectNodeOutput(self)
 
         }, { exception in
             Log.error(exception)
+            error = exception.error
         })
+
+        if let error {
+            throw error
+        }
     }
 
     /// Convenience to disconnect via the engine if it's non nil
-    public func disconnectInput() {
+    public func disconnectInput() throws {
+        guard let engine else {
+            throw error(function: #function, string: "engine is nil")
+        }
+
+        var error: Error?
+
         ExceptionCatcherOperation({ [weak self] in
             guard let self else { return }
 
-            engine?.disconnectNodeInput(self)
+            engine.disconnectNodeInput(self)
 
         }, { exception in
             Log.error(exception)
+            error = exception.error
         })
+
+        if let error {
+            throw error
+        }
     }
 
-    public func detach() {
+    public func detach() throws {
+        guard let engine else {
+            throw error(function: #function, string: "engine is nil")
+        }
+
+        var error: Error?
+
         ExceptionCatcherOperation({ [weak self] in
             guard let self else { return }
 
-            engine?.detach(self)
+            engine.detach(self)
 
         }, { exception in
             Log.error(exception)
+            error = exception.error
         })
+
+        if let error {
+            throw error
+        }
     }
 
     /// Disconnect without breaking other connections.
-    public func disconnect(input: AVAudioNode) {
+    public func disconnect(input: AVAudioNode) throws {
         guard let engine else {
-            return
+            throw error(function: #function, string: "engine is nil")
         }
 
         var newConnections: [AVAudioNode: [AVAudioConnectionPoint]] = [:]
@@ -103,9 +142,9 @@ extension AVAudioNode {
     }
 
     /// Make a connection without breaking other connections.
-    public func connect(input: AVAudioNode, bus: Int, format: AVAudioFormat? = nil) {
+    public func connect(input: AVAudioNode, bus: Int, format: AVAudioFormat? = nil) throws {
         guard let engine else {
-            return
+            throw error(function: #function, string: "engine is nil")
         }
 
         let format = format ?? engine.outputFormat

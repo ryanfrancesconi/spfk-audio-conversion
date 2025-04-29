@@ -115,7 +115,7 @@ extension AudioUnitChain {
     private func update(audioUnit: AudioUnitDescription, at index: Int) async throws {
         if try await data.effect(at: index) != nil {
             try await removeEffect(at: index, reconnectChain: true, sendEvent: true)
-            try await Task.sleep(seconds: 0.5)
+            try await Task.sleep(seconds: 0.5) // hack
         }
 
         try await data.assign(audioUnitDescription: audioUnit, to: index)

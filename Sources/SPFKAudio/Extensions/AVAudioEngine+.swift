@@ -44,16 +44,32 @@ extension AVAudioEngine {
     }
 
     public func detachMixerInitializationNodes() {
-        let nodes = attachedNodes.compactMap { $0 as? MixerInitializationtNode }
-        nodes.forEach { $0.disconnectOutput() }
+        let nodes = attachedNodes.compactMap { $0 as? MixerInitializationNode }
+
+        for node in nodes {
+            do {
+                try node.disconnectOutput()
+            } catch {
+                Log.error(error)
+            }
+        }
+
         safeDetach(nodes: nodes)
     }
 
     public func detachMixerInitializationNodes(in mixer: AVAudioMixerNode) {
         let nodes = mixer.inputs.compactMap {
-            $0.node as? MixerInitializationtNode
+            $0.node as? MixerInitializationNode
         }
-        nodes.forEach { $0.disconnectOutput() }
+
+        for node in nodes {
+            do {
+                try node.disconnectOutput()
+            } catch {
+                Log.error(error)
+            }
+        }
+
         safeDetach(nodes: nodes)
     }
 }
@@ -65,20 +81,21 @@ extension AVAudioEngine {
     /// node to the mixer prior to making a connection.
     ///
     /// This is still a bug as of macOS 14.6 (2024).
-    @discardableResult private func initialize(mixer: AVAudioMixerNode, format: AVAudioFormat) -> MixerInitializationtNode? {
-        let dummy = MixerInitializationtNode()
+    @discardableResult private func initialize(mixer: AVAudioMixerNode, format: AVAudioFormat) -> MixerInitializationNode? {
+        let dummy = MixerInitializationNode()
 
         safeAttach(nodes: [dummy])
         connect(dummy, to: mixer, format: format)
 
-        Log.debug("⚠️🎚 Added reset node \(dummy) to mixer with format \(format)")
+        // Log.debug("* Added reset node \(dummy) to mixer with format \(format)")
+
         return dummy
     }
 }
 
 /// A typed node so we can detect and manage if it leaks
-internal class MixerInitializationtNode: AVAudioUnitSampler {
+internal class MixerInitializationNode: AVAudioUnitSampler {
     deinit {
-        Log.debug("* { MixerInitializationtNode }")
+        Log.debug("* { MixerInitializationNode }")
     }
 }

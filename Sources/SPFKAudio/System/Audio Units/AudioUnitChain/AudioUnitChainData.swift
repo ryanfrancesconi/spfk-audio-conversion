@@ -74,7 +74,7 @@ public actor AudioUnitChainData {
 
     public func remove(index: Int) throws {
         try check(index: index)
-        effectsChain[index]?.dispose()
+        try effectsChain[index]?.dispose()
         effectsChain[index] = nil
     }
 

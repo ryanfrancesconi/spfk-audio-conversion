@@ -13,17 +13,13 @@ extension Fader: EngineNode {
         set { avAudioNode.auAudioUnit.shouldBypassEffect = newValue }
     }
 
-    public func detach() {
-        detachNodes()
+    public func detach() throws {
+        try detachNodes()
     }
 }
 
-extension Fader: EngineNodeAU {
-    public var avAudioNode: AVAudioNode { faderNode }
-}
-
 /// Stereo Fader.
-public class Fader: TypeDescribable {
+public class Fader: EngineNodeAU, TypeDescribable {
     public static let subType = fourCC("fder")
 
     public static let audioComponentDescription = AudioComponentDescription(
@@ -35,7 +31,7 @@ public class Fader: TypeDescribable {
     )
 
     /// Underlying AVAudioNode
-    private(set) var faderNode: AVAudioNode
+    public private(set) var avAudioNode: AVAudioNode
 
     // MARK: - Parameters
 
@@ -110,13 +106,12 @@ public class Fader: TypeDescribable {
     /// Initialize this fader node
     ///
     /// - Parameters:
-    ///   - input: Node whose output will be amplified
     ///   - gain: Amplification factor (Default: 1, Minimum: 0)
     ///
     public init(gain: AUValue = 1) async throws {
-        faderNode = try await AVAudioUnit.instantiateLocal(
+        avAudioNode = try await AVAudioUnit.instantiateLocal(
             componentDescription: Self.audioComponentDescription,
-            named: "Fader"
+            named: Fader.typeName
         )
 
         setupParameters()
@@ -128,24 +123,24 @@ public class Fader: TypeDescribable {
     }
 }
 
-public extension Fader {
+extension Fader {
     // MARK: - Automation
 
     /// Gain automation helper
     /// - Parameters:
     ///   - events: List of events
     ///   - startTime: start time
-    func automateGain(events: [AutomationEvent], startTime: AVAudioTime) {
+    public func automateGain(events: [AutomationEvent], startTime: AVAudioTime) {
         $leftGain.automate(events: events, startTime: startTime)
         $rightGain.automate(events: events, startTime: startTime)
     }
 
-    func automateGain(events: [AutomationEvent], offset: TimeInterval = 0) {
+    public func automateGain(events: [AutomationEvent], offset: TimeInterval = 0) {
         $leftGain.automate(events: events, offset: offset)
         $rightGain.automate(events: events, offset: offset)
     }
 
-    func ramp(from start: AUValue, to target: AUValue, duration: Float) {
+    public func ramp(from start: AUValue, to target: AUValue, duration: Float) {
         $leftGain.ramp(from: start, to: target, duration: duration)
         $rightGain.ramp(from: start, to: target, duration: duration)
     }
@@ -159,13 +154,15 @@ public extension Fader {
     ///   - rampTaper: Taper, default is 3 for fade in, 1/3 for fade out
     ///   - rampSkew: Skew, default is 1/3 for fade in, and 3 for fade out
     ///   - resolution: Segment duration, default 20ms
-    func taperedRamp(from start: AUValue,
-                     to target: AUValue,
-                     duration: AUValue,
-                     rampTaper: AUValue = AudioTaper.taper.in,
-                     rampSkew: AUValue = AudioTaper.skew.in,
-                     resolution: AUValue = 0.02,
-                     startTime scheduledTime: AVAudioTime? = nil) {
+    public func taperedRamp(
+        from start: AUValue,
+        to target: AUValue,
+        duration: AUValue,
+        rampTaper: AUValue = AudioTaper.taper.in,
+        rampSkew: AUValue = AudioTaper.skew.in,
+        resolution: AUValue = 0.02,
+        startTime scheduledTime: AVAudioTime? = nil
+    ) {
         stopAutomation()
 
         let startTime: AUValue = 0.02
@@ -184,29 +181,35 @@ public extension Fader {
         ]
 
         let points = [
-            ParameterAutomationPoint(targetValue: start,
-                                     startTime: startTime + 0.02,
-                                     rampDuration: 0.02,
-                                     rampTaper: rampTaper,
-                                     rampSkew: rampSkew),
+            ParameterAutomationPoint(
+                targetValue: start,
+                startTime: startTime + 0.02,
+                rampDuration: 0.02,
+                rampTaper: rampTaper,
+                rampSkew: rampSkew
+            ),
 
-            ParameterAutomationPoint(targetValue: target,
-                                     startTime: startTime + 0.04,
-                                     rampDuration: duration - 0.04,
-                                     rampTaper: rampTaper,
-                                     rampSkew: rampSkew),
+            ParameterAutomationPoint(
+                targetValue: target,
+                startTime: startTime + 0.04,
+                rampDuration: duration - 0.04,
+                rampTaper: rampTaper,
+                rampSkew: rampSkew
+            ),
         ]
 
         let curve = AutomationCurve(points: points)
-        let events = setupEvents + curve.evaluate(initialValue: start,
-                                                  resolution: resolution)
+        let events = setupEvents + curve.evaluate(
+            initialValue: start,
+            resolution: resolution
+        )
 
         $leftGain.automate(events: events, startTime: scheduledTime)
         $rightGain.automate(events: events, startTime: scheduledTime)
     }
 
     /// Stop automation
-    func stopAutomation() {
+    public func stopAutomation() {
         $leftGain.stopAutomation()
         $rightGain.stopAutomation()
     }

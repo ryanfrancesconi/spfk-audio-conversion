@@ -14,7 +14,7 @@ public protocol NodeInputAccess: AnyObject {
 public protocol EngineNode: NodeInputAccess, NodeOutputAccess {
     var isBypassed: Bool { get set }
 
-    func detach() // probably remove this and consolidate with AudioConnectable
+    func detach() throws
 }
 
 extension EngineNode {
@@ -51,24 +51,26 @@ extension EngineNode {
         engine?.isInManualRenderingMode == true
     }
 
-    public func disconnectInput() {
-        inputNode?.disconnectInput()
+    public func disconnectInput() throws {
+        try inputNode?.disconnectInput()
     }
 
-    public func disconnectOutput() {
-        outputNode?.disconnectOutput()
+    public func disconnectOutput() throws {
+        try outputNode?.disconnectOutput()
     }
 
-    public func detachNodes() {
-        guard let engine else { return }
+    public func detachNodes() throws {
+        guard let engine else {
+            throw NSError(description: "\(self) detachNodes: engine is nil")
+        }
 
         if let inputNode {
-            inputNode.disconnectInput()
+            try inputNode.disconnectInput()
             engine.safeDetach(nodes: [inputNode])
         }
 
-        if let outputNode {
-            outputNode.disconnectOutput()
+        if let outputNode, inputNode != outputNode {
+            try outputNode.disconnectOutput()
             engine.safeDetach(nodes: [outputNode])
         }
     }

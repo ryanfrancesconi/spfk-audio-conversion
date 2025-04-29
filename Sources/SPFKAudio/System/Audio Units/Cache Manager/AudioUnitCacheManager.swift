@@ -30,7 +30,9 @@ public class AudioUnitCacheManager {
     var isObserving = false
 
     // HACK: some special cases to allow through the filter
-    var allowedComponentDescriptions = [AVAudioUnitVarispeed().audioComponentDescription]
+    var allowedComponentDescriptions = [
+        AVAudioUnitVarispeed().audioComponentDescription,
+    ]
 
     public var debugDescription: String {
         let names = AudioUnitCacheManager.compatibleComponents.map { $0.name }.sorted()

@@ -43,10 +43,10 @@ public class AudioUnitDescription: Equatable {
         name = avAudioUnit.auAudioUnit.audioUnitName
     }
 
-    public func dispose() {
+    public func dispose() throws {
         avAudioUnit.auAudioUnit.musicalContextBlock = nil
         avAudioUnit.auAudioUnit.transportStateBlock = nil
-        avAudioUnit.detach()
+        try avAudioUnit.detach()
     }
 
     deinit {

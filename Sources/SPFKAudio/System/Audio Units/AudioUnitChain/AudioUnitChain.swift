@@ -60,10 +60,10 @@ public class AudioUnitChain {
         data = AudioUnitChainData(insertCount: AudioUnitChain.defaultInsertCount)
 
         self.delegate = delegate
-        try await update(input: input, output: output)
+        try await updateIO(input: input, output: output)
     }
 
-    public func update(input: AVAudioNode, output: AVAudioNode) async throws {
+    public func updateIO(input: AVAudioNode, output: AVAudioNode) async throws {
         self.input = input
         self.output = output
 
