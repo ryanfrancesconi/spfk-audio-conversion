@@ -11,7 +11,7 @@ extension AVAudioFile {
     }
 
     /// returns the max level in the file as a Peak struct
-    public var peak: AVAudioPCMBuffer.Peak? {
+    public var peak: Peak? {
         toAVAudioPCMBuffer()?.peak()
     }
 
@@ -31,8 +31,10 @@ extension AVAudioFile {
 
     /// converts to a 32 bit PCM buffer
     public func toAVAudioPCMBuffer() -> AVAudioPCMBuffer? {
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: processingFormat,
-                                            frameCapacity: AVAudioFrameCount(length)) else { return nil }
+        guard let buffer = AVAudioPCMBuffer(
+            pcmFormat: processingFormat,
+            frameCapacity: AVAudioFrameCount(length)
+        ) else { return nil }
 
         do {
             framePosition = 0
@@ -52,8 +54,10 @@ extension AVAudioFile {
 
         let frameCapacity = AVAudioFrameCount(seconds * fileFormat.sampleRate)
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: processingFormat,
-                                            frameCapacity: frameCapacity) else { return nil }
+        guard let buffer = AVAudioPCMBuffer(
+            pcmFormat: processingFormat,
+            frameCapacity: frameCapacity
+        ) else { return nil }
 
         do {
             framePosition = 0
@@ -75,11 +79,13 @@ extension AVAudioFile {
     }
 
     /// Will return a 32bit CAF file with the format of this buffer
-    @discardableResult public func extract(to outputURL: URL,
-                                           from startTime: TimeInterval,
-                                           to endTime: TimeInterval,
-                                           fadeInTime: TimeInterval = 0,
-                                           fadeOutTime: TimeInterval = 0) throws -> AVAudioFile? {
+    @discardableResult public func extract(
+        to outputURL: URL,
+        from startTime: TimeInterval,
+        to endTime: TimeInterval,
+        fadeInTime: TimeInterval = 0,
+        fadeOutTime: TimeInterval = 0
+    ) throws -> AVAudioFile? {
         guard let inputBuffer = toAVAudioPCMBuffer() else {
             throw NSError(description: "Error reading into input buffer")
         }
@@ -114,11 +120,6 @@ extension AVAudioFile {
         options: AudioFormatConverterOptions? = nil,
         completionHandler: AudioFormatConverter.Callback? = nil
     ) throws {
-        func createError(message: String, code: Int = 1) -> NSError {
-            let userInfo: [String: Any] = [NSLocalizedDescriptionKey: message]
-            return NSError(domain: "FormatConverter.error", code: code, userInfo: userInfo)
-        }
-
         // if options are nil, create them to match the input file
         let options = options ?? AudioFormatConverterOptions(audioFile: self)
 
@@ -129,25 +130,32 @@ extension AVAudioFile {
         let outputURL = directory.appendingPathComponent(filename).appendingPathExtension(format.rawValue)
 
         // first print CAF file
-        guard try extract(to: tempFile,
-                          from: startTime,
-                          to: endTime,
-                          fadeInTime: fadeInTime,
-                          fadeOutTime: fadeOutTime) != nil else {
-            completionHandler?(createError(message: "Failed to create new file"))
+        guard try extract(
+            to: tempFile,
+            from: startTime,
+            to: endTime,
+            fadeInTime: fadeInTime,
+            fadeOutTime: fadeOutTime
+        ) != nil else {
+            completionHandler?(
+                NSError(description: "Failed to create new file")
+            )
             return
         }
 
         // then convert to desired format here:
         guard FileManager.default.isReadableFile(atPath: tempFile.path) else {
-            completionHandler?(createError(message: "File wasn't created correctly"))
+            completionHandler?(
+                NSError(description: "File wasn't created correctly")
+            )
             return
         }
 
         let converter = AudioFormatConverter(inputURL: tempFile, outputURL: outputURL, options: options)
+
         converter.start { error in
 
-            if let error = error {
+            if let error {
                 Log.error("Done, error", error)
             }
 

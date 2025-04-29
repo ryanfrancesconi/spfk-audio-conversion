@@ -26,32 +26,6 @@ extension AVAudioPCMBuffer {
 }
 
 extension AVAudioPCMBuffer {
-    /// Local maximum containing the time, frame position and  amplitude
-    public struct Peak {
-        internal static let min: Float = -10000.0
-
-        /// Time of the peak
-        public var time: TimeInterval = 0
-
-        /// Frame position of the peak
-        public var framePosition: Int = 0
-
-        /// Peak amplitude
-        public var amplitude: Float = 1
-
-        public init() {}
-
-        public init?(url: URL) {
-            guard let avfile = try? AVAudioFile(forReading: url),
-                  let peak = avfile.peak else {
-                Log.error("Couldn't open file at", url)
-                return nil
-            }
-
-            self = peak
-        }
-    }
-
     /// Find peak in the buffer
     /// - Returns: A Peak struct containing the time, frame position and peak amplitude
     public func peak() -> Peak? {
@@ -119,7 +93,7 @@ extension AVAudioPCMBuffer {
         let length: AVAudioFrameCount = frameLength
         let channelCount = Int(format.channelCount)
 
-        guard let peak: AVAudioPCMBuffer.Peak = peak() else {
+        guard let peak: Peak = peak() else {
             Log.error("Failed getting peak amplitude, returning original buffer")
             return self
         }
@@ -134,6 +108,7 @@ extension AVAudioPCMBuffer {
                 normalizedBuffer?.floatChannelData?[n][i] = sample
             }
         }
+
         normalizedBuffer?.frameLength = length
 
         return normalizedBuffer
@@ -170,8 +145,8 @@ extension AVAudioPCMBuffer {
     ///   - linearRamp: use a linear ramp, will be exponential by default
     /// - Returns: A new buffer from this one that has fades applied to it
     public func fade(
-        inTime: Double = 0,
-        outTime: Double = 0,
+        inTime: TimeInterval = 0,
+        outTime: TimeInterval = 0,
         linearRamp: Bool = false
     ) -> AVAudioPCMBuffer? {
         guard inTime > 0 || outTime > 0 else {

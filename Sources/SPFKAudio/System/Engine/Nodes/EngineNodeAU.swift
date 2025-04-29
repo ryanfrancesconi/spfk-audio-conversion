@@ -28,21 +28,21 @@ extension EngineNodeAU {
         var params: [AUParameter] = []
 
         for child in mirror.children {
-            if let param = child.value as? ParameterBase {
-                let def = param.projectedValue.def
+            guard let param = child.value as? ParameterBase else { continue }
 
-                let auParam = AUParameterTree.createParameter(
-                    identifier: def.identifier,
-                    name: def.name,
-                    address: def.address,
-                    range: def.range,
-                    unit: def.unit,
-                    flags: def.flags
-                )
+            let def = param.projectedValue.def
 
-                params.append(auParam)
-                param.projectedValue.associate(with: avAudioNode, parameter: auParam)
-            }
+            let auParam = AUParameterTree.createParameter(
+                identifier: def.identifier,
+                name: def.name,
+                address: def.address,
+                range: def.range,
+                unit: def.unit,
+                flags: def.flags
+            )
+
+            params.append(auParam)
+            param.projectedValue.associate(with: avAudioNode, parameter: auParam)
         }
 
         avAudioNode.auAudioUnit.parameterTree = AUParameterTree.createTree(withChildren: params)

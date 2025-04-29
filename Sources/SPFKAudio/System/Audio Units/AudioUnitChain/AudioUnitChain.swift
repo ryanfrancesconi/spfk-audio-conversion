@@ -8,11 +8,16 @@ public class AudioUnitChain {
     /// The events this class will generate
     public enum Event {
         case connectionError(error: Error)
+
         case willBypass(index: Int, state: Bool)
         case didBypass(index: Int, state: Bool)
+
         case willRemove(index: Int)
         case didRemove(index: Int)
+
+        case willInsert(index: Int)
         case didInsert(index: Int)
+        
         case effectMoved(from: Int, to: Int)
     }
 

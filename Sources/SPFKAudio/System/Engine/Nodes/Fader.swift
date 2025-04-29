@@ -21,6 +21,7 @@ extension Fader: EngineNode {
 /// Stereo Fader.
 public class Fader: EngineNodeAU, TypeDescribable {
     public static let subType = fourCC("fder")
+    public static let version: UInt32 = 1
 
     public static let audioComponentDescription = AudioComponentDescription(
         componentType: kAudioUnitType_MusicEffect,
@@ -110,8 +111,9 @@ public class Fader: EngineNodeAU, TypeDescribable {
     ///
     public init(gain: AUValue = 1) async throws {
         avAudioNode = try await AVAudioUnit.instantiateLocal(
-            componentDescription: Self.audioComponentDescription,
-            named: Fader.typeName
+            with: Self.audioComponentDescription,
+            named: Self.typeName,
+            version: Self.version
         )
 
         setupParameters()

@@ -48,7 +48,7 @@ public class AudioFormatConverter {
         options = nil
     }
 
-    // MARK: - functions
+    // MARK: -
 
     /// The entry point for file conversion
     /// - Parameter completionHandler: the callback that will be triggered when process has completed.
@@ -75,6 +75,7 @@ public class AudioFormatConverter {
             if options?.eraseFile == true {
                 Log.error("Warning: removing existing file at", outputURL.path)
                 try? FileManager.default.removeItem(at: outputURL)
+                
             } else {
                 let message = "The output file exists already. You need to choose a unique URL or delete the file."
                 completionHandler?(Self.createError(message: message))

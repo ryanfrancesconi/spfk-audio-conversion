@@ -4,7 +4,7 @@ import AVFoundation
 import SPFKUtils
 import SPFKUtilsC
 
-extension AVAudioNode: TypeDescribable {
+extension AVAudioNode: @retroactive TypeDescribable {
     private func error(function: String, string: String) -> NSError {
         Log.printCallStack()
         

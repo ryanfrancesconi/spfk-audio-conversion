@@ -51,13 +51,14 @@ extension AudioUnitChain {
     }
 
     /// Create the Audio Unit at the specified index of the chain
-
     @discardableResult
     public func insertAudioUnit(
         componentDescription: AudioComponentDescription,
         at index: Int
     ) async throws -> AVAudioUnit {
         try await data.check(index: index)
+
+        delegate?.audioUnitChain(self, event: .willInsert(index: index))
 
         let ctype = componentDescription.componentType
 
@@ -86,20 +87,20 @@ extension AudioUnitChain {
             throw NSError(description: "Failed to create audio unit from \(componentDescription)")
         }
 
-        try await handleAudioUnitCreated(index: index, audioUnit: audioUnit)
+        try await insert(audioUnit: audioUnit, at: index)
+
+        delegate?.audioUnitChain(self, event: .didInsert(index: index))
 
         return audioUnit
     }
 
     @MainActor
-    private func handleAudioUnitCreated(index: Int, audioUnit: AVAudioUnit) async throws {
-        try await data.check(index: index)
-
-        // will throw an error if no inputs
-        if audioUnit.numberOfInputs > 0,
-           audioUnit.inputFormat(forBus: 0).channelCount == 1 {
-            Log.error("\(audioUnit) is a Mono effect. Please select a stereo version of it.")
-            return
+    private func insert(audioUnit: AVAudioUnit, at index: Int) async throws {
+        // if it has inputs, verify it supports stereo
+        if audioUnit.numberOfInputs > 0 {
+            guard audioUnit.inputFormat(forBus: 0).channelCount > 1 else {
+                throw NSError(description: "\(audioUnit.name) is a Mono effect. Please select a stereo version of it.")
+            }
         }
 
         let desc = AudioUnitDescription(avAudioUnit: audioUnit)

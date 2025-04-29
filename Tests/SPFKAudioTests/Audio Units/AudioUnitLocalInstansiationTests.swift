@@ -4,8 +4,8 @@ import Foundation
 import SPFKUtils
 import Testing
 
-@Suite(.serialized, .tags(.development))
-final class AudioUnitInstansiationTests {
+@Suite(.serialized)
+final class AudioUnitLocalInstansiationTests {
     let audioComponentDescription = Fader.audioComponentDescription
 
     // register first so the instansiates will find it all at the same time
@@ -16,36 +16,40 @@ final class AudioUnitInstansiationTests {
             AudioKitAU.self,
             as: audioComponentDescription,
             name: Fader.typeName,
-            version: .max
+            version: Fader.version
         )
     }
 
     @Test func instantiateAsync() async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
 
-        _ = try await AVAudioUnit.instantiateLocal(
-            componentDescription: audioComponentDescription,
+        let au = try await AVAudioUnit.instantiateLocal(
+            with: audioComponentDescription,
             named: Fader.typeName
         )
+
+        #expect(au.auAudioUnit.audioUnitName == Fader.typeName)
     }
 
     @Test func instantiateAndBlockWithSemaphore() async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
 
-        _ = try AVAudioUnit.instantiateLocalAndBlockWithSemaphore(
-            componentDescription: audioComponentDescription,
+        let au = try AVAudioUnit.instantiateLocalAndBlockWithSemaphore(
+            with: audioComponentDescription,
             named: Fader.typeName
         )
-        
-        Log.debug("done")
+
+        #expect(au.auAudioUnit.audioUnitName == Fader.typeName)
     }
 
     @Test func instantiateAndBlockRunLoop() async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
 
-        _ = try AVAudioUnit.instantiateLocalAndBlockRunLoop(
-            componentDescription: audioComponentDescription,
+        let au = try AVAudioUnit.instantiateLocalAndBlockRunLoop(
+            with: audioComponentDescription,
             named: Fader.typeName
         )
+
+        #expect(au.auAudioUnit.audioUnitName == Fader.typeName)
     }
 }

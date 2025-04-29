@@ -4,6 +4,10 @@ import Accelerate
 import AVFoundation
 
 extension AVAudioPCMBuffer {
+    public var duration: TimeInterval {
+        TimeInterval(frameLength) / format.sampleRate
+    }
+
     public var rmsValue: Float {
         guard let data = floatChannelData else { return 0 }
 
@@ -15,10 +19,6 @@ extension AVAudioPCMBuffer {
         }
         let value = rms / Float(format.channelCount)
         return value
-    }
-
-    public var duration: TimeInterval {
-        TimeInterval(frameLength) / format.sampleRate
     }
 
     /// Returns internal buffer as an `Array` of `Float` Arrays.

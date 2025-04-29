@@ -8,8 +8,6 @@ import SPFKUtils
 
 /// AudioUnit which instantiates a DSP kernel based on the componentSubType.
 open class AudioKitAU: AUAudioUnit {
-    // MARK: AUAudioUnit Overrides
-
     private var inputBusArray: [AUAudioUnitBus] = []
     private var outputBusArray: [AUAudioUnitBus] = []
     private var internalBuffers: [AVAudioPCMBuffer] = []
@@ -17,6 +15,8 @@ open class AudioKitAU: AUAudioUnit {
     // Default supported channel capabilities
     public var supportedLeftChannelCount: NSNumber = 2
     public var supportedRightChannelCount: NSNumber = 2
+
+    // MARK: AUAudioUnit Overrides
 
     override public var channelCapabilities: [NSNumber]? {
         return [supportedLeftChannelCount, supportedRightChannelCount]
@@ -60,18 +60,14 @@ open class AudioKitAU: AUAudioUnit {
     }()
 
     /// Input busses
-    override public var inputBusses: AUAudioUnitBusArray {
-        return auInputBusArray
-    }
+    override public var inputBusses: AUAudioUnitBusArray { auInputBusArray }
 
     private lazy var auOutputBusArray: AUAudioUnitBusArray = {
         AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: outputBusArray)
     }()
 
-    /// Output bus array
-    override public var outputBusses: AUAudioUnitBusArray {
-        return auOutputBusArray
-    }
+    /// Output buses
+    override public var outputBusses: AUAudioUnitBusArray { auOutputBusArray }
 
     /// Internal render block
     override public var internalRenderBlock: AUInternalRenderBlock {
@@ -82,7 +78,7 @@ open class AudioKitAU: AUAudioUnit {
 
     /// Parameter tree
     override public var parameterTree: AUParameterTree? {
-        get { return _parameterTree }
+        get { _parameterTree }
         set {
             _parameterTree = newValue
 
@@ -106,19 +102,19 @@ open class AudioKitAU: AUAudioUnit {
 
     /// Whether the unit can process in place
     override public var canProcessInPlace: Bool {
-        return canProcessInPlaceDSP(dsp)
+        canProcessInPlaceDSP(dsp)
     }
 
     /// Set in order to bypass processing
     override public var shouldBypassEffect: Bool {
-        get { return getBypassDSP(dsp) }
+        get { getBypassDSP(dsp) }
         set { setBypassDSP(dsp, newValue) }
     }
 
     // MARK: Lifecycle
 
     /// DSP Reference
-    public private(set) var dsp: DSPRef?
+    public private(set) var dsp: DSPRef
 
     /// Initialize with component description and options
     /// - Parameters:
@@ -129,22 +125,28 @@ open class AudioKitAU: AUAudioUnit {
         componentDescription: AudioComponentDescription,
         options: AudioComponentInstantiationOptions = []
     ) throws {
-        try super.init(componentDescription: componentDescription, options: options)
-
         // Create pointer to C++ DSP code.
-        dsp = akCreateDSP(componentDescription.componentSubType)
+        guard let dsp = akCreateDSP(componentDescription.componentSubType) else {
+            throw NSError(description: "Failed to create DSP for \(componentDescription)")
+        }
 
-        assert(dsp != nil)
+        self.dsp = dsp
+
+        try super.init(componentDescription: componentDescription, options: options)
 
         // create audio bus connection points
         let format = AudioDefaults.systemFormat
 
         for _ in 0 ..< inputBusCountDSP(dsp) {
-            inputBusArray.append(try AUAudioUnitBus(format: format))
+            inputBusArray.append(
+                try AUAudioUnitBus(format: format)
+            )
         }
 
         // All AudioKit nodes have one output bus.
-        outputBusArray.append(try AUAudioUnitBus(format: format))
+        outputBusArray.append(
+            try AUAudioUnitBus(format: format)
+        )
 
         parameterTree = AUParameterTree.createTree(withChildren: [])
     }

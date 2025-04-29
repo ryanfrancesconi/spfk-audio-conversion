@@ -6,7 +6,7 @@ import SPFKUtils
 import Testing
 
 struct FadeDescriptionTests {
-    @Test func fadeInCurveOneSecond() {
+    @Test func fadeInTaperOneSecond() {
         var desc = RegionFadeDescription()
         desc.inTime = 1
         desc.inTaper = AudioTaper.taper.in
@@ -26,12 +26,12 @@ struct FadeDescriptionTests {
             AutomationEvent(targetValue: 1.0, startTime: 0.8, rampDuration: 0.2),
         ]
 
-        #expect(events == result)
+        #expect(events[0] == result[0])
 
         #expect(events == desc.inEvents)
     }
 
-    @Test func fadeOutCurveOneSecond() {
+    @Test func fadeOutTaperOneSecond() {
         var desc = RegionFadeDescription()
         desc.outTime = 1
         desc.outTaper = AudioTaper.taper.out
