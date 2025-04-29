@@ -1,9 +1,15 @@
-// Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
-
+import Foundation
 import SPFKAudioC
-import AVFoundation
 
-// MARK: - this is extending the C struct in ParameterAutomation.h
+// MARK: These is extending the C struct in ParameterAutomation.h
+
+extension AutomationEvent: @retroactive Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.startTime == rhs.startTime &&
+            lhs.rampDuration == rhs.rampDuration &&
+            lhs.startTime == rhs.startTime
+    }
+}
 
 extension ParameterAutomationPoint {
     /// Initialize with value, time, and duration

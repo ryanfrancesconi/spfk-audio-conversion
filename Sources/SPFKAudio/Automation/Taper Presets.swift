@@ -8,12 +8,12 @@ public enum LinearTaper {
 
 /// half pipe
 public enum AudioTaper {
-    public static var taper = (in: AUValue(3.0), out: AUValue(0.333))
-    public static var skew = (in: AUValue(0.333), out: AUValue(1))
+    public static var taper = (in: AUValue(3.0), out: AUValue(0.33333))
+    public static var skew = (in: AUValue(1), out: AUValue(0.333333))
 }
 
 /// inverse half pipe
 public enum ReverseAudioTaper {
-    public static var taper = (in: AUValue(0.333), out: AUValue(3.0))
-    public static var skew = (in: AUValue(1), out: AUValue(0.333))
+    public static var taper = (in: AUValue(0.333333), out: AUValue(3.0))
+    public static var skew = (in: AUValue(1), out: AUValue(0.33333))
 }

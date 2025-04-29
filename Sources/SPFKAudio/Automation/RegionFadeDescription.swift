@@ -42,7 +42,7 @@ public struct RegionFadeDescription {
     }
 
     /// the slope adjustment in the taper
-    public var outSkew: AUValue = 1
+    public var outSkew: AUValue = AudioTaper.skew.out
 
     public var isFaded: Bool {
         inTime > 0 || outTime > 0

@@ -64,9 +64,11 @@ public class NodeParameter {
         get { parameter.value }
         set {
             if let avAudioUnit = avAudioNode as? AVAudioUnit {
-                AudioUnitSetParameter(avAudioUnit.audioUnit,
-                                      param: AudioUnitParameterID(def.address),
-                                      to: newValue.clamped(to: range))
+                AudioUnitSetParameter(
+                    avAudioUnit.audioUnit,
+                    param: AudioUnitParameterID(def.address),
+                    to: newValue.clamped(to: range)
+                )
             }
             parameter.value = newValue.clamped(to: range)
         }

@@ -1,12 +1,14 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
+import Foundation
 import OTCore
 import SPFKAudioC
 
-// `AutomationEvent` is a SPFKAudioC C++ struct pulled from AudioKit
+// NOTE: `AutomationEvent` is a SPFKAudioC C++ struct pulled from AudioKit
 
 extension RegionFadeDescription {
-    /// Convenience function for generating an `AutomationEvent` curve from struct values
+    /// Generate an `AutomationEvent` curve from internal values
+    ///
     /// - Returns: `AutomationEvent` curve
     public mutating func fadeInCurve() -> [AutomationEvent] {
         if let inEvents {
@@ -28,16 +30,6 @@ extension RegionFadeDescription {
         }
 
         let rampDuration = inTime.float
-        let initialValue: Float = RegionFadeDescription.minimumGain
-
-        var events = [
-            // put slightly in past to trigger AUEventSampleTimeImmediate
-            AutomationEvent(
-                targetValue: initialValue,
-                startTime: -0.1,
-                rampDuration: 0
-            ),
-        ]
 
         let curve = AutomationCurve(
             points: [
@@ -51,6 +43,17 @@ extension RegionFadeDescription {
             ]
         )
 
+        let initialValue: Float = RegionFadeDescription.minimumGain
+
+        var events = [
+            // put slightly in past to trigger AUEventSampleTimeImmediate
+            AutomationEvent(
+                targetValue: initialValue,
+                startTime: -0.1,
+                rampDuration: 0
+            ),
+        ]
+
         events += curve.evaluate(
             initialValue: initialValue,
             resolution: stepResolution(for: inTime)
@@ -61,16 +64,16 @@ extension RegionFadeDescription {
         return events
     }
 
-    /// Convenience function for generation a fade out curve
+    /// Generate a fade out curve for a region of audio
+    ///
     /// - Parameters:
-    ///   - duration: total duration of the file segment
-    ///   - rate: playback rate
-    ///   - timeRatio: sample rate time ratio if needed
+    ///   - segmentDuration: Total duration of the file segment. This is used to calculate
+    ///   how far in advance the fade out should begin.
+    ///   - sampleRateRatio: sample rate time ratio if needed
     /// - Returns: `AutomationEvent` curve
     public mutating func fadeOutCurve(
-        duration: TimeInterval,
-        rate: AUValue = 1,
-        timeRatio: Float = 1
+        segmentDuration: TimeInterval,
+        sampleRateRatio: Float = 1
     ) -> [AutomationEvent] {
         if let outEvents {
             return outEvents
@@ -81,29 +84,18 @@ extension RegionFadeDescription {
             return []
         }
 
-        var editedDuration = duration
-
-        // adjust for the playback rate so it's in real time
-        // TODO: the duration could alrady be divided by the rate when this function is called to eliminate that variable
-        editedDuration /= rate.double
-
         // when the start of the fade out should occur
-        let timeTillFadeOut = Float(editedDuration - outTime) / timeRatio
-        let rampDurationOut = outTime.float / timeRatio
+        let timeTillFadeOut = Float(segmentDuration - outTime) / sampleRateRatio
+        let rampDurationOut = outTime.float / sampleRateRatio
+
+        let initialValue = maximumGain
+        let isInsideCurve = timeTillFadeOut < 0
 
         var startTime = timeTillFadeOut.float
-        var adjustedRampDuration = rampDurationOut
-        var initialValue = maximumGain
 
-        // we're starting inside the curve
-        if startTime < 0 {
-            adjustedRampDuration += startTime
+        // we're starting inside the curve so this will start immediately
+        if isInsideCurve {
             startTime = 0
-
-            // TODO: fix, this is actually linear approximate
-            // how far into the curve we're starting
-            let skewRatio: Float = adjustedRampDuration / rampDurationOut
-            initialValue *= skewRatio
         }
 
         var events = [
@@ -120,7 +112,7 @@ extension RegionFadeDescription {
                 ParameterAutomationPoint(
                     targetValue: RegionFadeDescription.minimumGain,
                     startTime: startTime,
-                    rampDuration: adjustedRampDuration,
+                    rampDuration: rampDurationOut,
                     rampTaper: outTaper,
                     rampSkew: outSkew
                 ),
@@ -132,6 +124,10 @@ extension RegionFadeDescription {
             resolution: stepResolution(for: outTime)
         )
 
+        if isInsideCurve {
+            events = adjustFadeout(events: events, timeTillFadeOut: timeTillFadeOut)
+        }
+
         outEvents = events
 
         return events
@@ -139,6 +135,43 @@ extension RegionFadeDescription {
 }
 
 extension RegionFadeDescription {
+    private func adjustFadeout(events: [AutomationEvent], timeTillFadeOut: Float) -> [AutomationEvent] {
+        guard timeTillFadeOut < 0 else { return events }
+
+        let startPoint = abs(timeTillFadeOut)
+
+        let mappedEvents = events.map {
+            AutomationEvent(
+                targetValue: $0.targetValue,
+                startTime: $0.startTime - startPoint,
+                rampDuration: $0.rampDuration
+            )
+        }
+
+        let pastEvents = mappedEvents.filter {
+            $0.startTime < 0
+        }.sorted {
+            $0.startTime < $1.startTime
+        }
+
+        var futureEvents = mappedEvents.filter {
+            $0.startTime >= 0
+        }
+
+        if let firstPast = pastEvents.last {
+            // add the final negative event in past to set initialValue
+            let immediate = AutomationEvent(
+                targetValue: firstPast.targetValue,
+                startTime: -0.02,
+                rampDuration: 0.02
+            )
+
+            futureEvents.insert(immediate, at: 0)
+        }
+
+        return futureEvents
+    }
+
     func stepResolution(for duration: TimeInterval) -> Float {
         var resolution = stepResolution
 

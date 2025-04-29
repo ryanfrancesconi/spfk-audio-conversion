@@ -3,14 +3,12 @@
 import AVFoundation
 import Foundation
 import SPFKAudioC
+import SPFKUtils
 
 /// An automation curve (with curved segments) suitable for any time varying parameter.
 /// Includes functions for manipulating automation curves and conversion to linear automation ramps
 /// used by DSP code.
 public struct AutomationCurve {
-    /// Shorter name
-    public typealias Point = ParameterAutomationPoint
-
     /// Array of points that make up the curve
     public var points: [Point]
 
@@ -18,20 +16,6 @@ public struct AutomationCurve {
     /// - Parameter points: Array of points
     public init(points: [Point]) {
         self.points = points
-    }
-
-    static func evalRamp(start: Float, segment: Point, time: Float, endTime: Float) -> Float {
-        let remain = endTime - time
-        let taper = segment.rampTaper
-        let goal = segment.targetValue
-
-        // x is normalized position in ramp segment
-        let x = (segment.rampDuration - remain) / segment.rampDuration
-        let taper1 = start + (goal - start) * pow(x, abs(taper))
-        let absxm1 = abs((segment.rampDuration - remain) / segment.rampDuration - 1.0)
-        let taper2 = start + (goal - start) * (1.0 - pow(absxm1, 1.0 / abs(taper)))
-
-        return taper1 * (1.0 - segment.rampSkew) + taper2 * segment.rampSkew
     }
 
     /// Returns a new piecewise-linear automation curve which can be handed off to the audio thread
@@ -45,21 +29,26 @@ public struct AutomationCurve {
     public func evaluate(initialValue: AUValue, resolution: Float = 0.1) -> [AutomationEvent] {
         guard points.isNotEmpty else { return [] }
 
+        var resolution = resolution
+
         var result = [AutomationEvent]()
 
-        // The last evaluated value
-        var value = initialValue
-
-        // Log.debug("Evaluating", points.count, "point(s)")
+        // The last evaluated value, updated during the loop
+        var currentValue = initialValue
 
         for i in 0 ..< points.count {
             let point = points[i]
 
             if point.isLinear() {
-                result.append(AutomationEvent(targetValue: point.targetValue,
-                                              startTime: point.startTime,
-                                              rampDuration: point.rampDuration))
-                value = point.targetValue
+                result.append(
+                    AutomationEvent(
+                        targetValue: point.targetValue,
+                        startTime: point.startTime,
+                        rampDuration: point.rampDuration
+                    )
+                )
+
+                currentValue = point.targetValue
 
             } else {
                 // Cut off the end if another point comes along.
@@ -67,31 +56,48 @@ public struct AutomationCurve {
                     points[i + 1].startTime :
                     Float.greatestFiniteMagnitude
 
-                let endTime: Float = min(nextPointStart,
-                                         point.startTime + point.rampDuration)
+                let endTime: Float = min(
+                    nextPointStart,
+                    point.startTime + point.rampDuration
+                )
 
-                var t = point.startTime
-                let start = value
+                var position = point.startTime
+                let start = currentValue
 
                 // March t along the segment
                 // this is effectively `while t <= endTime - resolution` without potentional for rounding errors
-                for _ in 0 ..< Int(round(endTime / resolution)) {
-                    value = AutomationCurve.evalRamp(
+                let eventCount = Int(round(endTime / resolution))
+
+                for _ in 0 ..< eventCount {
+                    let isLastPoint = position + resolution >= endTime
+
+                    if isLastPoint {
+                        // if the time + resolution is past the endTime, truncate it to end exactly at endTime
+                        resolution = endTime - position
+                    }
+
+                    currentValue = AutomationCurve.evalRamp(
                         start: start,
                         segment: point,
-                        time: t + resolution,
+                        time: position + resolution,
                         endTime: point.startTime + point.rampDuration
                     )
 
-                    result.append(AutomationEvent(targetValue: value,
-                                                  startTime: t,
-                                                  rampDuration: resolution))
+                    result.append(
+                        AutomationEvent(
+                            targetValue: currentValue,
+                            startTime: position,
+                            rampDuration: resolution
+                        )
+                    )
 
-                    // Log.debug("Adding", value, "at", t, "endTime", endTime)
-                    t += resolution
+                    position += resolution
 
+                    // final point should always end exactly at endTime
                     // safety check to not run past the final target value
-                    if t >= endTime { break }
+                    guard position < endTime else {
+                        break
+                    }
                 }
             }
         }
@@ -124,5 +130,23 @@ public struct AutomationCurve {
         result.sort { $0.startTime < $1.startTime }
 
         return AutomationCurve(points: result)
+    }
+}
+
+extension AutomationCurve {
+    public typealias Point = ParameterAutomationPoint
+
+    fileprivate static func evalRamp(start: Float, segment: Point, time: Float, endTime: Float) -> Float {
+        let remain = endTime - time
+        let taper = segment.rampTaper
+        let goal = segment.targetValue
+
+        // x is normalized position in ramp segment
+        let x = (segment.rampDuration - remain) / segment.rampDuration
+        let taper1 = start + (goal - start) * pow(x, abs(taper))
+        let absxm1 = abs((segment.rampDuration - remain) / segment.rampDuration - 1.0)
+        let taper2 = start + (goal - start) * (1.0 - pow(absxm1, 1.0 / abs(taper)))
+
+        return taper1 * (1.0 - segment.rampSkew) + taper2 * segment.rampSkew
     }
 }
