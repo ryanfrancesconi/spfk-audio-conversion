@@ -14,13 +14,13 @@ struct AutomationPointTests {
         #expect(point2.time == 0) // clamp to 0
         #expect(point2.gain == 1)
         #expect(point2.dBValue == 0)
-        #expect(point2.description == "0 dB")
+        #expect(point2.label == "0 dB")
         #expect(point2.dBRange == AutomationPoint.dBMin ... 12)
 
         let point3 = AutomationPoint(time: 100, gain: 100, dBMax: 6)
         #expect(point3.time == 100)
         #expect(point3.dBValue == 6) // clamp to dBMax
-        #expect(point3.description == "+6.0 dB")
+        #expect(point3.label == "+6.0 dB")
     }
 
     @Test func update() {
