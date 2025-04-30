@@ -6,18 +6,10 @@ import Testing
 
 @Suite(.serialized)
 final class AudioUnitLocalInstansiationTests {
-    let audioComponentDescription = Fader.audioComponentDescription
+    let audioComponentDescription: AudioComponentDescription
 
-    // register first so the instansiates will find it all at the same time
-    @Test func register() async throws {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
-
-        AUAudioUnit.registerSubclass(
-            AudioKitAU.self,
-            as: audioComponentDescription,
-            name: Fader.typeName,
-            version: Fader.version
-        )
+    public init() async throws {
+        audioComponentDescription = try await Fader().audioComponentDescription
     }
 
     @Test func instantiateAsync() async throws {

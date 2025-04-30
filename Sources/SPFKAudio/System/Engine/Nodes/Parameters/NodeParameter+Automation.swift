@@ -1,27 +1,26 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Heavily based on the AudioKit version. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AVFoundation
 import SPFKAudioC
 import SPFKUtils
 
-// NOTE: Altered significantly from the AudioKit version as there seems to be some issues there
-
-public extension NodeParameter {
+extension NodeParameter {
     /// the `lastRenderTime` of the avAudioNode or a zero sampleTime AVAudioTime
     private var lastRenderTime: AVAudioTime {
-        var value = avAudioNode.lastRenderTime ??
-            AVAudioTime(sampleTime: 0, atRate: Settings.sampleRate)
+        var value = avAudioNode?.lastRenderTime ?? AVAudioTime(sampleTime: 0, atRate: sampleRate)
 
         if !value.isSampleTimeValid {
             // if we're rendering, take the sample time from the engine
-            if let engine = avAudioNode.engine, engine.isInManualRenderingMode {
+            if let engine = avAudioNode?.engine, engine.isInManualRenderingMode {
                 value = AVAudioTime(sampleTime: engine.manualRenderingSampleTime,
-                                    atRate: Settings.sampleRate)
+                                    atRate: sampleRate)
             } else {
                 // otherwise, a zero sampleTime
-                value = AVAudioTime(sampleTime: 0, atRate: Settings.sampleRate)
+                value = AVAudioTime(sampleTime: 0, atRate: sampleRate)
             }
         }
+
         return value
     }
 
@@ -32,15 +31,17 @@ public extension NodeParameter {
     /// - Parameters:
     ///   - events: An array of events
     ///   - offset: A time offset into the events
-    func automate(events: [AutomationEvent], offset: TimeInterval) {
+    public func automate(events: [AutomationEvent], offset: TimeInterval) throws {
+        guard let avAudioNode else {
+            throw NSError(description: "Underlying AVAudioNode is nil")
+        }
+
         guard let engine = avAudioNode.engine else {
-            assertionFailure("Engine state isn't ready")
-            return
+            throw NSError(description: "\(avAudioNode.debugDescription) engine is nil")
         }
 
         guard var lastTime = avAudioNode.lastRenderTime else {
-            assertionFailure("lastRenderTime is nil")
-            return
+            throw NSError(description: "\(avAudioNode.debugDescription) lastRenderTime is nil")
         }
 
         // In manual rendering, we may not have a valid lastRenderTime, so
@@ -48,17 +49,19 @@ public extension NodeParameter {
         if !lastTime.isSampleTimeValid || engine.isInManualRenderingMode {
             lastTime = AVAudioTime(
                 sampleTime: 0,
-                atRate: Settings.sampleRate
+                atRate: sampleRate
             )
         }
 
-        // assert(lastTime.isSampleTimeValid)
+        guard lastTime.isSampleTimeValid else {
+            throw NSError(description: "\(avAudioNode.debugDescription) isSampleTimeValid is false")
+        }
 
         if offset != 0 {
             lastTime = lastTime.offset(seconds: -offset)
         }
 
-        automate(events: events, startTime: lastTime)
+        try automate(events: events, startTime: lastTime)
     }
 
     /// Begin automation of the parameter.
@@ -67,19 +70,21 @@ public extension NodeParameter {
     ///
     /// - Parameter events: automation curve
     /// - Parameter startTime: optional time to start automation
-    func automate(events: [AutomationEvent], startTime: AVAudioTime? = nil) {
+    public func automate(events: [AutomationEvent], startTime: AVAudioTime? = nil) throws {
+        guard let avAudioNode else {
+            throw NSError(description: "Underlying AVAudioNode is nil")
+        }
+
         guard let engine = avAudioNode.engine else {
-            Log.error("Engine is nil")
-            return
+            throw NSError(description: "\(avAudioNode.debugDescription) engine is nil")
         }
 
         var startTime = startTime ?? lastRenderTime
 
-        // Don't do this if we're rendering
+        // This is only for realtime automation - not rendering
         if !engine.isInManualRenderingMode,
            startTime.isHostTimeValid && !startTime.isSampleTimeValid {
-            // Convert a hostTime based AVAudioTime to sampleTime which is needed
-            // for automation to work
+            // Convert a hostTime based AVAudioTime to sampleTime which is needed for automation to work
             let startTimeSeconds = AVAudioTime.seconds(forHostTime: startTime.hostTime)
             let lastTimeSeconds = AVAudioTime.seconds(forHostTime: lastRenderTime.hostTime)
             let offsetSeconds = startTimeSeconds - lastTimeSeconds
@@ -89,40 +94,48 @@ public extension NodeParameter {
 
         // this must be valid
         guard startTime.isSampleTimeValid else {
-            Log.error("startTime.isSampleTimeValid is false")
-            return
+            throw NSError(description: "\(avAudioNode.debugDescription) startTime.isSampleTimeValid is false")
         }
 
-        stopAutomation()
+        try stopAutomation()
 
         events.withUnsafeBufferPointer { automationPtr in
             guard let automationBaseAddress = automationPtr.baseAddress else { return }
 
-            guard let observer = ParameterAutomationGetRenderObserver(parameter.address,
-                                                                      avAudioNode.auAudioUnit.scheduleParameterBlock,
-                                                                      Float(Settings.sampleRate),
-                                                                      Float(startTime.sampleTime),
-                                                                      automationBaseAddress,
-                                                                      events.count) else { return }
+            guard let observer = ParameterAutomationGetRenderObserver(
+                parameter.address,
+                avAudioNode.auAudioUnit.scheduleParameterBlock,
+                Float(sampleRate),
+                Float(startTime.sampleTime),
+                automationBaseAddress,
+                events.count
+            ) else {
+                Log.error("Failed to create ParameterAutomationGetRenderObserver for \(avAudioNode.auAudioUnit.audioUnitName ?? "Audio Unit")")
+                return
+            }
 
             renderObserverToken = avAudioNode.auAudioUnit.token(byAddingRenderObserver: observer)
         }
     }
 
     /// Stop automation
-    func stopAutomation() {
+    public func stopAutomation() throws {
+        guard let avAudioNode else {
+            throw NSError(description: "Underlying AVAudioNode is nil")
+        }
+        
         if let token = renderObserverToken {
             avAudioNode.auAudioUnit.removeRenderObserver(token)
         }
     }
 
-    /// Ramp from a source value (which is ramped to over 20ms) to a target value
+    /// Ramp from a source value
     ///
     /// - Parameters:
     ///   - start: initial value
     ///   - target: destination value
     ///   - duration: duration to ramp to the target value in seconds
-    func ramp(from start: AUValue, to target: AUValue, duration: Float) {
+    public func ramp(from start: AUValue, to target: AUValue, duration: Float) {
         ramp(to: start, duration: 0.02, delay: 0)
         ramp(to: target, duration: duration, delay: 0.02)
     }

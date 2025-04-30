@@ -11,12 +11,15 @@
 
 /// Returns a render observer block which will apply the automation to the selected parameter.
 extern "C"
-AURenderObserver ParameterAutomationGetRenderObserver(AUParameterAddress           address,
-                                                      AUScheduleParameterBlock     scheduleParameterBlock,
-                                                      float                        sampleRate,
-                                                      float                        startSampleTime,
-                                                      const struct AutomationEvent *eventsArray,
-                                                      size_t                       count) {
+AURenderObserver ParameterAutomationGetRenderObserver(
+    AUParameterAddress           address,
+    AUScheduleParameterBlock     scheduleParameterBlock,
+    float                        sampleRate,
+    float                        startSampleTime,
+    const struct AutomationEvent *eventsArray,
+    size_t                       count
+    ) {
+    //
     std::vector<AutomationEvent> events {
         eventsArray, eventsArray + count
     };
@@ -60,7 +63,7 @@ AURenderObserver ParameterAutomationGetRenderObserver(AUParameterAddress        
                                           0,
                                           address,
                                           initial);
-                }
+               }
 
                // Apply parameter automation for the segment.
                while (index < count) {

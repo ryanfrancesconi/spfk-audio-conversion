@@ -1,4 +1,5 @@
-// Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Heavily based on the AudioKit version. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AVFoundation
 import SPFKAudioC
@@ -20,16 +21,9 @@ extension Fader: EngineNode {
 
 /// Stereo Fader.
 public class Fader: EngineNodeAU, TypeDescribable {
-    public static let subType = fourCC("fder")
     public static let version: UInt32 = 1
 
-    public static let audioComponentDescription = AudioComponentDescription(
-        componentType: kAudioUnitType_MusicEffect,
-        componentSubType: Fader.subType,
-        componentManufacturer: kAudioUnitManufacturer_Spongefork,
-        componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
-        componentFlagsMask: 0
-    )
+    public private(set) var audioComponentDescription: AudioComponentDescription
 
     /// Underlying AVAudioNode
     public private(set) var avAudioNode: AVAudioNode
@@ -67,7 +61,8 @@ public class Fader: EngineNodeAU, TypeDescribable {
         address: akGetParameterAddress("FaderParameterRightGain"),
         defaultValue: 1,
         range: Fader.defaultGainRange,
-        unit: .linearGain)
+        unit: .linearGain
+    )
 
     /// Right Channel Amplification Factor
     @Parameter(rightGainDef) public var rightGain: AUValue
@@ -85,7 +80,8 @@ public class Fader: EngineNodeAU, TypeDescribable {
         address: akGetParameterAddress("FaderParameterFlipStereo"),
         defaultValue: 0,
         range: 0.0 ... 1.0,
-        unit: .boolean)
+        unit: .boolean
+    )
 
     /// Flip left and right signal
     @Parameter(flipStereoDef) public var flipStereo: Bool
@@ -97,7 +93,8 @@ public class Fader: EngineNodeAU, TypeDescribable {
         address: akGetParameterAddress("FaderParameterMixToMono"),
         defaultValue: 0,
         range: 0.0 ... 1.0,
-        unit: .boolean)
+        unit: .boolean
+    )
 
     /// Make the output on left and right both be the same combination of incoming left and mixed equally
     @Parameter(mixToMonoDef) public var mixToMono: Bool
@@ -110,8 +107,18 @@ public class Fader: EngineNodeAU, TypeDescribable {
     ///   - gain: Amplification factor (Default: 1, Minimum: 0)
     ///
     public init(gain: AUValue = 1) async throws {
+        let subType = try FourCharCode.from(string: "fder")
+
+        audioComponentDescription = AudioComponentDescription(
+            componentType: kAudioUnitType_MusicEffect,
+            componentSubType: subType,
+            componentManufacturer: kAudioUnitManufacturer_Spongefork,
+            componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
+            componentFlagsMask: 0
+        )
+
         avAudioNode = try await AVAudioUnit.instantiateLocal(
-            with: Self.audioComponentDescription,
+            with: audioComponentDescription,
             named: Self.typeName,
             version: Self.version
         )
@@ -132,14 +139,14 @@ extension Fader {
     /// - Parameters:
     ///   - events: List of events
     ///   - startTime: start time
-    public func automateGain(events: [AutomationEvent], startTime: AVAudioTime) {
-        $leftGain.automate(events: events, startTime: startTime)
-        $rightGain.automate(events: events, startTime: startTime)
+    public func automateGain(events: [AutomationEvent], startTime: AVAudioTime) throws {
+        try $leftGain.automate(events: events, startTime: startTime)
+        try $rightGain.automate(events: events, startTime: startTime)
     }
 
-    public func automateGain(events: [AutomationEvent], offset: TimeInterval = 0) {
-        $leftGain.automate(events: events, offset: offset)
-        $rightGain.automate(events: events, offset: offset)
+    public func automateGain(events: [AutomationEvent], offset: TimeInterval = 0) throws {
+        try $leftGain.automate(events: events, offset: offset)
+        try $rightGain.automate(events: events, offset: offset)
     }
 
     public func ramp(from start: AUValue, to target: AUValue, duration: Float) {
@@ -147,7 +154,7 @@ extension Fader {
         $rightGain.ramp(from: start, to: target, duration: duration)
     }
 
-    /// Tapered Ramp from a source value (which is ramped to over 20ms) to a target value
+    /// Tapered Ramp from a source value (which is ramped to over resolution) to a target value
     ///
     /// - Parameters:
     ///   - start: initial value
@@ -164,8 +171,8 @@ extension Fader {
         rampSkew: AUValue = AudioTaper.skew.in,
         resolution: AUValue = 0.02,
         startTime scheduledTime: AVAudioTime? = nil
-    ) {
-        stopAutomation()
+    ) throws {
+        try stopAutomation()
 
         let startTime: AUValue = 0.02
         var rampTaper = rampTaper
@@ -206,13 +213,13 @@ extension Fader {
             resolution: resolution
         )
 
-        $leftGain.automate(events: events, startTime: scheduledTime)
-        $rightGain.automate(events: events, startTime: scheduledTime)
+        try $leftGain.automate(events: events, startTime: scheduledTime)
+        try $rightGain.automate(events: events, startTime: scheduledTime)
     }
 
     /// Stop automation
-    public func stopAutomation() {
-        $leftGain.stopAutomation()
-        $rightGain.stopAutomation()
+    public func stopAutomation() throws {
+        try $leftGain.stopAutomation()
+        try $rightGain.stopAutomation()
     }
 }

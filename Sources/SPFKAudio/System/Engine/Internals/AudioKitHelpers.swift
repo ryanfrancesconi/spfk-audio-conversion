@@ -1,6 +1,5 @@
-// Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
-
-// Edited to just misc necessary items
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Heavily based on the AudioKit version. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AudioToolbox
 
@@ -17,12 +16,14 @@ internal func AudioUnitSetParameter(_ unit: AudioUnit, param: AudioUnitParameter
 }
 
 public extension AUParameterTree {
-    static func createParameter(identifier: String,
-                                name: String,
-                                address: AUParameterAddress,
-                                range: ClosedRange<AUValue>,
-                                unit: AudioUnitParameterUnit,
-                                flags: AudioUnitParameterOptions) -> AUParameter {
+    static func createParameter(
+        identifier: String,
+        name: String,
+        address: AUParameterAddress,
+        range: ClosedRange<AUValue>,
+        unit: AudioUnitParameterUnit,
+        flags: AudioUnitParameterOptions
+    ) -> AUParameter {
         AUParameterTree.createParameter(
             withIdentifier: identifier,
             name: name,
@@ -43,22 +44,6 @@ extension AUParameterTree {
     public subscript(key: String) -> AUParameter? {
         value(forKey: key) as? AUParameter
     }
-}
-
-/// Helper function to convert codes for Audio Units
-/// - parameter string: Four character string to convert
-public func fourCC(_ string: String) -> UInt32 {
-    let utf8 = string.utf8
-
-    precondition(utf8.count == 4, "Must be a 4 character string")
-
-    var out: UInt32 = 0
-
-    for char in utf8 {
-        out <<= 8
-        out |= UInt32(char)
-    }
-    return out
 }
 
 extension AudioUnitParameterOptions {

@@ -1,9 +1,6 @@
 import AVFoundation
 import SPFKUtils
 
-// Used in Node Parameter classes for sampleRate
-public typealias Settings = AudioDefaults
-
 public enum AudioDefaults {
     public static let defaultSampleRate: Double = 48000
     public static var minimumSampleRateSupported: Double = 44100
@@ -30,5 +27,5 @@ public enum AudioDefaults {
     }
 }
 
-let kAudioUnitManufacturer_Spongefork = fourCC("spfk")
-let kAudioUnitManufacturer_AudioKit = fourCC("AuKt")
+let kAudioUnitManufacturer_Spongefork = (try? FourCharCode.from(string: "spfk")) ?? 0
+let kAudioUnitManufacturer_AudioKit = (try? FourCharCode.from(string: "AuKt")) ?? 0

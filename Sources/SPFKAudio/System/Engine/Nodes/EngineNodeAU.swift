@@ -1,4 +1,5 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Inspired by AudioKit's implementation. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AudioToolbox
 import AVFoundation
@@ -42,6 +43,7 @@ extension EngineNodeAU {
             )
 
             params.append(auParam)
+
             param.projectedValue.associate(with: avAudioNode, parameter: auParam)
         }
 
