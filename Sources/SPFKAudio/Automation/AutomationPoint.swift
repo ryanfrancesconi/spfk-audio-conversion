@@ -1,11 +1,16 @@
 import AudioToolbox
 import Foundation
 import OTCore
+import SPFKUtils
 
 /// An object to represent one user automation point in an UI
-public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConvertible {
+public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConvertible, TypeDescribable {
     public static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.time < rhs.time
+    }
+
+    public var description: String {
+        "\(typeName)(time: \(time), gain: \(gain), selected: \(selected), dBMax: \(dBRange.upperBound))"
     }
 
     public static let dBMin: AUValue = -90
@@ -41,7 +46,7 @@ public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConve
             _gain = newValue.clamped(to: gainRange)
             dBValue = _gain.dBValue.clamped(to: dBRange).rounded(decimalPlaces: 2)
 
-            updateDescription()
+            updateLabel()
         }
     }
 
@@ -49,7 +54,7 @@ public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConve
     public var selected: Bool = false
 
     /// A string suitable for displaying in the UI such as "+6.0 dB"
-    public private(set) var description: String = ""
+    public private(set) var label: String = ""
 
     public init(time: TimeInterval, gain: AUValue, selected: Bool = false, dBMax: AUValue = 12) {
         self.dBRange = Self.dBMin ... dBMax
@@ -64,7 +69,7 @@ public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConve
         gainRange = 0 ... dBRange.upperBound.linearValue
     }
 
-    private mutating func updateDescription() {
-        description = dBValue.dBString(decimalPlaces: 1)
+    private mutating func updateLabel() {
+        label = dBValue.dBString(decimalPlaces: 1)
     }
 }

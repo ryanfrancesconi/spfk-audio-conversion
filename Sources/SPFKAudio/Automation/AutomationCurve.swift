@@ -37,7 +37,7 @@ public struct AutomationCurve {
 
         for i in 0 ..< points.count {
             do {
-                result = try evaluateCurve(
+                result += try evaluateCurve(
                     index: i,
                     currentValue: currentValue,
                     resolution: resolution
@@ -90,7 +90,7 @@ public struct AutomationCurve {
         let startValue = currentValue
 
         // March position along the segment
-        // this is effectively `while t <= endTime - resolution` without potentional for rounding errors
+        // this is effectively `while position <= endTime - resolution` without potentional for rounding errors
         let eventCount = Int(round(endTime / resolution))
 
         for _ in 0 ..< eventCount {
@@ -142,7 +142,9 @@ public struct AutomationCurve {
         let stopTime = range.upperBound
 
         // Clear existing points in segment range.
-        result.removeAll { point in point.startTime >= startTime && point.startTime <= stopTime }
+        result.removeAll { point in
+            point.startTime >= startTime && point.startTime <= stopTime
+        }
 
         // Append recorded points.
         result.append(contentsOf: newPoints.map { point in

@@ -1,19 +1,19 @@
 import AudioToolbox
 
-/// straight line
+/// Straight line
 public enum LinearTaper {
-    public static var taper = (in: AUValue(1.0), out: AUValue(1.0))
-    public static var skew = (in: AUValue(0), out: AUValue(0))
+    public static let taper = (in: AUValue(1.0), out: AUValue(1.0))
+    public static let skew = (in: AUValue(0), out: AUValue(0))
 }
 
-/// half pipe
+/// Half pipe
 public enum AudioTaper {
-    public static var taper = (in: AUValue(3.0), out: AUValue(0.33333))
-    public static var skew = (in: AUValue(1), out: AUValue(0.333333))
+    public static let taper = (in: AUValue(3.0), out: AUValue(0.333))
+    public static let skew = (in: AUValue(0.333), out: AUValue(1))
 }
 
-/// inverse half pipe
+/// Inverse half pipe
 public enum ReverseAudioTaper {
-    public static var taper = (in: AUValue(0.333333), out: AUValue(3.0))
-    public static var skew = (in: AUValue(1), out: AUValue(0.33333))
+    public static let taper = (in: AUValue(0.333), out: AUValue(3.0))
+    public static let skew = (in: AUValue(1), out: AUValue(0.333))
 }

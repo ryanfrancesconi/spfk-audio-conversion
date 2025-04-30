@@ -1,6 +1,7 @@
 import AudioToolbox
 import Foundation
 @testable import SPFKAudio
+import SPFKUtils
 import Testing
 
 struct AutomationPointTests {
@@ -31,5 +32,17 @@ struct AutomationPointTests {
 
         point.gain = 2
         #expect(point.dBValue == 6)
+    }
+
+    @Test func createCurve() async throws {
+        let points = [
+            AutomationPoint(time: 0.019075106002620478, gain: 0.0, selected: false, dBMax: 6.0206003),
+            AutomationPoint(time: 3.884410354243773, gain: 1.0, selected: false, dBMax: 6.0206003),
+            AutomationPoint(time: 6.800137064528385, gain: 0.0, selected: true, dBMax: 6.0206003),
+        ]
+
+        let events = AutomationCurve.createCurve(automationPoints: points)
+
+        Log.debug(events)
     }
 }
