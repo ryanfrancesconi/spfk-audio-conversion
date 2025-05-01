@@ -7,7 +7,7 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.realtime))
 final class AudioFilePlayerTests: AudioEngineTestCase {
     @Test func testEdit() async throws {
         try await setup()
@@ -20,7 +20,7 @@ final class AudioFilePlayerTests: AudioEngineTestCase {
         try player.play()
         #expect(player.isPlaying)
 
-        try await wait(sec: 2)
+        try await wait(sec: 1)
         
         player.stop()
         #expect(!player.isPlaying)

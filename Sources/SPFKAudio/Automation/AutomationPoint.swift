@@ -45,7 +45,6 @@ public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConve
         set {
             _gain = newValue.clamped(to: gainRange)
             dBValue = _gain.dBValue.clamped(to: dBRange).rounded(decimalPlaces: 2)
-
             updateLabel()
         }
     }

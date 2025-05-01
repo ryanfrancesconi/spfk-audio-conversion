@@ -5,10 +5,11 @@ import SPFKAudioC
 import SPFKUtils
 import Testing
 
+@Suite(.tags(.automation))
 struct FadeDescriptionTests {
     // MARK: - in
 
-    @Test func fadeInTruncatingLastPoint() throws {
+    @Test func fadeInTruncatingLastPointDuration() throws {
         var desc = RegionFadeDescription()
         desc.maximumGain = 1
         desc.stepResolution = 0.2
@@ -19,7 +20,8 @@ struct FadeDescriptionTests {
         desc.inSkew = 1
         desc.stepResolution = 0.2
 
-        let events = desc.fadeInCurve()
+        let curve = desc.fadeInCurve()
+        let events = try #require(curve?.events)
 
         let firstPoint = try #require(events.first)
         let lastPoint = try #require(events.last)
@@ -36,7 +38,9 @@ struct FadeDescriptionTests {
         desc.inTime = 1
         desc.inTaper = LinearTaper.taper.in
 
-        let events = desc.fadeInCurve()
+        let curve = desc.fadeInCurve()
+        let events = try #require(curve?.events)
+
         #expect(events.count == 6)
 
         Log.debug(events)
@@ -52,7 +56,7 @@ struct FadeDescriptionTests {
 
         #expect(events.count == expectedResult.count)
         #expect(events == expectedResult)
-        #expect(events == desc.inEvents)
+        #expect(events == desc.fadeInCache?.events)
     }
 
     @Test func fadeInTaperOneSecond() throws {
@@ -60,7 +64,8 @@ struct FadeDescriptionTests {
         desc.inTime = 1
         desc.inTaper = AudioTaper.taper.in
 
-        let events = desc.fadeInCurve()
+        let curve = desc.fadeInCurve()
+        let events = try #require(curve?.events)
 
         Log.debug(events)
 
@@ -75,7 +80,7 @@ struct FadeDescriptionTests {
 
         #expect(events.count == expectedResult.count)
         #expect(events == expectedResult)
-        #expect(events == desc.inEvents)
+        #expect(events == desc.fadeInCache?.events)
     }
 
     @Test func fadeInReverseTaperOneSecond() throws {
@@ -83,7 +88,8 @@ struct FadeDescriptionTests {
         desc.inTime = 1
         desc.inTaper = ReverseAudioTaper.taper.in
 
-        let events = desc.fadeInCurve()
+        let curve = desc.fadeInCurve()
+        let events = try #require(curve?.events)
 
         Log.debug(events)
 
@@ -98,7 +104,7 @@ struct FadeDescriptionTests {
 
         #expect(events.count == expectedResult.count)
         #expect(events == expectedResult)
-        #expect(events == desc.inEvents)
+        #expect(events == desc.fadeInCache?.events)
     }
 
     // MARK: - out
@@ -109,22 +115,23 @@ struct FadeDescriptionTests {
         desc.stepResolution = 0.2
         desc.outTaper = AudioTaper.taper.out
 
-        let events = desc.fadeOutCurve(segmentDuration: 1)
+        let curve = desc.fadeOutCurve(segmentDuration: 1)
+        let events = try #require(curve?.events)
 
         Log.debug(events)
 
         let expectedResult = [
             AutomationEvent(targetValue: 1.0, startTime: -0.02, rampDuration: 0.02),
-            AutomationEvent(targetValue: 0.51165706, startTime: 0.0, rampDuration: 0.2),
-            AutomationEvent(targetValue: 0.21566892, startTime: 0.2, rampDuration: 0.2),
-            AutomationEvent(targetValue: 0.06382412, startTime: 0.4, rampDuration: 0.2),
-            AutomationEvent(targetValue: 0.007961452, startTime: 0.6, rampDuration: 0.2),
+            AutomationEvent(targetValue: 0.4471085, startTime: 0.0, rampDuration: 0.2),
+            AutomationEvent(targetValue: 0.24721783, startTime: 0.2, rampDuration: 0.2),
+            AutomationEvent(targetValue: 0.12558803, startTime: 0.4, rampDuration: 0.2),
+            AutomationEvent(targetValue: 0.050417162, startTime: 0.6, rampDuration: 0.2),
             AutomationEvent(targetValue: 0.0, startTime: 0.8, rampDuration: 0.19999999),
         ]
 
         #expect(events.count == expectedResult.count)
         #expect(events == expectedResult)
-        #expect(events == desc.outEvents)
+        #expect(events == desc.fadeOutCache?.events)
     }
 
     @Test func fadeOutStartingInsideCurve() throws {
@@ -132,20 +139,21 @@ struct FadeDescriptionTests {
         desc.outTime = 1
         desc.outTaper = AudioTaper.taper.out
 
-        let events = desc.fadeOutCurve(segmentDuration: 0.8)
+        let curve = desc.fadeOutCurve(segmentDuration: 0.8)
+        let events = try #require(curve?.events)
 
         Log.debug(events)
 
         let expectedResult = [
-            AutomationEvent(targetValue: 0.51165706, startTime: -0.02, rampDuration: 0.02),
-            AutomationEvent(targetValue: 0.21566892, startTime: 0.0, rampDuration: 0.2),
-            AutomationEvent(targetValue: 0.06382412, startTime: 0.2, rampDuration: 0.2),
-            AutomationEvent(targetValue: 0.007961452, startTime: 0.40000004, rampDuration: 0.2),
+            AutomationEvent(targetValue: 0.4471085, startTime: -0.02, rampDuration: 0.02),
+            AutomationEvent(targetValue: 0.24721783, startTime: 0.0, rampDuration: 0.2),
+            AutomationEvent(targetValue: 0.12558803, startTime: 0.2, rampDuration: 0.2),
+            AutomationEvent(targetValue: 0.050417162, startTime: 0.40000004, rampDuration: 0.2),
             AutomationEvent(targetValue: 0.0, startTime: 0.6, rampDuration: 0.19999999),
         ]
 
         #expect(events.count == expectedResult.count)
         #expect(events == expectedResult)
-        #expect(events == desc.outEvents)
+        #expect(events == desc.fadeOutCache?.events)
     }
 }

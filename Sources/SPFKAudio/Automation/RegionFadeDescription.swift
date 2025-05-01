@@ -2,7 +2,7 @@
 
 import SPFKAudioC
 
-/// An object representing a fade in and out on a region of audio in a timeline
+/// An object representing a fade in and out automation curves on a region of audio in a timeline
 public struct RegionFadeDescription {
     /// a constant
     public static var minimumGain: AUValue = 0
@@ -15,13 +15,13 @@ public struct RegionFadeDescription {
     /// How long the fade in is
     public var inTime: TimeInterval = 0 {
         willSet {
-            if newValue != inTime { inEvents = nil }
+            if newValue != inTime { fadeInCache = nil }
         }
     }
 
     public var inTaper: AUValue = AudioTaper.taper.in {
         willSet {
-            if newValue != inTaper { inEvents = nil }
+            if newValue != inTaper { fadeInCache = nil }
         }
     }
 
@@ -31,13 +31,13 @@ public struct RegionFadeDescription {
     /// How long the fade out is
     public var outTime: TimeInterval = 0 {
         willSet {
-            if newValue != outTime { outEvents = nil }
+            if newValue != outTime { fadeOutCache = nil }
         }
     }
 
     public var outTaper: AUValue = AudioTaper.taper.out {
         willSet {
-            if newValue != outTaper { outEvents = nil }
+            if newValue != outTaper { fadeOutCache = nil }
         }
     }
 
@@ -50,8 +50,8 @@ public struct RegionFadeDescription {
 
     // MARK: Event cache
 
-    var inEvents: [AutomationEvent]?
-    var outEvents: [AutomationEvent]?
+    var fadeInCache: AutomationCurve?
+    var fadeOutCache: AutomationCurve?
 
     public init() {}
 }

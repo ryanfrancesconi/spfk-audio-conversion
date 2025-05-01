@@ -7,7 +7,7 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.realtime))
 final class AudioUnitChainTests: AudioEngineTestCase {
     @Test func testInsert() async throws {
         try await setup()

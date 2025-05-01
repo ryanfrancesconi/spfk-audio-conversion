@@ -184,10 +184,10 @@ extension Fader {
         }
 
         // this ensures we get a AUEventSampleTimeImmediate set to the start value
-        let setupEvents = [
-            AutomationEvent(targetValue: start, startTime: 0, rampDuration: 0),
-            AutomationEvent(targetValue: start, startTime: startTime + 0.01, rampDuration: 0.01),
-        ]
+//        let setupEvents = [
+//            AutomationEvent(targetValue: start, startTime: 0, rampDuration: 0),
+//            AutomationEvent(targetValue: start, startTime: startTime + 0.01, rampDuration: 0.01),
+//        ]
 
         let points = [
             ParameterAutomationPoint(
@@ -207,14 +207,14 @@ extension Fader {
             ),
         ]
 
-        let curve = AutomationCurve(points: points)
-        let events = setupEvents + curve.evaluate(
-            initialValue: start,
-            resolution: resolution
-        )
+        let curve = AutomationCurve(points: points, resolution: resolution)
 
-        try $leftGain.automate(events: events, startTime: scheduledTime)
-        try $rightGain.automate(events: events, startTime: scheduledTime)
+//        let events = setupEvents + curve.evaluate(
+//            resolution: resolution
+//        )
+
+        try $leftGain.automate(events: curve.events, startTime: scheduledTime)
+        try $rightGain.automate(events: curve.events, startTime: scheduledTime)
     }
 
     /// Stop automation

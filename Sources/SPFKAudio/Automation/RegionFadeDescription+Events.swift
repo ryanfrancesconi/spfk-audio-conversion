@@ -3,65 +3,50 @@
 import Foundation
 import OTCore
 import SPFKAudioC
+import SPFKUtils
 
 // NOTE: `AutomationEvent` is a SPFKAudioC C++ struct pulled from AudioKit
 
 extension RegionFadeDescription {
     /// Generate an `AutomationEvent` curve from internal values
     ///
-    /// - Returns: `AutomationEvent` curve
-    public mutating func fadeInCurve() -> [AutomationEvent] {
-        if let inEvents {
-            return inEvents
-        }
-
+    /// - Returns: `AutomationCurve`
+    public mutating func fadeInCurve() -> AutomationCurve? {
         // if no fade in, set to max
         guard inTime > 0 else {
-            let events = [
-                AutomationEvent(
-                    targetValue: maximumGain,
-                    startTime: -0.1,
-                    rampDuration: 0
-                ),
-            ]
+            fadeInCache = nil
+            return nil
+        }
 
-            inEvents = events
-            return events
+        if let fadeInCache {
+            return fadeInCache
         }
 
         let rampDuration = inTime.float
 
-        let curve = AutomationCurve(
-            points: [
-                ParameterAutomationPoint(
-                    targetValue: maximumGain,
-                    startTime: 0,
-                    rampDuration: rampDuration,
-                    rampTaper: inTaper,
-                    rampSkew: inSkew
-                ),
-            ]
-        )
-
-        let initialValue: Float = RegionFadeDescription.minimumGain
-
-        var events = [
-            // put slightly in past to trigger AUEventSampleTimeImmediate
-            AutomationEvent(
-                targetValue: initialValue,
+        let points = [
+            ParameterAutomationPoint(
+                targetValue: Self.minimumGain,
                 startTime: -0.1,
-                rampDuration: 0
+                rampDuration: 0,
+                rampTaper: LinearTaper.taper.in,
+                rampSkew: LinearTaper.skew.in
+            ),
+
+            ParameterAutomationPoint(
+                targetValue: maximumGain,
+                startTime: 0,
+                rampDuration: rampDuration,
+                rampTaper: inTaper,
+                rampSkew: inSkew
             ),
         ]
 
-        events += curve.evaluate(
-            initialValue: initialValue,
-            resolution: stepResolution(for: inTime)
-        )
+        let curve = AutomationCurve(points: points, resolution: stepResolution(for: inTime))
 
-        inEvents = events
+        fadeInCache = curve
 
-        return events
+        return curve
     }
 
     /// Generate a fade out curve for a region of audio
@@ -69,109 +54,66 @@ extension RegionFadeDescription {
     /// - Parameters:
     ///   - segmentDuration: Total duration of the file segment. This is used to calculate
     ///   how far in advance the fade out should begin.
+    ///
     ///   - sampleRateRatio: sample rate time ratio if needed
-    /// - Returns: `AutomationEvent` curve
+    ///
+    /// - Returns: `AutomationCurve`
     public mutating func fadeOutCurve(
         segmentDuration: TimeInterval,
         sampleRateRatio: Float = 1
-    ) -> [AutomationEvent] {
-        if let outEvents {
-            return outEvents
-        }
-
+    ) -> AutomationCurve? {
         guard outTime > 0 else {
-            outEvents = []
-            return []
+            fadeOutCache = nil
+            return nil
         }
 
-        // when the start of the fade out should occur
-        let timeTillFadeOut = Float(segmentDuration - outTime) / sampleRateRatio
-        let rampDurationOut = outTime.float / sampleRateRatio
-
-        let initialValue = maximumGain
-        let isInsideCurve = timeTillFadeOut < 0
-
-        var startTime = timeTillFadeOut.float
-
-        // we're starting inside the curve so this will start immediately
-        if isInsideCurve {
-            startTime = 0
+        if let fadeOutCache {
+            return fadeOutCache
         }
 
-        var events = [
-            // put slightly in past to set initialValue
-            AutomationEvent(
-                targetValue: initialValue,
+        let rampDuration = outTime.float / sampleRateRatio
+
+        // offset: when the start of the fade out should occur. If it is negative, playback is starting inside the curve.
+        // in that case segmentDuration is < outTime
+        let offset = Float(segmentDuration - outTime) / sampleRateRatio
+        let isInsideCurve = offset < 0
+        let startTime = max(0, offset.float)
+
+        let points = [
+            ParameterAutomationPoint(
+                targetValue: maximumGain,
                 startTime: startTime - 0.02,
-                rampDuration: 0.02
+                rampDuration: 0.02,
+                rampTaper: LinearTaper.taper.out,
+                rampSkew: LinearTaper.skew.out
+            ),
+
+            ParameterAutomationPoint(
+                targetValue: Self.minimumGain,
+                startTime: startTime,
+                rampDuration: rampDuration,
+                rampTaper: outTaper,
+                rampSkew: outSkew
             ),
         ]
 
-        let curve = AutomationCurve(
-            points: [
-                ParameterAutomationPoint(
-                    targetValue: RegionFadeDescription.minimumGain,
-                    startTime: startTime,
-                    rampDuration: rampDurationOut,
-                    rampTaper: outTaper,
-                    rampSkew: outSkew
-                ),
-            ]
-        )
-
-        events += curve.evaluate(
-            initialValue: initialValue,
-            resolution: stepResolution(for: outTime)
-        )
+        var curve = AutomationCurve(points: points, resolution: stepResolution(for: outTime))
 
         if isInsideCurve {
-            events = adjustFadeout(events: events, timeTillFadeOut: timeTillFadeOut)
+            do {
+                try curve.crop(after: abs(offset))
+            } catch {
+                Log.error(error)
+            }
         }
 
-        outEvents = events
+        fadeOutCache = curve // cache
 
-        return events
+        return curve
     }
 }
 
 extension RegionFadeDescription {
-    private func adjustFadeout(events: [AutomationEvent], timeTillFadeOut: Float) -> [AutomationEvent] {
-        guard timeTillFadeOut < 0 else { return events }
-
-        let startPoint = abs(timeTillFadeOut)
-
-        let mappedEvents = events.map {
-            AutomationEvent(
-                targetValue: $0.targetValue,
-                startTime: $0.startTime - startPoint,
-                rampDuration: $0.rampDuration
-            )
-        }
-
-        let pastEvents = mappedEvents.filter {
-            $0.startTime < 0
-        }.sorted {
-            $0.startTime < $1.startTime
-        }
-
-        var futureEvents = mappedEvents.filter {
-            $0.startTime >= 0
-        }
-
-        if let firstPast = pastEvents.last {
-            // add the final negative event in past to set initialValue
-            let immediate = AutomationEvent(
-                targetValue: firstPast.targetValue,
-                startTime: -0.02,
-                rampDuration: 0.02
-            )
-
-            futureEvents.insert(immediate, at: 0)
-        }
-
-        return futureEvents
-    }
-
     func stepResolution(for duration: TimeInterval) -> Float {
         var resolution = stepResolution
 
