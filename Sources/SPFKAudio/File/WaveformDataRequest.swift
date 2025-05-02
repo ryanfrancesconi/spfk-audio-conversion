@@ -10,7 +10,7 @@ import SPFKUtils
 public struct WaveformDataRequest {
     /// Determines if the returned amplitude value is the rms or peak value
     public var analysisMode: AnalysisMode = .rms
-    public var taper: AUValue = AudioTaper.taper.in
+    public var taper: AUValue = AutomationTaper.audio.taperUp
 
     private var dataTask: Task<FloatChannelData, Error>?
 

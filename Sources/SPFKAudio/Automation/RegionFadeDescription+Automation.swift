@@ -29,16 +29,16 @@ extension RegionFadeDescription {
                 targetValue: Self.minimumGain,
                 startTime: -0.1,
                 rampDuration: 0,
-                rampTaper: LinearTaper.taper.in,
-                rampSkew: LinearTaper.skew.in
+                rampTaper: AutomationTaper.linear.taperUp,
+                rampSkew: AutomationTaper.linear.skew
             ),
 
             ParameterAutomationPoint(
                 targetValue: maximumGain,
                 startTime: 0,
                 rampDuration: rampDuration,
-                rampTaper: inTaper,
-                rampSkew: inSkew
+                rampTaper: taper.taperUp,
+                rampSkew: taper.skew
             ),
         ]
 
@@ -55,7 +55,7 @@ extension RegionFadeDescription {
     ///   - segmentDuration: Total duration of the file segment. This is used to calculate
     ///   how far in advance the fade out should begin.
     ///
-    ///   - sampleRateRatio: sample rate time ratio if needed
+    ///   - sampleRateRatio: sample rate time ratio if needed when rendering
     ///
     /// - Returns: `AutomationCurve`
     public mutating func fadeOutCurve(
@@ -84,16 +84,16 @@ extension RegionFadeDescription {
                 targetValue: maximumGain,
                 startTime: startTime - 0.02,
                 rampDuration: 0.02,
-                rampTaper: LinearTaper.taper.out,
-                rampSkew: LinearTaper.skew.out
+                rampTaper: AutomationTaper.linear.taperDown,
+                rampSkew: AutomationTaper.linear.skew
             ),
 
             ParameterAutomationPoint(
                 targetValue: Self.minimumGain,
                 startTime: startTime,
                 rampDuration: rampDuration,
-                rampTaper: outTaper,
-                rampSkew: outSkew
+                rampTaper: taper.taperDown,
+                rampSkew: taper.skew
             ),
         ]
 
@@ -107,7 +107,7 @@ extension RegionFadeDescription {
             }
         }
 
-        fadeOutCache = curve // cache
+        fadeOutCache = curve
 
         return curve
     }

@@ -63,7 +63,7 @@ public class AmplitudeTap {
         amp[1]
     }
 
-    public var taper: AUValue = AudioTaper.taper.in
+    public var taper: AUValue = AutomationTaper.audio.taperUp
 
     private var eventHandler: (([Float]) -> Void)?
 

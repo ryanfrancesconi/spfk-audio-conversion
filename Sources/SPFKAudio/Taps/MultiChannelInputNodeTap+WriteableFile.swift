@@ -124,7 +124,7 @@ extension MultiChannelInputNodeTap {
             try file.write(from: buffer)
 
             amplitudeArray.append(
-                amplitude.normalized(from: 0 ... 1, taper: AudioTaper.taper.in)
+                amplitude.normalized(from: 0 ... 1, taper: AutomationTaper.audio.taperUp)
             )
 
             totalFramesWritten = file.length

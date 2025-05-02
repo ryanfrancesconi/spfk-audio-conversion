@@ -12,6 +12,7 @@ final class AudioFilePlayerTests: AudioEngineTestCase {
     @Test func testEdit() async throws {
         try await setup()
 
+        player.volume = 0.1
         try player.load(url: BundleResources.shared.tabla_wav)
         try player.schedule(from: 1, to: 2)
 

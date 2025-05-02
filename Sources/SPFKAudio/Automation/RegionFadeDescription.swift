@@ -4,8 +4,8 @@ import SPFKAudioC
 
 /// An object representing a fade in and out automation curves on a region of audio in a timeline
 public struct RegionFadeDescription {
-    /// a constant
-    public static var minimumGain: AUValue = 0
+    /// a constant, 0
+    public static let minimumGain: AUValue = 0
 
     /// the value that the fade should fade to
     public var maximumGain: AUValue = 1
@@ -19,15 +19,6 @@ public struct RegionFadeDescription {
         }
     }
 
-    public var inTaper: AUValue = AudioTaper.taper.in {
-        willSet {
-            if newValue != inTaper { fadeInCache = nil }
-        }
-    }
-
-    /// the slope adjustment in the taper
-    public var inSkew: AUValue = AudioTaper.skew.in
-
     /// How long the fade out is
     public var outTime: TimeInterval = 0 {
         willSet {
@@ -35,14 +26,17 @@ public struct RegionFadeDescription {
         }
     }
 
-    public var outTaper: AUValue = AudioTaper.taper.out {
+    public var taper = AutomationTaper.audio {
         willSet {
-            if newValue != outTaper { fadeOutCache = nil }
+            if newValue.taperUp != taper.taperUp {
+                fadeInCache = nil
+            }
+
+            if newValue.taperDown != taper.taperDown {
+                fadeOutCache = nil
+            }
         }
     }
-
-    /// the slope adjustment in the taper
-    public var outSkew: AUValue = AudioTaper.skew.out
 
     public var isFaded: Bool {
         inTime > 0 || outTime > 0

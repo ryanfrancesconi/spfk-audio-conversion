@@ -18,6 +18,7 @@ final class AudioUnitChainTests: AudioEngineTestCase {
 
         await #expect(audioUnitChain.data.unbypassedEffects.count == 2)
 
+        player.volume = 0.1
         try player.load(url: BundleResources.shared.tabla_wav)
         try player.schedule()
         try player.play()

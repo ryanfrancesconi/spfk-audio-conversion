@@ -154,69 +154,6 @@ extension Fader {
         $rightGain.ramp(from: start, to: target, duration: duration)
     }
 
-    /// Tapered Ramp from a source value (which is ramped to over resolution) to a target value
-    ///
-    /// - Parameters:
-    ///   - start: initial value
-    ///   - target: destination value
-    ///   - duration: duration to ramp to the target value in seconds
-    ///   - rampTaper: Taper, default is 3 for fade in, 1/3 for fade out
-    ///   - rampSkew: Skew, default is 1/3 for fade in, and 3 for fade out
-    ///   - resolution: Segment duration, default 20ms
-    public func taperedRamp(
-        from start: AUValue,
-        to target: AUValue,
-        duration: AUValue,
-        rampTaper: AUValue = AudioTaper.taper.in,
-        rampSkew: AUValue = AudioTaper.skew.in,
-        resolution: AUValue = 0.02,
-        startTime scheduledTime: AVAudioTime? = nil
-    ) throws {
-        try stopAutomation()
-
-        let startTime: AUValue = 0.02
-        var rampTaper = rampTaper
-        var rampSkew = rampSkew
-
-        if target < start {
-            rampTaper = 1 / rampTaper
-            rampSkew = 1 / rampSkew
-        }
-
-        // this ensures we get a AUEventSampleTimeImmediate set to the start value
-//        let setupEvents = [
-//            AutomationEvent(targetValue: start, startTime: 0, rampDuration: 0),
-//            AutomationEvent(targetValue: start, startTime: startTime + 0.01, rampDuration: 0.01),
-//        ]
-
-        let points = [
-            ParameterAutomationPoint(
-                targetValue: start,
-                startTime: startTime + 0.02,
-                rampDuration: 0.02,
-                rampTaper: rampTaper,
-                rampSkew: rampSkew
-            ),
-
-            ParameterAutomationPoint(
-                targetValue: target,
-                startTime: startTime + 0.04,
-                rampDuration: duration - 0.04,
-                rampTaper: rampTaper,
-                rampSkew: rampSkew
-            ),
-        ]
-
-        let curve = AutomationCurve(points: points, resolution: resolution)
-
-//        let events = setupEvents + curve.evaluate(
-//            resolution: resolution
-//        )
-
-        try $leftGain.automate(events: curve.events, startTime: scheduledTime)
-        try $rightGain.automate(events: curve.events, startTime: scheduledTime)
-    }
-
     /// Stop automation
     public func stopAutomation() throws {
         try $leftGain.stopAutomation()
