@@ -58,10 +58,7 @@ extension RegionFadeDescription {
     ///   - sampleRateRatio: sample rate time ratio if needed when rendering
     ///
     /// - Returns: `AutomationCurve`
-    public mutating func fadeOutCurve(
-        segmentDuration: TimeInterval,
-        sampleRateRatio: Float = 1
-    ) -> AutomationCurve? {
+    public mutating func fadeOutCurve() -> AutomationCurve? {
         guard outTime > 0 else {
             fadeOutCache = nil
             return nil

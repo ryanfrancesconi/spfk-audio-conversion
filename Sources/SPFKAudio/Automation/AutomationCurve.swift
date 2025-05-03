@@ -9,7 +9,7 @@ import SPFKUtils
 /// An automation curve (with curved segments) suitable for any time varying parameter.
 /// Includes functions for manipulating automation curves and conversion to linear automation ramps
 /// used by DSP code.
-public struct AutomationCurve {
+public struct AutomationCurve: Equatable {
     /// Time between linear points to interpolate between
     public static let defaultResolution: Float = 0.2
 

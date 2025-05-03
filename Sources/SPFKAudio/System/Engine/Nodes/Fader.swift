@@ -139,12 +139,12 @@ extension Fader {
     /// - Parameters:
     ///   - events: List of events
     ///   - startTime: start time
-    public func automateGain(events: [AutomationEvent], startTime: AVAudioTime) throws {
+    public func automate(events: [AutomationEvent], startTime: AVAudioTime) throws {
         try $leftGain.automate(events: events, startTime: startTime)
         try $rightGain.automate(events: events, startTime: startTime)
     }
 
-    public func automateGain(events: [AutomationEvent], offset: TimeInterval = 0) throws {
+    public func automate(events: [AutomationEvent], offset: TimeInterval = 0) throws {
         try $leftGain.automate(events: events, offset: offset)
         try $rightGain.automate(events: events, offset: offset)
     }

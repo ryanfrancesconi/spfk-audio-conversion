@@ -1,5 +1,6 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
+import SPFKUtils
 import SPFKAudioC
 
 /// An object representing a fade in and out automation curves on a region of audio in a timeline
@@ -10,7 +11,14 @@ public struct RegionFadeDescription {
     /// the value that the fade should fade to
     public var maximumGain: AUValue = 1
 
-    public var stepResolution: Float = 0.2
+    public var stepResolution: Float = 0.2 {
+        willSet {
+            if newValue != stepResolution {
+                fadeInCache = nil
+                fadeOutCache = nil
+            }
+        }
+    }
 
     /// How long the fade in is
     public var inTime: TimeInterval = 0 {
@@ -25,7 +33,14 @@ public struct RegionFadeDescription {
             if newValue != outTime { fadeOutCache = nil }
         }
     }
-
+    
+    
+    public var segmentDuration: TimeInterval = 0 {
+        willSet {
+            if newValue != segmentDuration { fadeOutCache = nil }
+        }
+    }
+    
     public var taper = AutomationTaper.audio {
         willSet {
             if newValue.taperUp != taper.taperUp {
@@ -35,6 +50,12 @@ public struct RegionFadeDescription {
             if newValue.taperDown != taper.taperDown {
                 fadeOutCache = nil
             }
+        }
+    }
+
+    public var sampleRateRatio: Float = 1 {
+        willSet {
+            if newValue != sampleRateRatio { fadeOutCache = nil }
         }
     }
 

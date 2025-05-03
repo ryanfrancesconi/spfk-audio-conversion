@@ -107,10 +107,11 @@ struct FadeDescriptionTests {
     @Test func fadeOutTaperOneSecond() throws {
         var desc = RegionFadeDescription()
         desc.outTime = 1
+        desc.segmentDuration = 1
         desc.stepResolution = 0.2
         desc.taper = .audio
 
-        let curve = desc.fadeOutCurve(segmentDuration: 1)
+        let curve = desc.fadeOutCurve()
         let events = try #require(curve?.events)
 
         Log.debug(events)
@@ -133,9 +134,10 @@ struct FadeDescriptionTests {
     @Test func fadeOutStartingInsideCurve() throws {
         var desc = RegionFadeDescription()
         desc.outTime = 1
+        desc.segmentDuration = 0.8
         desc.taper = .audio
 
-        let curve = desc.fadeOutCurve(segmentDuration: 0.8)
+        let curve = desc.fadeOutCurve()
         let events = try #require(curve?.events)
 
         Log.debug(events)
@@ -151,5 +153,29 @@ struct FadeDescriptionTests {
         #expect(events.count == expectedResult.count)
         #expect(events == expectedResult)
         #expect(events == desc.fadeOutCache?.events)
+    }
+
+    // MARK: - cache
+
+    @Test func fadeCache() throws {
+        var desc = RegionFadeDescription()
+        desc.inTime = 1
+        desc.outTime = 1
+        desc.segmentDuration = 2
+        desc.taper = .audio
+
+        let curveIn = desc.fadeInCurve()
+        let curveOut = desc.fadeOutCurve()
+
+        #expect(desc.fadeInCache != nil)
+        #expect(desc.fadeInCache == curveIn)
+
+        #expect(desc.fadeInCache != nil)
+        #expect(desc.fadeOutCache == curveOut)
+
+        desc.inTime = 0
+        desc.outTime = 0
+        #expect(desc.fadeInCache == nil)
+        #expect(desc.fadeOutCache == nil)
     }
 }
