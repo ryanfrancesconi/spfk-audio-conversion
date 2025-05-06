@@ -27,6 +27,7 @@ extension AVAudioPCMBuffer {
     public var floatData: FloatChannelData? {
         // Do we have PCM channel data?
         guard let internalData = floatChannelData else { return nil }
+
         let channelCount = Int(format.channelCount)
         let size = Int(frameLength)
         let zeros = Array<Float>(repeating: 0, count: size)

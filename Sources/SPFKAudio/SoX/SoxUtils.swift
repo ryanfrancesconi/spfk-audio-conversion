@@ -6,8 +6,7 @@ import SPFKAudioC
 import SPFKMetadata
 import SPFKUtils
 
-
-/*
+/**
  AUDIO FILE FORMATS: 8svx aif aifc aiff aiffc al amb au avr caf cdda cdr cvs cvsd cvu dat dvms f32 f4 f64 f8 fap flac fssd gsm gsrt hcom htk ima ircam la lpc lpc10 lu mat mat4 mat5 maud mp2 mp3 nist ogg paf prc pvf raw s1 s16 s2 s24 s3 s32 s4 s8 sb sd2 sds sf sl sln smp snd sndfile sndr sndt sou sox sph sw txw u1 u16 u2 u24 u3 u32 u4 u8 ub ul uw vms voc vorbis vox w64 wav wavpcm wve xa xi
  PLAYLIST FORMATS: m3u pls
  AUDIO DEVICE DRIVERS: coreaudio
@@ -18,13 +17,13 @@ public enum SoxUtils {
     public static func convert(input: String, output: String, bitDepth: UInt32?, sampleRate: Double?) {
         // Log.debug(input, "to:", output, bits, sampleRate)
 
-        if let bits = bitDepth, let sampleRate = sampleRate {
-            SoxWrapper.convert(input, output: output, bits: String(bits), sampleRate: String(sampleRate))
+        if let bitDepth, let sampleRate {
+            SoxWrapper.convert(input, output: output, bits: String(bitDepth), sampleRate: String(sampleRate))
 
-        } else if let bits = bitDepth {
-            SoxWrapper.convert(input, output: output, bits: String(bits))
+        } else if let bitDepth {
+            SoxWrapper.convert(input, output: output, bits: String(bitDepth))
 
-        } else if let sampleRate = sampleRate {
+        } else if let sampleRate {
             SoxWrapper.convert(input, output: output, sampleRate: String(sampleRate))
 
         } else {
@@ -51,7 +50,12 @@ public enum SoxUtils {
 
      In order to squeeze the selection of VBR into the the −C value float we use negative numbers to select VRR. -4.2 would select default VBR encoding (size) with high quality (speed). One special case is 0, which is a valid VBR encoding parameter but not a valid bitrate. Compression value of 0 is always treated as a high quality vbr, as a result both -0.2 and 0.2 are treated as highest quality VBR (size) and high quality (speed).
      */
-    public static func convertMP3(input: String, output: String, bitRate: UInt32?, sampleRate: Double?) {
+    public static func convertMP3(
+        input: String,
+        output: String,
+        bitRate: UInt32?,
+        sampleRate: Double?
+    ) {
         // Log.debug(input, "to:", output, bitRate, sampleRate)
 
         if let bitRate, let sampleRate {
@@ -71,16 +75,20 @@ public enum SoxUtils {
     // TODO: allow for trim fade time
     // doesn't accept 32bit files
     // needs error handling
-    public static func trim(input: String,
-                            output: String,
-                            timeChunk: TimeChunk) -> Bool {
+    public static func trim(
+        input: String,
+        output: String,
+        timeChunk: TimeChunk
+    ) -> Bool {
         trim(input: input, output: output, startTime: timeChunk.start, endTime: timeChunk.end)
     }
 
-    public static func trim(input: String,
-                            output: String,
-                            startTime: TimeInterval,
-                            endTime: TimeInterval = 0) -> Bool {
+    public static func trim(
+        input: String,
+        output: String,
+        startTime: TimeInterval,
+        endTime: TimeInterval = 0
+    ) -> Bool {
         var endTimeStr: String = "0"
         if endTime > 0 {
             endTimeStr = "=" + String(endTime)
@@ -94,10 +102,12 @@ public enum SoxUtils {
     /// Split stereo files to dual mono
     ///        sox infile.wav outfile.L.wav remix 1
     ///        sox infile.wav outfile.R.wav remix 2
-    public static func exportSplitStereo(input source: URL,
-                                         destination: URL? = nil,
-                                         newName: String? = nil,
-                                         overwrite: Bool = true) throws -> SplitStereoPair {
+    public static func exportSplitStereo(
+        input source: URL,
+        destination: URL? = nil,
+        newName: String? = nil,
+        overwrite: Bool = true
+    ) throws -> SplitStereoPair {
         // check source input
 
         let audioFile = try AVAudioFile(forReading: source)
@@ -138,9 +148,11 @@ public enum SoxUtils {
     }
 
     /// Export all channels as mono files
-    public static func exportChannels(input source: URL,
-                                      destination: URL? = nil,
-                                      newName: String? = nil) throws -> [URL] {
+    public static func exportChannels(
+        input source: URL,
+        destination: URL? = nil,
+        newName: String? = nil
+    ) throws -> [URL] {
         var outputBin = source.deletingLastPathComponent()
 
         if let destination = destination, destination.isDirectory {
@@ -168,7 +180,12 @@ public enum SoxUtils {
     }
 
     /// Mix a stereo file to mono
-    public static func stereoToMono(source: URL, destination: URL? = nil, newName: String? = nil, overwrite: Bool = true) -> URL? {
+    public static func stereoToMono(
+        source: URL,
+        destination: URL? = nil,
+        newName: String? = nil,
+        overwrite: Bool = true
+    ) -> URL? {
         var outputBin = source.deletingLastPathComponent()
 
         if let destination = destination, destination.isDirectory {
@@ -191,7 +208,10 @@ public enum SoxUtils {
     }
 
     /// sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
-    public static func createMultiChannelWave(input files: [String], output: String) -> Bool {
+    public static func createMultiChannelWave(
+        input files: [String],
+        output: String
+    ) -> Bool {
         let inputs = files.filter {
             FileManager.default.fileExists(atPath: $0)
         }

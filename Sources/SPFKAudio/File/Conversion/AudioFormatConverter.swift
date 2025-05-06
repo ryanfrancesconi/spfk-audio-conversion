@@ -48,7 +48,23 @@ public class AudioFormatConverter {
         options = nil
     }
 
-    // MARK: -
+    // MARK: - TEMP ASYNC wrapper
+
+    public func start() async throws {
+        try await withCheckedThrowingContinuation { [weak self] (continuation: CheckedContinuation<Void, Error>) in
+            guard let self else { return }
+
+            self.start { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                }
+
+                continuation.resume()
+            }
+        }
+    }
+
+    // MARK: - Legacy
 
     /// The entry point for file conversion
     /// - Parameter completionHandler: the callback that will be triggered when process has completed.
@@ -73,9 +89,13 @@ public class AudioFormatConverter {
 
         if outputURL.exists {
             if options?.eraseFile == true {
-                Log.error("Warning: removing existing file at", outputURL.path)
-                try? FileManager.default.removeItem(at: outputURL)
-                
+                do {
+                    try FileManager.default.removeItem(at: outputURL)
+                    Log.debug("eraseFile == true, removed existing file at", outputURL.path)
+
+                } catch {
+                    completionHandler?(error)
+                }
             } else {
                 let message = "The output file exists already. You need to choose a unique URL or delete the file."
                 completionHandler?(Self.createError(message: message))
@@ -108,7 +128,9 @@ public class AudioFormatConverter {
             convertCompressed(completionHandler: completionHandler)
 
         } else {
-            completionHandler?(Self.createError(message: "Unable to determine formats for conversion"))
+            completionHandler?(
+                Self.createError(message: "Unable to determine formats for conversion")
+            )
         }
     }
 

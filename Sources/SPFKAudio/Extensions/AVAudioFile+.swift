@@ -10,9 +10,9 @@ extension AVAudioFile {
         TimeInterval(length) / fileFormat.sampleRate
     }
 
-    /// returns the max level in the file as a Peak struct
+    /// the max level in the file as a Peak struct
     public var peak: Peak? {
-        toAVAudioPCMBuffer()?.peak()
+        try? toAVAudioPCMBuffer().peak()
     }
 
     /// Convenience init to instantiate a file from an AVAudioPCMBuffer.
@@ -30,26 +30,24 @@ extension AVAudioFile {
     }
 
     /// converts to a 32 bit PCM buffer
-    public func toAVAudioPCMBuffer() -> AVAudioPCMBuffer? {
+    public func toAVAudioPCMBuffer() throws -> AVAudioPCMBuffer {
         guard let buffer = AVAudioPCMBuffer(
             pcmFormat: processingFormat,
             frameCapacity: AVAudioFrameCount(length)
-        ) else { return nil }
-
-        do {
-            framePosition = 0
-            try read(into: buffer)
-
-        } catch let error as NSError {
-            Log.error("Cannot read into buffer " + error.localizedDescription)
+        ) else {
+            throw NSError(description: "Error reading into input buffer")
         }
+
+        framePosition = 0
+
+        try read(into: buffer)
 
         return buffer
     }
 
-    public func toAVAudioPCMBuffer(seconds: TimeInterval) -> AVAudioPCMBuffer? {
+    public func toAVAudioPCMBuffer(maxDuration seconds: TimeInterval) throws -> AVAudioPCMBuffer {
         guard seconds < duration else {
-            return toAVAudioPCMBuffer()
+            return try toAVAudioPCMBuffer()
         }
 
         let frameCapacity = AVAudioFrameCount(seconds * fileFormat.sampleRate)
@@ -57,59 +55,29 @@ extension AVAudioFile {
         guard let buffer = AVAudioPCMBuffer(
             pcmFormat: processingFormat,
             frameCapacity: frameCapacity
-        ) else { return nil }
-
-        do {
-            framePosition = 0
-            try read(into: buffer, frameCount: frameCapacity)
-
-        } catch let error as NSError {
-            Log.error("Cannot read into buffer " + error.localizedDescription)
-            return nil
+        ) else {
+            throw NSError(description: "Failed creating buffer")
         }
+
+        framePosition = 0
+        try read(into: buffer, frameCount: frameCapacity)
 
         return buffer
     }
 
     /// converts to Swift friendly Float array
-    func toFloatChannelData() -> FloatChannelData? {
-        guard let pcmBuffer = toAVAudioPCMBuffer(),
-              let data = pcmBuffer.floatData else { return nil }
+    func toFloatChannelData() throws -> FloatChannelData {
+        let pcmBuffer = try toAVAudioPCMBuffer()
+
+        guard let data = pcmBuffer.floatData else {
+            throw NSError(description: "Failed getting float data")
+        }
+
         return data
     }
+}
 
-    /// Will return a 32bit CAF file with the format of this buffer
-    @discardableResult public func extract(
-        to outputURL: URL,
-        from startTime: TimeInterval,
-        to endTime: TimeInterval,
-        fadeInTime: TimeInterval = 0,
-        fadeOutTime: TimeInterval = 0
-    ) throws -> AVAudioFile? {
-        guard let inputBuffer = toAVAudioPCMBuffer() else {
-            throw NSError(description: "Error reading into input buffer")
-        }
-
-        guard var editedBuffer = try inputBuffer.extract(from: startTime, to: endTime) else {
-            throw NSError(description: "Failed to create edited buffer")
-        }
-
-        if fadeInTime != 0 || fadeOutTime != 0,
-           let fadedBuffer = editedBuffer.fade(inTime: fadeInTime, outTime: fadeOutTime) {
-            editedBuffer = fadedBuffer
-        }
-
-        var outputURL = outputURL
-        if outputURL.pathExtension.lowercased() != "caf" {
-            outputURL = outputURL.deletingPathExtension().appendingPathExtension("caf")
-        }
-
-        guard let outputFile = try? AVAudioFile(url: outputURL, fromBuffer: editedBuffer) else {
-            throw NSError(description: "Failed to write new file at \(outputURL.path)")
-        }
-        return outputFile
-    }
-
+extension AVAudioFile {
     /// - Returns: An extracted section of this file of the passed in conversion options
     public func extract(
         to url: URL,
@@ -117,56 +85,65 @@ extension AVAudioFile {
         to endTime: TimeInterval,
         fadeInTime: TimeInterval = 0,
         fadeOutTime: TimeInterval = 0,
-        options: AudioFormatConverterOptions? = nil,
-        completionHandler: AudioFormatConverter.Callback? = nil
-    ) throws {
+        options: AudioFormatConverterOptions? = nil
+    ) async throws {
         // if options are nil, create them to match the input file
         let options = options ?? AudioFormatConverterOptions(audioFile: self)
-
         let format = options?.format ?? AudioFileType(pathExtension: url.pathExtension)
+
         let directory = url.deletingLastPathComponent()
         let filename = url.deletingPathExtension().lastPathComponent
         let tempFile = directory.appendingPathComponent(filename + "_temp").appendingPathExtension(AudioFileType.caf.rawValue)
         let outputURL = directory.appendingPathComponent(filename).appendingPathExtension(format.rawValue)
 
         // first print CAF file
-        guard try extract(
+        try extractCAF(
             to: tempFile,
             from: startTime,
             to: endTime,
             fadeInTime: fadeInTime,
             fadeOutTime: fadeOutTime
-        ) != nil else {
-            completionHandler?(
-                NSError(description: "Failed to create new file")
-            )
-            return
-        }
+        )
 
         // then convert to desired format here:
-        guard FileManager.default.isReadableFile(atPath: tempFile.path) else {
-            completionHandler?(
-                NSError(description: "File wasn't created correctly")
-            )
-            return
+        guard tempFile.exists else {
+            throw NSError(description: "CAF File wasn't created correctly")
         }
 
-        let converter = AudioFormatConverter(inputURL: tempFile, outputURL: outputURL, options: options)
+        // will be PCM
+        try await AudioFormatConverter(inputURL: tempFile, outputURL: outputURL, options: options).start()
 
-        converter.start { error in
-
-            if let error {
-                Log.error("Done, error", error)
-            }
-
-            completionHandler?(error)
-
-            do {
-                // clean up temp file
-                try FileManager.default.removeItem(at: tempFile)
-            } catch {
-                Log.error("Unable to remove temp file at", tempFile)
-            }
+        do {
+            // clean up temp file
+            try FileManager.default.removeItem(at: tempFile)
+        } catch {
+            Log.error("Unable to remove temp file at", tempFile)
         }
+    }
+
+    /// Will return a 32bit CAF file
+    @discardableResult public func extractCAF(
+        to outputURL: URL,
+        from startTime: TimeInterval,
+        to endTime: TimeInterval,
+        fadeInTime: TimeInterval = 0,
+        fadeOutTime: TimeInterval = 0
+    ) throws -> AVAudioFile {
+        //
+        let inputBuffer = try toAVAudioPCMBuffer()
+
+        var editedBuffer = try inputBuffer.extract(from: startTime, to: endTime)
+
+        if fadeInTime != 0 || fadeOutTime != 0 {
+            editedBuffer = try editedBuffer.fade(inTime: fadeInTime, outTime: fadeOutTime)
+        }
+
+        var outputURL = outputURL
+
+        if outputURL.pathExtension.lowercased() != "caf" {
+            outputURL = outputURL.deletingPathExtension().appendingPathExtension("caf")
+        }
+
+        return try AVAudioFile(url: outputURL, fromBuffer: editedBuffer)
     }
 }

@@ -33,6 +33,8 @@ struct ModelCompilation {
         let model = try await MLModel.load(contentsOf: compiledModelURL)
         let destination = modelURL.deletingLastPathComponent().appendingPathComponent(compiledModelURL.lastPathComponent)
 
+        try? destination.delete()
+
         try FileManager.default.copyItem(
             at: compiledModelURL,
             to: destination

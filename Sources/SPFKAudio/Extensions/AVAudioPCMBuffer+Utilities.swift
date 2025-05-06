@@ -1,8 +1,8 @@
 // Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
-import SPFKUtils
 import AVFoundation
 import CryptoKit
+import SPFKUtils
 
 extension AVAudioPCMBuffer {
     /// Hash useful for testing
@@ -176,8 +176,10 @@ extension AVAudioPCMBuffer {
     /// - Parameter startTime: The time of the in point of the extraction
     /// - Parameter endTime: The time of the out point
     /// - Returns: A new edited AVAudioPCMBuffer
-    public func extract(from startTime: TimeInterval,
-                        to endTime: TimeInterval) throws -> AVAudioPCMBuffer? {
+    public func extract(
+        from startTime: TimeInterval,
+        to endTime: TimeInterval
+    ) throws -> AVAudioPCMBuffer {
         let sampleRate = format.sampleRate
         let startSample = AVAudioFrameCount(startTime * sampleRate)
         var endSample = AVAudioFrameCount(endTime * sampleRate)

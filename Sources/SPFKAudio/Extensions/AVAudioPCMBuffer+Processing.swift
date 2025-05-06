@@ -28,9 +28,14 @@ extension AVAudioPCMBuffer {
 extension AVAudioPCMBuffer {
     /// Find peak in the buffer
     /// - Returns: A Peak struct containing the time, frame position and peak amplitude
-    public func peak() -> Peak? {
-        guard frameLength > 0 else { return nil }
-        guard let floatData = floatChannelData else { return nil }
+    public func peak() throws -> Peak {
+        guard frameLength > 0 else {
+            throw NSError(description: "buffer is empty")
+        }
+
+        guard let floatData = floatChannelData else {
+            throw NSError(description: "Failed to create floatChannelData")
+        }
 
         var value = Peak()
         var position = 0
@@ -57,9 +62,11 @@ extension AVAudioPCMBuffer {
 
                 if blockPeak > peakValue {
                     value.framePosition = position
-                    value.time = Double(position) / Double(format.sampleRate)
+                    value.sampleRate = format.sampleRate
+
                     peakValue = blockPeak
                 }
+
                 position += block.count
             }
         }
@@ -82,21 +89,22 @@ extension AVAudioPCMBuffer {
     }
 
     /// - Returns: A normalized buffer
-    public func normalize() -> AVAudioPCMBuffer? {
-        guard let floatData = floatChannelData else { return self }
+    public func normalize() throws -> AVAudioPCMBuffer {
+        guard let floatData = floatChannelData else {
+            throw NSError(description: "Failed to create floatChannelData")
+        }
 
-        let normalizedBuffer = AVAudioPCMBuffer(
+        guard let normalizedBuffer = AVAudioPCMBuffer(
             pcmFormat: format,
             frameCapacity: frameCapacity
-        )
+        ) else {
+            throw NSError(description: "Failed to create buffer")
+        }
 
         let length: AVAudioFrameCount = frameLength
         let channelCount = Int(format.channelCount)
 
-        guard let peak: Peak = peak() else {
-            Log.error("Failed getting peak amplitude, returning original buffer")
-            return self
-        }
+        let peak: Peak = try peak()
 
         let gainFactor: Float = 1 / peak.amplitude
 
@@ -105,21 +113,23 @@ extension AVAudioPCMBuffer {
             // n is the channel
             for n in 0 ..< channelCount {
                 let sample = floatData[n][i] * gainFactor
-                normalizedBuffer?.floatChannelData?[n][i] = sample
+                normalizedBuffer.floatChannelData?[n][i] = sample
             }
         }
 
-        normalizedBuffer?.frameLength = length
+        normalizedBuffer.frameLength = length
 
         return normalizedBuffer
     }
 
     /// - Returns: A reversed buffer
-    public func reverse() -> AVAudioPCMBuffer? {
+    public func reverse() throws -> AVAudioPCMBuffer {
         guard let reversedBuffer = AVAudioPCMBuffer(
             pcmFormat: format,
             frameCapacity: frameCapacity
-        ) else { return nil }
+        ) else {
+            throw NSError(description: "Failed to create buffer")
+        }
 
         var j: Int = 0
         let length: AVAudioFrameCount = frameLength
@@ -134,7 +144,9 @@ extension AVAudioPCMBuffer {
             }
             j += 1
         }
+
         reversedBuffer.frameLength = length
+
         return reversedBuffer
     }
 
@@ -142,27 +154,25 @@ extension AVAudioPCMBuffer {
     /// - Parameters:
     ///   - inTime: Fade In time
     ///   - outTime: Fade Out time
-    ///   - linearRamp: use a linear ramp, will be exponential by default
     /// - Returns: A new buffer from this one that has fades applied to it
     public func fade(
         inTime: TimeInterval = 0,
-        outTime: TimeInterval = 0,
-        linearRamp: Bool = false
-    ) -> AVAudioPCMBuffer? {
+        outTime: TimeInterval = 0
+    ) throws -> AVAudioPCMBuffer {
         guard inTime > 0 || outTime > 0 else {
-            Log.error("Error fading buffer, inTime or outTime must be > 0")
-            return nil
+            throw NSError(description: "Error fading buffer, inTime or outTime must be > 0")
         }
 
         guard let floatChannelData else {
-            Log.error("floatChannelData is nil")
-            return nil
+            throw NSError(description: "floatChannelData is nil")
         }
 
-        let fadeBuffer = AVAudioPCMBuffer(
+        guard let fadeBuffer = AVAudioPCMBuffer(
             pcmFormat: format,
             frameCapacity: frameCapacity
-        )
+        ) else {
+            throw NSError(description: "Failed to create buffer")
+        }
 
         let length: UInt32 = frameLength
         let sampleRate = format.sampleRate
@@ -172,27 +182,12 @@ extension AVAudioPCMBuffer {
         var gain: Double = inTime > 0 ? 0.01 : 1
 
         let sampleTime: Double = 1.0 / sampleRate
-
-        var fadeInPower: Double = 1
-        var fadeOutPower: Double = 1
-
-        if linearRamp {
-            gain = inTime > 0 ? 0 : 1
-            fadeInPower = sampleTime / inTime
-
-        } else {
-            fadeInPower = exp(log(10) * sampleTime / inTime)
-        }
-
-        if linearRamp {
-            fadeOutPower = sampleTime / outTime
-
-        } else {
-            fadeOutPower = exp(-log(25) * sampleTime / outTime)
-        }
+        let fadeInPower: Double = exp(log(10) * sampleTime / inTime)
+        let fadeOutPower: Double = exp(-log(25) * sampleTime / outTime)
 
         // where in the buffer to end the fade in
         let fadeInSamples = Int(sampleRate * inTime)
+
         // where in the buffer to start the fade out
         let fadeOutSamples = Int(Double(length) - (sampleRate * outTime))
 
@@ -201,18 +196,11 @@ extension AVAudioPCMBuffer {
             // n is the channel
             for n in 0 ..< channelCount {
                 if i < fadeInSamples, inTime > 0 {
-                    if linearRamp {
-                        gain *= fadeInPower
-                    } else {
-                        gain += fadeInPower
-                    }
+                    gain *= fadeInPower
 
                 } else if i > fadeOutSamples, outTime > 0 {
-                    if linearRamp {
-                        gain -= fadeOutPower
-                    } else {
-                        gain *= fadeOutPower
-                    }
+                    gain *= fadeOutPower
+
                 } else {
                     gain = 1.0
                 }
@@ -222,12 +210,12 @@ extension AVAudioPCMBuffer {
 
                 let adjustedSample = floatChannelData[n][i] * Float(gain)
 
-                fadeBuffer?.floatChannelData?[n][i] = adjustedSample
+                fadeBuffer.floatChannelData?[n][i] = adjustedSample
             }
         }
 
         // update this
-        fadeBuffer?.frameLength = length
+        fadeBuffer.frameLength = length
 
         // set the buffer now to be the faded one
         return fadeBuffer
