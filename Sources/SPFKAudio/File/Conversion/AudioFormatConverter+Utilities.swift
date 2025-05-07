@@ -33,18 +33,24 @@ public extension AudioFormatConverter {
     ///   - ignorePathExtension: Do a deep parse rather than rely on the path extension
     /// - Returns: Bool or nil if it couldn't be determined
     static func isPCM(url: URL, ignorePathExtension: Bool = false) -> Bool? {
-        guard let value = isCompressed(url: url) else { return nil }
+        guard let value = isCompressed(url: url, ignorePathExtension: ignorePathExtension) else { return nil }
+
         return !value
     }
 
     /// Compressed format or not
-    static func isCompressed(url: URL, ignorePathExtension: Bool = false) -> Bool? {
+    static func isCompressed(url: URL, ignorePathExtension: Bool) -> Bool? {
         guard !ignorePathExtension else {
             return isCompressedExt(url: url)
         }
-        let ext = url.pathExtension.lowercased()
 
-        switch ext {
+        return isCompressed(url: url)
+    }
+
+    static func isCompressed(url: URL) -> Bool {
+        let pathExtension = url.pathExtension.lowercased()
+
+        switch pathExtension {
         case "wav", "wave", "bwf", "aif", "aiff", "caf":
             return false
 
@@ -75,8 +81,10 @@ public extension AudioFormatConverter {
             closeFiles()
         }
 
-        if noErr != ExtAudioFileOpenURL(url as CFURL,
-                                        &inputFile) {
+        if noErr != ExtAudioFileOpenURL(
+            url as CFURL,
+            &inputFile
+        ) {
             Log.error("Unable to open", url.lastPathComponent)
             return nil
         }
@@ -88,10 +96,15 @@ public extension AudioFormatConverter {
         var inputDescription = AudioStreamBasicDescription()
         var inputDescriptionSize = UInt32(MemoryLayout.stride(ofValue: inputDescription))
 
-        if noErr != ExtAudioFileGetProperty(strongInputFile,
-                                            kExtAudioFileProperty_FileDataFormat,
-                                            &inputDescriptionSize,
-                                            &inputDescription) {
+        if noErr != ExtAudioFileGetProperty(
+            strongInputFile,
+            kExtAudioFileProperty_FileDataFormat,
+            &inputDescriptionSize,
+            &inputDescription
+        ) {
+            //
+            Log.error("Unable to get kExtAudioFileProperty_FileDataFormat", url.lastPathComponent)
+            return nil
         }
 
         let mFormatID = inputDescription.mFormatID

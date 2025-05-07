@@ -107,11 +107,13 @@ public struct AudioFormatConverterOptions {
     ///   - sampleRate: Sample Rate
     ///   - bitDepth: Bit Depth, or bits per channel
     ///   - channels: How many channels
-    public init(pcmFormat: AudioFileType,
-                sampleRate: Double? = nil,
-                bitsPerChannel: UInt32? = nil,
-                channels: UInt32? = nil,
-                bitDepthRule: BitDepthRule = .any) throws {
+    public init(
+        pcmFormat: AudioFileType,
+        sampleRate: Double? = nil,
+        bitsPerChannel: UInt32? = nil,
+        channels: UInt32? = nil,
+        bitDepthRule: BitDepthRule = .any
+    ) throws {
         guard pcmFormat.isPCM else {
             throw NSError(description: "Not a pcm format \(pcmFormat.pathExtension)")
         }
@@ -132,4 +134,16 @@ extension AudioFormatConverterOptions: Serializable {
     public init(data: Data) throws {
         self = try PropertyListDecoder().decode(AudioFormatConverterOptions.self, from: data)
     }
+}
+
+extension AudioFormatConverterOptions {
+    public static let waveStereo48k16bit: AudioFormatConverterOptions = {
+        var o = AudioFormatConverterOptions()
+        o.format = .wav
+        o.sampleRate = AudioDefaults.sampleRate
+        o.bitsPerChannel = 16
+        o.channels = 2
+        o.bitDepthRule = .any
+        return o
+    }()
 }

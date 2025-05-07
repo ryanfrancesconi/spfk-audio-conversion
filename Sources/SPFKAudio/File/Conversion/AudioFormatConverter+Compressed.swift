@@ -126,15 +126,15 @@ extension AudioFormatConverter {
     /// Convert to compressed first creating a tmp file to PCM to allow more flexible conversion
     /// options to work.
     func convertCompressed() async throws {
-        guard let inputURL = inputURL else {
+        guard let inputURL else {
             throw NSError(description: "Input file can't be nil.")
         }
 
-        guard let outputURL = outputURL else {
+        guard let outputURL else {
             throw NSError(description: "Output file can't be nil.")
         }
 
-        guard let options = options else {
+        guard let options else {
             throw NSError(description: "Options can't be nil.")
         }
 

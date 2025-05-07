@@ -2,6 +2,7 @@
 
 import AVFoundation
 import Foundation
+import SPFKMetadata
 import SPFKUtils
 
 /// AudioFormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
@@ -89,7 +90,15 @@ public class AudioFormatConverter {
             throw NSError(description: "Output file can't be nil.")
         }
 
-        let inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
+        var inputFormat: AudioFileType
+
+        if inputURL.pathExtension == "",
+           let ext = (try? MetaAudioFileFormat.getExtensions(for: inputURL))?.first {
+            inputFormat = AudioFileType(pathExtension: ext)
+
+        } else {
+            inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
+        }
 
         // verify inputFormat, only allow files with path extensions for speed?
         guard AudioFormatConverter.inputFormats.contains(inputFormat) else {
