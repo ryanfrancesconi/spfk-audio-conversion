@@ -6,25 +6,22 @@ import SPFKUtils
 // MARK: - internal helper functions
 
 public extension AudioFormatConverter {
-    func convertToPCM(completionHandler: Callback? = nil) {
+    func convertToPCM() async throws {
         guard let inputURL else {
-            completionHandler?(Self.createError(message: "Input file can't be nil."))
-            return
+            throw NSError(description: "Input file can't be nil.")
         }
+
         guard let outputURL else {
-            completionHandler?(Self.createError(message: "Output file can't be nil."))
-            return
+            throw NSError(description: "Output file can't be nil.")
         }
 
         guard let options, let outputFormat = options.format else {
-            completionHandler?(Self.createError(message: "Options can't be nil."))
-            return
+            throw NSError(description: "Options can't be nil.")
         }
 
         guard outputFormat == .aiff || outputFormat == .wav || outputFormat == .caf,
               var format = outputFormat.audioFileTypeID else {
-            completionHandler?(Self.createError(message: "Output file must be caf, wav or aif but it is \(outputFormat)"))
-            return
+            throw NSError(description: "Output file must be caf, wav or aif but it is \(outputFormat)")
         }
 
         // This might want to be an option or throw an error
@@ -64,13 +61,11 @@ public extension AudioFormatConverter {
         }
 
         if noErr != ExtAudioFileOpenURL(inputURL as CFURL, &inputFile) {
-            completionHandler?(Self.createError(message: "Unable to open the input file."))
-            return
+            throw NSError(description: "Unable to open the input file.")
         }
 
         guard let strongInputFile = inputFile else {
-            completionHandler?(Self.createError(message: "Unable to open the input file."))
-            return
+            throw NSError(description: "Unable to open the input file.")
         }
 
         var inputDescription = AudioStreamBasicDescription()
@@ -80,8 +75,7 @@ public extension AudioFormatConverter {
                                             kExtAudioFileProperty_FileDataFormat,
                                             &inputDescriptionSize,
                                             &inputDescription) {
-            completionHandler?(Self.createError(message: "Unable to get the input file data format."))
-            return
+            throw NSError(description: "Unable to get the input file data format.")
         }
 
         var outputDescription = AudioFormatConverter.createOutputDescription(options: options,
@@ -95,15 +89,8 @@ public extension AudioFormatConverter {
             outputDescription.mChannelsPerFrame != inputDescription.mChannelsPerFrame ||
             outputDescription.mBitsPerChannel != inputDescription.mBitsPerChannel else {
             Log.error("No conversion is needed, formats are the same. Copying to", outputURL)
-            // just copy it?
-            do {
-                try FileManager.default.copyItem(at: inputURL, to: outputURL)
-                completionHandler?(nil)
 
-            } catch {
-                Log.error(error)
-                completionHandler?(error)
-            }
+            try FileManager.default.copyItem(at: inputURL, to: outputURL)
             return
         }
 
@@ -116,16 +103,13 @@ public extension AudioFormatConverter {
                                         &outputFile)
 
         if err != noErr {
-            let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(err.string) (\(err.fourCharCodeToString() ?? "?"))"
-            completionProxy(error: Self.createError(message: message),
-                            completionHandler: completionHandler)
-            return
+            let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(err.string) (\(err.fourCharCodeToString() ?? "?")"
+
+            throw NSError(description: message)
         }
 
         guard let strongOutputFile = outputFile else {
-            completionProxy(error: Self.createError(message: "Output file is nil."),
-                            completionHandler: completionHandler)
-            return
+            throw NSError(description: "Output file is nil.")
         }
 
         // The format must be linear PCM (kAudioFormatLinearPCM).
@@ -136,19 +120,16 @@ public extension AudioFormatConverter {
                                             kExtAudioFileProperty_ClientDataFormat,
                                             inputDescriptionSize,
                                             &outputDescription) {
-            completionProxy(error: Self.createError(message: "Unable to set data format on input file."),
-                            completionHandler: completionHandler)
-            return
+            throw NSError(description: "Unable to set data format on input file.")
         }
 
         if noErr != ExtAudioFileSetProperty(strongOutputFile,
                                             kExtAudioFileProperty_ClientDataFormat,
                                             inputDescriptionSize,
                                             &outputDescription) {
-            completionProxy(error: Self.createError(message: "Unable to set the output file data format."),
-                            completionHandler: completionHandler)
-            return
+            throw NSError(description: "Unable to set the output file data format.")
         }
+
         let bufferByteSize: UInt32 = 32768
         var srcBuffer = [UInt8](repeating: 0, count: Int(bufferByteSize))
         var sourceFrameOffset: UInt32 = 0
@@ -196,18 +177,8 @@ public extension AudioFormatConverter {
             }
         }
 
-        Task { @MainActor [error] in
-            if let error {
-                Log.error(error.localizedDescription)
-
-                self.completionProxy(
-                    error: error,
-                    completionHandler: completionHandler
-                )
-            } else {
-                // no errors
-                completionHandler?(nil)
-            }
+        if let error {
+            throw error
         }
     }
 

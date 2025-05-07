@@ -5,7 +5,7 @@ import SPFKUtils
 
 // MARK: - internal helper functions
 
-public extension AudioFormatConverter {
+extension AudioFormatConverter {
     /// Example of the most simplistic AVFoundation conversion.
     /// With this approach you can't really specify any settings other than the limited presets.
     /// No sample rate conversion in this. This isn't used in the public methods but is here
@@ -17,7 +17,7 @@ public extension AudioFormatConverter {
     /// +exportPresetsCompatibleWithAsset: to obtain a list of presets that are compatible
     /// with a specific AVAsset.*
 
-    func convertCompressed(presetName: String) async throws -> URL {
+    public func convertCompressed(presetName: String) async throws -> URL {
         guard let inputURL = inputURL else {
             throw Self.createError(message: "Input file can't be nil.")
         }
@@ -46,19 +46,17 @@ public extension AudioFormatConverter {
         return outputURL
     }
 
-    func convertToMP3(completionHandler: Callback? = nil) {
+    func convertToMP3() async throws {
         guard var inputURL else {
-            completionHandler?(Self.createError(message: "Input file can't be nil."))
-            return
+            throw NSError(description: "Input file can't be nil.")
         }
+
         guard let outputURL else {
-            completionHandler?(Self.createError(message: "Output file can't be nil."))
-            return
+            throw NSError(description: "Output file can't be nil.")
         }
 
         guard let options else {
-            completionHandler?(Self.createError(message: "Options can't be nil."))
-            return
+            throw NSError(description: "Options can't be nil.")
         }
 
         let inputExt = inputURL.pathExtension.lowercased()
@@ -81,7 +79,7 @@ public extension AudioFormatConverter {
                                                      outputURL: temp,
                                                      options: tempOptions)
 
-            tempConverter.convertToPCM()
+            try await tempConverter.convertToPCM()
 
             if temp.exists {
                 inputURL = temp
@@ -89,10 +87,11 @@ public extension AudioFormatConverter {
             }
         }
 
-        processConvertToMP3(inputURL: inputURL,
-                            outputURL: outputURL,
-                            options: options,
-                            completionHandler: completionHandler)
+        try await processConvertToMP3(
+            inputURL: inputURL,
+            outputURL: outputURL,
+            options: options
+        )
 
         if let tempFile = tempFile {
             Log.debug("Removing temp file at", tempFile.path)
@@ -100,55 +99,47 @@ public extension AudioFormatConverter {
         }
     }
 
-    private func processConvertToMP3(inputURL: URL,
-                                     outputURL: URL,
-                                     options: AudioFormatConverterOptions,
-                                     completionHandler: Callback? = nil) {
+    private func processConvertToMP3(
+        inputURL: URL,
+        outputURL: URL,
+        options: AudioFormatConverterOptions
+    ) async throws {
         // check input channels
-        guard let avfile = try? AVAudioFile(forReading: inputURL) else {
-            completionHandler?(Self.createError(message: "Failed to open input file: \(inputURL.lastPathComponent)"))
-            return
-        }
+        let avfile = try AVAudioFile(forReading: inputURL)
 
         guard avfile.fileFormat.channelCount <= 2 else {
-            completionHandler?(Self.createError(message: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)"))
-            return
+            throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
         }
 
-        SoxUtils.convertMP3(input: inputURL.path,
-                            output: outputURL.path,
-                            bitRate: options.bitRate / 1000, // sox bit rate is kbps
-                            sampleRate: options.sampleRate)
+        sox.convertMP3(
+            input: inputURL,
+            output: outputURL,
+            bitRate: options.bitRate / 1000, // sox bit rate is kbps
+            sampleRate: options.sampleRate
+        )
 
         guard outputURL.exists else {
-            completionHandler?(Self.createError(message: "Failed to convert to MP3: \(inputURL.lastPathComponent)"))
-            return
+            throw NSError(description: "Failed to convert to MP3: \(inputURL.lastPathComponent)")
         }
-
-        completionHandler?(
-            outputURL.exists ? nil : Self.createError(message: "Failed to convert to MP3: \(inputURL.lastPathComponent)")
-        )
     }
 
     /// Convert to compressed first creating a tmp file to PCM to allow more flexible conversion
     /// options to work.
-    func convertCompressed(completionHandler: Callback? = nil) {
+    func convertCompressed() async throws {
         guard let inputURL = inputURL else {
-            completionHandler?(Self.createError(message: "Input file can't be nil."))
-            return
+            throw NSError(description: "Input file can't be nil.")
         }
+
         guard let outputURL = outputURL else {
-            completionHandler?(Self.createError(message: "Output file can't be nil."))
-            return
+            throw NSError(description: "Output file can't be nil.")
         }
 
         guard let options = options else {
-            completionHandler?(Self.createError(message: "Options can't be nil."))
-            return
+            throw NSError(description: "Options can't be nil.")
         }
 
         if options.format == .mp3 {
-            convertToMP3(completionHandler: completionHandler)
+            try await convertToMP3()
             return
         }
 
@@ -162,90 +153,67 @@ public extension AudioFormatConverter {
         tempOptions.channels = options.channels
         tempOptions.format = .wav
 
-        let tempConverter = AudioFormatConverter(inputURL: inputURL,
-                                                 outputURL: tempFile,
-                                                 options: tempOptions)
+        let tempConverter = AudioFormatConverter(
+            inputURL: inputURL,
+            outputURL: tempFile,
+            options: tempOptions
+        )
 
-        tempConverter.start { error in
-            if let error = error {
-                completionHandler?(Self.createError(message: "Failed to convert input to PCM: \(error.localizedDescription)"))
-                return
-            }
+        try await tempConverter.start()
 
-            self.inputURL = tempFile
+        self.inputURL = tempFile
 
-            self.convertPCMToCompressed { error in
-                try? FileManager.default.removeItem(at: tempFile)
-                completionHandler?(error)
-            }
-        }
+        try await self.convertPCMToCompressed()
+
+        try? FileManager.default.removeItem(at: tempFile)
     }
 
     /// The AVFoundation way. *This doesn't currently handle compressed input - only compressed output.*
-    func convertPCMToCompressed(completionHandler: Callback? = nil) {
+    func convertPCMToCompressed() async throws {
         guard let inputURL else {
-            completionHandler?(Self.createError(message: "Input file can't be nil."))
-            return
+            throw NSError(description: "Input file can't be nil.")
         }
+
         guard let outputURL else {
-            completionHandler?(Self.createError(message: "Output file can't be nil."))
-            return
+            throw NSError(description: "Output file can't be nil.")
         }
 
         guard let options, let outputFormat = options.format else {
-            completionHandler?(Self.createError(message: "Options can't be nil."))
-            return
+            throw NSError(description: "Options can't be nil.")
         }
 
         // verify outputFormat
         guard AudioFormatConverter.outputFormats.contains(outputFormat) else {
-            completionHandler?(Self.createError(message: "The output file format isn't able to be produced by this class."))
-            return
+            throw NSError(description: "The output file format isn't able to be produced by this class.")
         }
 
         let asset = AVURLAsset(url: inputURL)
-        do {
-            self.reader = try AVAssetReader(asset: asset)
+        self.reader = try AVAssetReader(asset: asset)
 
-        } catch let err as NSError {
-            completionHandler?(err)
-            return
-        }
-
-        guard let reader = reader else {
-            completionHandler?(Self.createError(message: "Unable to setup the AVAssetReader."))
-            return
+        guard let reader else {
+            throw NSError(description: "Unable to setup the AVAssetReader.")
         }
 
         guard let inputFormat = asset.audioFormat else {
-            completionHandler?(Self.createError(message: "Unable to read the input file format."))
-            return
+            throw NSError(description: "Unable to read the input file format.")
         }
 
         switch outputFormat {
         case .m4a, .mp4, .aiff, .caf, .wav:
             break
         default:
-            Log.error("Unsupported output format: \(outputFormat)")
-            return
+            throw NSError(description: "Unsupported output format: \(outputFormat)")
         }
 
         guard let format = outputFormat.avFileType,
               let formatKey = outputFormat.audioFormatID else {
-            Log.error("Unsupported output format: \(outputFormat)")
-            return
+            throw NSError(description: "Unsupported output format: \(outputFormat)")
         }
 
-        do {
-            self.writer = try AVAssetWriter(outputURL: outputURL, fileType: format)
-        } catch let err as NSError {
-            completionHandler?(err)
-            return
-        }
+        self.writer = try AVAssetWriter(outputURL: outputURL, fileType: format)
 
-        guard let writer = writer else {
-            completionHandler?(Self.createError(message: "Unable to setup the AVAssetWriter."))
-            return
+        guard let writer else {
+            throw NSError(description: "Unable to setup the AVAssetWriter.")
         }
 
         // 1. chosen option. 2. same as input file. 3. 16 bit
@@ -299,81 +267,92 @@ public extension AudioFormatConverter {
         let hint = asset.audioFormat?.formatDescription
 
         let writerInput = AVAssetWriterInput(mediaType: .audio, outputSettings: outputSettings, sourceFormatHint: hint)
+
         writer.add(writerInput)
 
         guard let track = asset.tracks(withMediaType: .audio).first else {
-            completionProxy(error: Self.createError(message: "No audio was found in the input file."),
-                            completionHandler: completionHandler)
-            return
+            throw NSError(description: "No audio was found in the input file.")
         }
 
         let readerOutput = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
+
         guard reader.canAdd(readerOutput) else {
-            completionProxy(error: Self.createError(message: "Unable to add reader output."),
-                            completionHandler: completionHandler)
-            return
+            throw NSError(description: "Unable to add reader output.")
         }
+
         reader.add(readerOutput)
 
         if !writer.startWriting() {
-            Log.error("Failed to start writing. Error:", writer.error?.localizedDescription)
-            completionProxy(error: writer.error,
-                            completionHandler: completionHandler)
-            return
+            throw writer.error ?? NSError(description: "Failed to start writing")
         }
 
         writer.startSession(atSourceTime: .zero)
 
         if !reader.startReading() {
-            Log.error("Failed to start reading. Error:", reader.error?.localizedDescription)
-            completionProxy(error: reader.error,
-                            completionHandler: completionHandler)
-            return
+            throw reader.error ?? NSError(description: "Failed to start reading")
         }
 
-        let queue = DispatchQueue(label: "com.audiodesigndesk.ADD.FormatConverter.convertAsset")
+        try await withCheckedThrowingContinuation { [weak self] (continuation: CheckedContinuation<Void, Error>) in
+            guard let self else { return }
 
-        // session.progress could be sent out via a delegate for this session
-        writerInput.requestMediaDataWhenReady(on: queue, using: {
-            var processing = true // safety flag to prevent runaway loops if errors
-
-            while writerInput.isReadyForMoreMediaData, processing {
-                if reader.status == .reading,
-                   let buffer = readerOutput.copyNextSampleBuffer() {
-                    writerInput.append(buffer)
-
+            self.write(reader: reader, readerOutput: readerOutput, writer: writer, writerInput: writerInput) { error in
+                if let error {
+                    continuation.resume(throwing: error)
                 } else {
-                    writerInput.markAsFinished()
-
-                    switch reader.status {
-                    case .failed:
-                        Log.error("Conversion failed with error", reader.error)
-                        writer.cancelWriting()
-                        self.completionProxy(error: reader.error, completionHandler: completionHandler)
-                    case .cancelled:
-                        Log.error("Conversion cancelled")
-                        self.completionProxy(error: Self.createError(message: "Process cancelled"),
-                                             completionHandler: completionHandler)
-                    case .completed:
-                        // writer.endSession(atSourceTime: asset.duration)
-                        writer.finishWriting {
-                            switch writer.status {
-                            case .failed:
-                                Log.error("Conversion failed at finishWriting")
-                                self.completionProxy(error: writer.error,
-                                                     completionHandler: completionHandler)
-                            default:
-                                // no errors
-                                // Log.error("Conversion complete")
-                                completionHandler?(nil)
-                            }
-                        }
-                    default:
-                        break
-                    }
-                    processing = false
+                    continuation.resume()
                 }
             }
-        }) // requestMediaDataWhenReady
+        }
+
+        await writer.finishWriting()
+    }
+
+    private func write(
+        reader: AVAssetReader,
+        readerOutput: AVAssetReaderOutput,
+        writer: AVAssetWriter,
+        writerInput: AVAssetWriterInput,
+        completionHandler: @escaping (Error?) -> Void
+    ) {
+        let queue = DispatchQueue(label: "com.spongefork.AudioFormatConverter")
+
+        var error: Error?
+
+        // session.progress could be sent out via a delegate for this session
+        writerInput.requestMediaDataWhenReady(
+            on: queue,
+            using: {
+                var processing = true // safety flag to prevent runaway loops if errors
+
+                while writerInput.isReadyForMoreMediaData, processing {
+                    if reader.status == .reading, let buffer = readerOutput.copyNextSampleBuffer() {
+                        writerInput.append(buffer)
+
+                    } else {
+                        writerInput.markAsFinished()
+
+                        switch reader.status {
+                        case .failed:
+                            writer.cancelWriting()
+                            error = reader.error ?? NSError(description: "Conversion failed with error")
+
+                        case .cancelled:
+                            Log.error("Conversion cancelled")
+                            error = NSError(description: "Conversion cancelled")
+
+                        case .completed:
+                            break
+
+                        default:
+                            break
+                        }
+
+                        completionHandler(error)
+                        processing = false
+                        break
+                    }
+                }
+            }
+        )
     }
 }

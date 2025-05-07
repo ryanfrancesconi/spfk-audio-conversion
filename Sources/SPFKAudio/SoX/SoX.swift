@@ -13,21 +13,28 @@ import SPFKUtils
 
  EFFECTS: allpass band bandpass bandreject bass bend biquad chorus channels compand contrast dcshift deemph delay dither divide+ downsample earwax echo echos equalizer fade fir firfit+ flanger gain highpass hilbert input# ladspa loudness lowpass mcompand noiseprof noisered norm oops output# overdrive pad phaser pitch rate remix repeat reverb reverse riaa silence sinc spectrogram speed splice stat stats stretch swap synth tempo treble tremolo trim upsample vad vol
  */
-public enum SoxUtils {
-    public static func convert(input: String, output: String, bitDepth: UInt32?, sampleRate: Double?) {
+public struct SoX {
+    private let sox = SoxWrapper()
+
+    public init() {}
+
+    public func convert(input: URL, output: URL, bitDepth: UInt32?, sampleRate: Double?) {
         // Log.debug(input, "to:", output, bits, sampleRate)
 
+        let inputPath = input.path
+        let outputPath = output.path
+
         if let bitDepth, let sampleRate {
-            SoxWrapper.convert(input, output: output, bits: String(bitDepth), sampleRate: String(sampleRate))
+            sox.convert(inputPath, output: outputPath, bits: String(bitDepth), sampleRate: String(sampleRate))
 
         } else if let bitDepth {
-            SoxWrapper.convert(input, output: output, bits: String(bitDepth))
+            sox.convert(inputPath, output: outputPath, bits: String(bitDepth))
 
         } else if let sampleRate {
-            SoxWrapper.convert(input, output: output, sampleRate: String(sampleRate))
+            sox.convert(inputPath, output: outputPath, sampleRate: String(sampleRate))
 
         } else {
-            SoxWrapper.convert(input, output: output)
+            sox.convert(inputPath, output: outputPath)
         }
     }
 
@@ -50,59 +57,63 @@ public enum SoxUtils {
 
      In order to squeeze the selection of VBR into the the −C value float we use negative numbers to select VRR. -4.2 would select default VBR encoding (size) with high quality (speed). One special case is 0, which is a valid VBR encoding parameter but not a valid bitrate. Compression value of 0 is always treated as a high quality vbr, as a result both -0.2 and 0.2 are treated as highest quality VBR (size) and high quality (speed).
      */
-    public static func convertMP3(
-        input: String,
-        output: String,
+    public func convertMP3(
+        input: URL,
+        output: URL,
         bitRate: UInt32?,
         sampleRate: Double?
     ) {
         // Log.debug(input, "to:", output, bitRate, sampleRate)
 
+        let inputPath = input.path
+        let outputPath = output.path
+
         if let bitRate, let sampleRate {
-            SoxWrapper.convert(input, output: output, bitRate: String(bitRate) + ".2", sampleRate: String(sampleRate))
+            sox.convert(inputPath, output: outputPath, bitRate: String(bitRate) + ".2", sampleRate: String(sampleRate))
 
         } else if let bitRate {
-            SoxWrapper.convert(input, output: output, bitRate: String(bitRate) + ".2")
+            sox.convert(inputPath, output: outputPath, bitRate: String(bitRate) + ".2")
 
         } else if let sampleRate {
-            SoxWrapper.convert(input, output: output, sampleRate: String(sampleRate))
+            sox.convert(inputPath, output: outputPath, sampleRate: String(sampleRate))
 
         } else {
-            SoxWrapper.convert(input, output: output)
+            sox.convert(inputPath, output: outputPath)
         }
     }
 
     // TODO: allow for trim fade time
     // doesn't accept 32bit files
     // needs error handling
-    public static func trim(
-        input: String,
-        output: String,
+    public func trim(
+        input: URL,
+        output: URL,
         timeChunk: TimeChunk
     ) -> Bool {
         trim(input: input, output: output, startTime: timeChunk.start, endTime: timeChunk.end)
     }
 
-    public static func trim(
-        input: String,
-        output: String,
+    public func trim(
+        input: URL,
+        output: URL,
         startTime: TimeInterval,
         endTime: TimeInterval = 0
     ) -> Bool {
         var endTimeStr: String = "0"
+
         if endTime > 0 {
             endTimeStr = "=" + String(endTime)
         }
 
-        SoxWrapper.trim(input, output: output, startTime: String(startTime), endTime: endTimeStr)
+        sox.trim(input.path, output: output.path, startTime: String(startTime), endTime: endTimeStr)
 
-        return FileManager.default.fileExists(atPath: output)
+        return output.exists
     }
 
     /// Split stereo files to dual mono
     ///        sox infile.wav outfile.L.wav remix 1
     ///        sox infile.wav outfile.R.wav remix 2
-    public static func exportSplitStereo(
+    public func exportSplitStereo(
         input source: URL,
         destination: URL? = nil,
         newName: String? = nil,
@@ -133,11 +144,11 @@ public enum SoxUtils {
         let url2 = outputBin.appendingPathComponent(right)
 
         if overwrite || !url1.exists {
-            SoxWrapper.remix(source.path, output: url1.path, channel: "1")
+            sox.remix(source.path, output: url1.path, channel: "1")
         }
 
         if overwrite || url1.exists {
-            SoxWrapper.remix(source.path, output: url2.path, channel: "2")
+            sox.remix(source.path, output: url2.path, channel: "2")
         }
 
         guard url1.exists, url2.exists else {
@@ -148,7 +159,7 @@ public enum SoxUtils {
     }
 
     /// Export all channels as mono files
-    public static func exportChannels(
+    public func exportChannels(
         input source: URL,
         destination: URL? = nil,
         newName: String? = nil
@@ -171,7 +182,7 @@ public enum SoxUtils {
             let url = outputBin.appendingPathComponent(filename)
 
             // TODO: needs error handling
-            SoxWrapper.remix(source.path, output: url.path, channel: channel.string)
+            sox.remix(source.path, output: url.path, channel: channel.string)
 
             urls.append(url)
         }
@@ -180,7 +191,7 @@ public enum SoxUtils {
     }
 
     /// Mix a stereo file to mono
-    public static func stereoToMono(
+    public func stereoToMono(
         source: URL,
         destination: URL? = nil,
         newName: String? = nil,
@@ -197,7 +208,7 @@ public enum SoxUtils {
 
         let url1 = outputBin.appendingPathComponent(left)
 
-        SoxWrapper.remix(source.path, output: url1.path, channel: "1")
+        sox.remix(source.path, output: url1.path, channel: "1")
 
         guard url1.exists else {
             // failed
@@ -208,18 +219,20 @@ public enum SoxUtils {
     }
 
     /// sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
-    public static func createMultiChannelWave(
-        input files: [String],
-        output: String
+    public func createMultiChannelWave(
+        input files: [URL],
+        output: URL
     ) -> Bool {
         let inputs = files.filter {
-            FileManager.default.fileExists(atPath: $0)
+            $0.exists
         }
 
         guard inputs.isNotEmpty else { return false }
 
-        SoxWrapper.createMultiChannelWave(inputs, output: output)
+        let paths = inputs.map { $0.path }
 
-        return FileManager.default.fileExists(atPath: output)
+        sox.createMultiChannelWave(paths, output: output.path)
+
+        return output.exists
     }
 }

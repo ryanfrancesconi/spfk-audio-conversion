@@ -1381,12 +1381,12 @@ static char const * vu(unsigned channel) {
     static struct timeval then;
     static char const *const text[][2] = {
         /* White: 2dB steps */
-        { "",       ""                                           }, { "-",      "-"                                    }, { "=",     "="                             }, { "-=",   "=-"               },
-        { "==",     "=="                                         }, { "-==",    "==-"                                  }, { "===",   "==="                           }, { "-===", "===-"             },
-        { "====",   "===="                                       }, { "-====",  "====-"                                }, { "=====", "====="                         },
-        { "-=====", "=====-"                                     }, { "======", "======"                               },
+        { "",       ""                                                                         }, { "-",      "-"                                                             }, { "=",     "="                                                 }, { "-=",   "=-"                         },
+        { "==",     "=="                                                                       }, { "-==",    "==-"                                                           }, { "===",   "==="                                               }, { "-===", "===-"                       },
+        { "====",   "===="                                                                     }, { "-====",  "====-"                                                         }, { "=====", "====="                                             },
+        { "-=====", "=====-"                                                                   }, { "======", "======"                                                        },
         /* Red: 1dB steps */
-        { "!=====", "=====!"                                     },
+        { "!=====", "=====!"                                                                   },
     };
     int const red = 1, white = array_length(text) - red;
     double const MAX = SOX_SAMPLE_MAX, MIN = SOX_SAMPLE_MIN;
@@ -2175,129 +2175,9 @@ static void display_supported_effects(void) {
 }
 
 static void usage(char const *message) {
-    /*
-       const sox_version_info_t *info = sox_version_info();
-       size_t i;
-       static char const *const lines1[] = {
-        "SPECIAL FILENAMES (infile, outfile):",
-        "-                        Pipe/redirect input/output (stdin/stdout); may need -t",
-        "-d, --default-device     Use the default audio device (where available)",
-        "-n, --null               Use the `null' file handler; e.g. with synth effect",
-        "-p, --sox-pipe           Alias for `-t sox -'"
-       };
-       static char const *const linesPopen[] = {
-        "\nSPECIAL FILENAMES (infile only):",
-        "\"|program [options] ...\" Pipe input from external program (where supported)",
-        "http://server/file       Use the given URL as input file (where supported)"
-       };
-       static char const *const lines2[] = {
-        "",
-        "GLOBAL OPTIONS (gopts) (can be specified at any point before the first effect):",
-        "--buffer BYTES           Set the size of all processing buffers (default 8192)",
-        "--clobber                Don't prompt to overwrite output file (default)",
-        "--combine concatenate    Concatenate all input files (default for sox, rec)",
-        "--combine sequence       Sequence all input files (default for play)",
-        "-D, --no-dither          Don't dither automatically",
-        "--dft-min NUM            Minimum size (log2) for DFT processing (default 10)",
-        "--effects-file FILENAME  File containing effects and options",
-        "-G, --guard              Use temporary files to guard against clipping",
-        "-h, --help               Display version number and usage information",
-        "--help-effect NAME       Show usage of effect NAME, or NAME=all for all",
-        "--help-format NAME       Show info on format NAME, or NAME=all for all",
-        "--i, --info              Behave as soxi(1)",
-        "--input-buffer BYTES     Override the input buffer size (default: as --buffer)",
-        "--no-clobber             Prompt to overwrite output file",
-        "-m, --combine mix        Mix multiple input files (instead of concatenating)",
-        "--combine mix-power      Mix to equal power (instead of concatenating)",
-        "-M, --combine merge      Merge multiple input files (instead of concatenating)"
-       };
-       static char const *const linesMagic[] = {
-        "--magic                  Use `magic' file-type detection"
-       };
-       static char const *const linesThreads[] = {
-        "--multi-threaded         Enable parallel effects channels processing"
-       };
-       static char const *const lines3[] = {
-        "--norm                   Guard (see --guard) & normalise",
-        "--play-rate-arg ARG      Default `rate' argument for auto-resample with `play'",
-        "--plot gnuplot|octave    Generate script to plot response of filter effect",
-        "-q, --no-show-progress   Run in quiet mode; opposite of -S",
-        "--replay-gain track|album|off  Default: off (sox, rec), track (play)",
-        "-R                       Use default random numbers (same on each run of SoX)",
-        "-S, --show-progress      Display progress while processing audio data",
-        "--single-threaded        Disable parallel effects channels processing",
-        "--temp DIRECTORY         Specify the directory to use for temporary files",
-        "-T, --combine multiply   Multiply samples of corresponding channels from all",
-        "                         input files (instead of concatenating)",
-        "--version                Display version number of SoX and exit",
-        "-V[LEVEL]                Increment or set verbosity level (default 2); levels:",
-        "                           1: failure messages",
-        "                           2: warnings",
-        "                           3: details of processing",
-        "                           4-6: increasing levels of debug messages",
-        "FORMAT OPTIONS (fopts):",
-        "Input file format options need only be supplied for files that are headerless.",
-        "Output files will have the same format as the input file where possible and not",
-        "overridden by any of various means including providing output format options.",
-        "",
-        "-v|--volume FACTOR       Input file volume adjustment factor (real number)",
-        "--ignore-length          Ignore input file length given in header; read to EOF",
-        "-t|--type FILETYPE       File type of audio",
-        "-e|--encoding ENCODING   Set encoding (ENCODING may be one of signed-integer,",
-        "                         unsigned-integer, floating-point, mu-law, a-law,",
-        "                         ima-adpcm, ms-adpcm, gsm-full-rate)",
-        "-b|--bits BITS           Encoded sample size in bits",
-        "-N|--reverse-nibbles     Encoded nibble-order",
-        "-X|--reverse-bits        Encoded bit-order",
-        "--endian little|big|swap Encoded byte-order; swap means opposite to default",
-        "-L/-B/-x                 Short options for the above",
-        "-c|--channels CHANNELS   Number of channels of audio data; e.g. 2 = stereo",
-        "-r|--rate RATE           Sample rate of audio",
-        "-C|--compression FACTOR  Compression factor for output format",
-        "--add-comment TEXT       Append output file comment",
-        "--comment TEXT           Specify comment text for the output file",
-        "--comment-file FILENAME  File containing comment text for the output file",
-     #if HAVE_GLOB_H
-        "--no-glob                Don't `glob' wildcard match the following filename",
-     #endif
-        ""
-       };
-
-       if (!(sox_globals.verbosity > 2)) {
-        display_SoX_version(stdout);
-        putchar('\n');
-       }
-
-       if (message) lsx_fail("%s\n", message);
-
-       printf("Usage summary: [gopts] [[fopts] infile]... [fopts]%s [effect [effopt]]...\n\n",
-           sox_mode == sox_play ? "" : " outfile");
-       for (i = 0; i < array_length(lines1); ++i) {
-        puts(lines1[i]);
-       }
-       if (info->flags & sox_version_have_popen)
-        for (i = 0; i < array_length(linesPopen); ++i) {
-            puts(linesPopen[i]);
-        }
-       for (i = 0; i < array_length(lines2); ++i) {
-        puts(lines2[i]);
-       }
-       if (info->flags & sox_version_have_magic)
-        for (i = 0; i < array_length(linesMagic); ++i) {
-            puts(linesMagic[i]);
-        }
-       if (info->flags & sox_version_have_threads)
-        for (i = 0; i < array_length(linesThreads); ++i) {
-            puts(linesThreads[i]);
-        }
-       for (i = 0; i < array_length(lines3); ++i) {
-        puts(lines3[i]);
-       }
-       display_supported_formats();
-       display_supported_effects();
-       printf("EFFECT OPTIONS (effopts): effect dependent; see --help-effect\n");
-     */
-    sox_error(message != NULL);
+    if (message != NULL) {
+        fprintf(stderr, "SoX Error: %s\n", message);
+    }
 }
 
 static void usage_effect(char const *name) {
@@ -2486,52 +2366,52 @@ static char const *const getoptstr =
     "+b:c:de:hmnpqr:t:v:xBC:DGLMNRSTV::X";
 
 static struct lsx_option_t const long_options[] = {
-    { "add-comment",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "buffer",           lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "combine",          lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "comment-file",     lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "comment",          lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "endian",           lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "input-buffer",     lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "interactive",      lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "help-effect",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "help-format",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "no-glob",          lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "plot",             lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "replay-gain",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "version",          lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "output",           lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "effects-file",     lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "temp",             lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "single-threaded",  lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "ignore-length",    lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "norm",             lsx_option_arg_optional,             NULL,                                   0                                                                                                                                                                 },
-    { "magic",            lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "play-rate-arg",    lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
-    { "clobber",          lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "no-clobber",       lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "multi-threaded",   lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                 },
-    { "dft-min",          lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                 },
+    { "add-comment",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "buffer",           lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "combine",          lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "comment-file",     lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "comment",          lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "endian",           lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "input-buffer",     lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "interactive",      lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "help-effect",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "help-format",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "no-glob",          lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "plot",             lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "replay-gain",      lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "version",          lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "output",           lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "effects-file",     lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "temp",             lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "single-threaded",  lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "ignore-length",    lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "norm",             lsx_option_arg_optional,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "magic",            lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "play-rate-arg",    lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "clobber",          lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "no-clobber",       lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "multi-threaded",   lsx_option_arg_none,                 NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
+    { "dft-min",          lsx_option_arg_required,             NULL,                                   0                                                                                                                                                                                                                                                                                                                                           },
 
-    { "bits",             lsx_option_arg_required,             NULL,                                   'b'                                                                                                                                                               },
-    { "channels",         lsx_option_arg_required,             NULL,                                   'c'                                                                                                                                                               },
-    { "compression",      lsx_option_arg_required,             NULL,                                   'C'                                                                                                                                                               },
-    { "default-device",   lsx_option_arg_none,                 NULL,                                   'd'                                                                                                                                                               },
-    { "no-dither",        lsx_option_arg_none,                 NULL,                                   'D'                                                                                                                                                               },
-    { "encoding",         lsx_option_arg_required,             NULL,                                   'e'                                                                                                                                                               },
-    { "help",             lsx_option_arg_none,                 NULL,                                   'h'                                                                                                                                                               },
-    { "null",             lsx_option_arg_none,                 NULL,                                   'n'                                                                                                                                                               },
-    { "no-show-progress", lsx_option_arg_none,                 NULL,                                   'q'                                                                                                                                                               },
-    { "pipe",             lsx_option_arg_none,                 NULL,                                   'p'                                                                                                                                                               },
-    { "rate",             lsx_option_arg_required,             NULL,                                   'r'                                                                                                                                                               },
-    { "reverse-bits",     lsx_option_arg_none,                 NULL,                                   'X'                                                                                                                                                               },
-    { "reverse-nibbles",  lsx_option_arg_none,                 NULL,                                   'N'                                                                                                                                                               },
-    { "show-progress",    lsx_option_arg_none,                 NULL,                                   'S'                                                                                                                                                               },
-    { "type",             lsx_option_arg_required,             NULL,                                   't'                                                                                                                                                               },
-    { "volume",           lsx_option_arg_required,             NULL,                                   'v'                                                                                                                                                               },
-    { "guard",            lsx_option_arg_none,                 NULL,                                   'G'                                                                                                                                                               },
+    { "bits",             lsx_option_arg_required,             NULL,                                   'b'                                                                                                                                                                                                                                                                                                                                         },
+    { "channels",         lsx_option_arg_required,             NULL,                                   'c'                                                                                                                                                                                                                                                                                                                                         },
+    { "compression",      lsx_option_arg_required,             NULL,                                   'C'                                                                                                                                                                                                                                                                                                                                         },
+    { "default-device",   lsx_option_arg_none,                 NULL,                                   'd'                                                                                                                                                                                                                                                                                                                                         },
+    { "no-dither",        lsx_option_arg_none,                 NULL,                                   'D'                                                                                                                                                                                                                                                                                                                                         },
+    { "encoding",         lsx_option_arg_required,             NULL,                                   'e'                                                                                                                                                                                                                                                                                                                                         },
+    { "help",             lsx_option_arg_none,                 NULL,                                   'h'                                                                                                                                                                                                                                                                                                                                         },
+    { "null",             lsx_option_arg_none,                 NULL,                                   'n'                                                                                                                                                                                                                                                                                                                                         },
+    { "no-show-progress", lsx_option_arg_none,                 NULL,                                   'q'                                                                                                                                                                                                                                                                                                                                         },
+    { "pipe",             lsx_option_arg_none,                 NULL,                                   'p'                                                                                                                                                                                                                                                                                                                                         },
+    { "rate",             lsx_option_arg_required,             NULL,                                   'r'                                                                                                                                                                                                                                                                                                                                         },
+    { "reverse-bits",     lsx_option_arg_none,                 NULL,                                   'X'                                                                                                                                                                                                                                                                                                                                         },
+    { "reverse-nibbles",  lsx_option_arg_none,                 NULL,                                   'N'                                                                                                                                                                                                                                                                                                                                         },
+    { "show-progress",    lsx_option_arg_none,                 NULL,                                   'S'                                                                                                                                                                                                                                                                                                                                         },
+    { "type",             lsx_option_arg_required,             NULL,                                   't'                                                                                                                                                                                                                                                                                                                                         },
+    { "volume",           lsx_option_arg_required,             NULL,                                   'v'                                                                                                                                                                                                                                                                                                                                         },
+    { "guard",            lsx_option_arg_none,                 NULL,                                   'G'                                                                                                                                                                                                                                                                                                                                         },
 
-    { NULL,               0,                                   NULL,                                   0                                                                                                                                                                 }
+    { NULL,               0,                                   NULL,                                   0                                                                                                                                                                                                                                                                                                                                           }
 };
 
 static int opt_index(int val) {
@@ -2585,17 +2465,17 @@ enum {
 };
 
 static lsx_enum_item const encodings[] = {
-    { "signed-integer",   encoding_signed_integer                                                                                                         },
-    { "unsigned-integer", encoding_unsigned_integer                                                                                                       },
-    { "floating-point",   encoding_floating_point                                                                                                         },
-    { "ms-adpcm",         encoding_ms_adpcm                                                                                                               },
-    { "ima-adpcm",        encoding_ima_adpcm                                                                                                              },
-    { "oki-adpcm",        encoding_oki_adpcm                                                                                                              },
-    { "gsm-full-rate",    encoding_gsm_full_rate                                                                                                          },
-    { "u-law",            encoding_u_law                                                                                                                  },
-    { "mu-law",           encoding_u_law                                                                                                                  },
-    { "a-law",            encoding_a_law                                                                                                                  },
-    { 0,                  0                                                                                                                               }
+    { "signed-integer",   encoding_signed_integer                                                                                                                                                                                              },
+    { "unsigned-integer", encoding_unsigned_integer                                                                                                                                                                                            },
+    { "floating-point",   encoding_floating_point                                                                                                                                                                                              },
+    { "ms-adpcm",         encoding_ms_adpcm                                                                                                                                                                                                    },
+    { "ima-adpcm",        encoding_ima_adpcm                                                                                                                                                                                                   },
+    { "oki-adpcm",        encoding_oki_adpcm                                                                                                                                                                                                   },
+    { "gsm-full-rate",    encoding_gsm_full_rate                                                                                                                                                                                               },
+    { "u-law",            encoding_u_law                                                                                                                                                                                                       },
+    { "mu-law",           encoding_u_law                                                                                                                                                                                                       },
+    { "a-law",            encoding_a_law                                                                                                                                                                                                       },
+    { 0,                  0                                                                                                                                                                                                                    }
 };
 
 static int enum_option(char const *arg, int option_index, lsx_enum_item const *items) {
@@ -3439,9 +3319,12 @@ int sox_main_private(int argc, char *argv[]) {
         combine_method = sox_concatenate;
     }
 
+    size_t expected_count = (size_t)(is_serial(combine_method) ? 1 : 2);
+
     /* Make sure we got at least the required # of input filenames */
-    if (input_count < (size_t)(is_serial(combine_method) ? 1 : 2)) {
-        usage("Not enough input filenames specified");
+    if (input_count < expected_count) {
+        // ignoring this right now
+        // usage("Not enough input filenames specified");
     }
 
     /* Check for misplaced input/output-specific options */

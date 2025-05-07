@@ -5,19 +5,25 @@
 
 @implementation SoxWrapper
 
-+ (void)createMultiChannelWave:(NSArray *)inputs
+- (void)createMultiChannelWave:(NSArray *)inputs
                         output:(NSString *)output {
     NSLog(@"createMultiChannelWave");
 
     int count = 2;
 
-    char *argv[3 + inputs.count];
+    // sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
+    char *argv[2 + inputs.count + 1];
+
     argv[0] = (char *)"sox";
     argv[1] = (char *)"-M";
 
     // add each input path
-    for (NSString *object in inputs) {
-        argv[count++] = (char *)object.UTF8String;
+    for (id object in inputs) {
+        NSLog(object);
+
+        NSString *value = (NSString *)object;
+
+        argv[count++] = (char *)value.UTF8String;
     }
 
     // then the file to create
@@ -27,7 +33,7 @@
 }
 
 // TODO: error handling
-+ (void)remix:(NSString *)input
+- (void)remix:(NSString *)input
        output:(NSString *)output
       channel:(NSString *)channel
 {
@@ -42,7 +48,7 @@
 }
 
 // TODO: error handling
-+ (void)convert:(NSString *)input
+- (void)convert:(NSString *)input
          output:(NSString *)output
            bits:(NSString *)bits
      sampleRate:(NSString *)sampleRate
@@ -60,7 +66,7 @@
 }
 
 // TODO: error handling
-+ (void)convert:(NSString *)input
+- (void)convert:(NSString *)input
          output:(NSString *)output
            bits:(NSString *)bits
 {
@@ -75,7 +81,7 @@
 }
 
 // TODO: error handling
-+ (void)convert:(NSString *)input
+- (void)convert:(NSString *)input
          output:(NSString *)output
      sampleRate:(NSString *)sampleRate
 {
@@ -90,7 +96,7 @@
 }
 
 // TODO: error handling
-+ (void)convert:(NSString *)input
+- (void)convert:(NSString *)input
          output:(NSString *)output
 {
     char *argv[3];
@@ -102,7 +108,7 @@
 }
 
 // TODO: error handling
-+ (void)convert:(NSString *)input
+- (void)convert:(NSString *)input
          output:(NSString *)output
         bitRate:(NSString *)bitRate
      sampleRate:(NSString *)sampleRate
@@ -119,7 +125,7 @@
     sox_main(7, argv);
 }
 
-+ (void)convert:(NSString *)input
+- (void)convert:(NSString *)input
          output:(NSString *)output
         bitRate:(NSString *)bitRate
 {
@@ -134,7 +140,7 @@
 }
 
 // TODO: error handling
-+ (void)remix2:(NSString *)input
+- (void)remix2:(NSString *)input
         output:(NSString *)output
        channel:(NSString *)channel {
     /* All libSoX applications must start by initialising the SoX library */
@@ -204,7 +210,7 @@
 }
 
 // TODO: better error handling
-+ (void) trim:(NSString *)input
+- (void) trim:(NSString *)input
        output:(NSString *)output
     startTime:(NSString *)startTime
       endTime:(NSString *)endTime {
@@ -291,7 +297,7 @@
 ///
 /// libsndfile based channel extraction
 /// http://disis.music.vt.edu/eric/LyonSoftware/demux/
-+ (int)demux:(NSString *)input
+- (int)demux:(NSString *)input
       output:(NSString *)output
      channel:(NSString *)channel
 {
@@ -345,7 +351,7 @@
         framesRead = (int)sf_readf_int(inputSound, inputBuffer, bufferSize);
 
         for (i = 0, j = 0; i < framesRead; i++, j += inHeader.channels) {
-            outputBuffer[i] = inputBuffer[j + chanSelect];
+            outputBuffer[i] = inputBuffer[j - chanSelect];
         }
 
         sf_write_int(outputSound, outputBuffer, framesRead);

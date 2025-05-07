@@ -22,6 +22,8 @@ public class AudioFormatConverter {
 
     // MARK: - private properties
 
+    let sox = SoX()
+
     // The reader needs to exist outside the start func otherwise the async nature of the
     // AVAssetWriterInput will lose its reference
     var reader: AVAssetReader?
@@ -48,58 +50,60 @@ public class AudioFormatConverter {
         options = nil
     }
 
-    // MARK: - TEMP ASYNC wrapper
+    // MARK: - Async
 
+    /// The entry point for file conversionÏ
     public func start() async throws {
-        try await withCheckedThrowingContinuation { [weak self] (continuation: CheckedContinuation<Void, Error>) in
-            guard let self else { return }
-
-            self.start { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                }
-
-                continuation.resume()
-            }
-        }
+        try await process()
     }
 
-    // MARK: - Legacy
+    // MARK: Legacy
 
     /// The entry point for file conversion
     /// - Parameter completionHandler: the callback that will be triggered when process has completed.
     public func start(completionHandler: Callback? = nil) {
+        Task {
+            do {
+                try await self.process()
+
+                Task { @MainActor in
+                    completionHandler?(nil)
+                }
+
+            } catch {
+                Task { @MainActor in
+                    completionHandler?(error)
+                }
+            }
+        }
+    }
+
+    // MARK: -
+
+    private func process() async throws {
         guard let inputURL else {
-            completionHandler?(Self.createError(message: "Input file can't be nil."))
-            return
+            throw NSError(description: "Input file can't be nil.")
         }
 
         guard let outputURL else {
-            completionHandler?(Self.createError(message: "Output file can't be nil."))
-            return
+            throw NSError(description: "Output file can't be nil.")
         }
 
         let inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
 
         // verify inputFormat, only allow files with path extensions for speed?
         guard AudioFormatConverter.inputFormats.contains(inputFormat) else {
-            completionHandler?(Self.createError(message: "The input file format is in an incompatible format: \(inputFormat)"))
-            return
+            throw NSError(description: "The input file format is in an incompatible format: \(inputFormat)")
         }
 
         if outputURL.exists {
             if options?.eraseFile == true {
-                do {
-                    try FileManager.default.removeItem(at: outputURL)
-                    Log.debug("eraseFile == true, removed existing file at", outputURL.path)
+                try FileManager.default.removeItem(at: outputURL)
+                Log.debug("eraseFile == true, removed existing file at", outputURL.path)
 
-                } catch {
-                    completionHandler?(error)
-                }
             } else {
                 let message = "The output file exists already. You need to choose a unique URL or delete the file."
-                completionHandler?(Self.createError(message: message))
-                return
+                throw NSError(description: message)
             }
         }
 
@@ -112,47 +116,23 @@ public class AudioFormatConverter {
         // PCM output, any supported input
         if Self.isPCM(url: outputURL) == true {
             // PCM output
-            convertToPCM(completionHandler: completionHandler)
+            try await convertToPCM()
 
         } else if outputURL.pathExtension.lowercased() == "mp3" {
-            convertToMP3(completionHandler: completionHandler)
+            try await convertToMP3()
 
             // PCM input, compressed output
         } else if Self.isPCM(url: inputURL) == true,
                   Self.isCompressed(url: outputURL) == true {
-            convertPCMToCompressed(completionHandler: completionHandler)
+            try await convertPCMToCompressed()
 
             // Compressed input and output, won't do sample rate
         } else if Self.isCompressed(url: inputURL) == true,
                   Self.isCompressed(url: outputURL) == true {
-            convertCompressed(completionHandler: completionHandler)
+            try await convertCompressed()
 
         } else {
-            completionHandler?(
-                Self.createError(message: "Unable to determine formats for conversion")
-            )
+            throw NSError(description: "Unable to determine formats for conversion")
         }
-    }
-
-    func completionProxy(error: Error?,
-                         deleteOutputOnError: Bool = true,
-                         completionHandler: Callback? = nil) {
-        guard error != nil,
-              deleteOutputOnError,
-              let outputURL,
-              outputURL.exists else {
-            completionHandler?(error)
-            return
-        }
-
-        do {
-            Log.error("Deleting output on error", outputURL.path)
-            try FileManager.default.removeItem(at: outputURL)
-
-        } catch {
-            Log.error("Failed to remove file", outputURL, error.localizedDescription)
-        }
-
-        completionHandler?(error)
     }
 }
