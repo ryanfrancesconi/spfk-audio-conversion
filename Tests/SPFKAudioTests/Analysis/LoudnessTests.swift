@@ -5,6 +5,7 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
+@Suite(.tags(.file))
 final class LoudnessTests: BinTestCase {
     @Test func testMeasureLoudness() async throws {
         let url = BundleResources.shared.tabla_wav

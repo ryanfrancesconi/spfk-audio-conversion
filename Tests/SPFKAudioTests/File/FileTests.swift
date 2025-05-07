@@ -6,7 +6,7 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.file))
 class FileTests: BinTestCase {
     @Test func peak() async throws {
         let input = BundleResources.shared.tabla_wav

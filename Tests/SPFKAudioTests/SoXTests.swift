@@ -5,13 +5,13 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.file))
 class SoXTests: BinTestCase {
     @Test func convertMP3() throws {
         let input = BundleResources.shared.tabla_wav
         let output = bin.appendingPathComponent("test.mp3")
 
-        SoX().convertMP3(input: input.path, output: output.path, bitRate: 256, sampleRate: 48000)
+        SoX().convertMP3(input: input, output: output, bitRate: 256, sampleRate: 48000)
 
         let avFile = try AVAudioFile(forReading: output)
         #expect(avFile.duration == 4.44)
@@ -22,7 +22,7 @@ class SoXTests: BinTestCase {
         let input = BundleResources.shared.tabla_wav
         let output = bin.appendingPathComponent("test.aiff")
 
-        SoX().convert(input: input.path, output: output.path, bitDepth: 24, sampleRate: 48000)
+        SoX().convert(input: input, output: output, bitDepth: 24, sampleRate: 48000)
 
         let avFile = try AVAudioFile(forReading: output)
         #expect(avFile.duration == 4.39375)
@@ -31,8 +31,6 @@ class SoXTests: BinTestCase {
     }
 
     @Test func createMultiChannelWave() throws {
-        deleteBinOnExit = false
-
         let input = BundleResources.shared.tabla_wav
 
         let url1 = bin.appendingPathComponent("wave1.wav")

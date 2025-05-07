@@ -4,7 +4,7 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.file))
 class SoundClassificationTests: BinTestCase {
     @Test func analyze() async throws {
         let url = BundleResources.shared.tabla_wav

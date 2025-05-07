@@ -4,7 +4,7 @@ import AVFoundation
 import SPFKUtils
 import Testing
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.file))
 class DynamicPCMBufferTests: BinTestCase {
     @Test func createElements() throws {
         let url = BundleResources.shared.tabla_wav

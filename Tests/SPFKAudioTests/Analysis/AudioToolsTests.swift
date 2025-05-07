@@ -9,6 +9,7 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
+@Suite(.tags(.file))
 final class AudioToolsTests: BinTestCase {
     @Test func loopedAudio() async throws {
         let url = BundleResources.shared.cowbell_wav

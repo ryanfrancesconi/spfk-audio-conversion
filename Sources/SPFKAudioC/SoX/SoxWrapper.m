@@ -5,6 +5,8 @@
 
 @implementation SoxWrapper
 
+char *_sox = "sox";
+
 - (void)createMultiChannelWave:(NSArray *)inputs
                         output:(NSString *)output {
     NSLog(@"createMultiChannelWave");
@@ -14,13 +16,11 @@
     // sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
     char *argv[2 + inputs.count + 1];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)"-M";
 
     // add each input path
     for (id object in inputs) {
-        NSLog(object);
-
         NSString *value = (NSString *)object;
 
         argv[count++] = (char *)value.UTF8String;
@@ -39,7 +39,7 @@
 {
     char *argv[5];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)output.UTF8String;
     argv[3] = (char *)"remix";
@@ -55,7 +55,7 @@
 {
     char *argv[7];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)"-b";
     argv[3] = (char *)bits.UTF8String;
@@ -72,7 +72,7 @@
 {
     char *argv[5];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)"-b";
     argv[3] = (char *)bits.UTF8String;
@@ -87,7 +87,7 @@
 {
     char *argv[5];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)"-r";
     argv[3] = (char *)sampleRate.UTF8String;
@@ -101,7 +101,7 @@
 {
     char *argv[3];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)output.UTF8String;
     sox_main(3, argv);
@@ -115,7 +115,7 @@
 {
     char *argv[7];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)"-C";
     argv[3] = (char *)bitRate.UTF8String;
@@ -131,7 +131,7 @@
 {
     char *argv[5];
 
-    argv[0] = (char *)"sox";
+    argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)"-C";
     argv[3] = (char *)bitRate.UTF8String;
