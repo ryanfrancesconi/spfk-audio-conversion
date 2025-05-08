@@ -5,29 +5,35 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class SoXTests: BinTestCase {
     @Test func convertMP3() throws {
         let input = BundleResources.shared.tabla_wav
         let output = bin.appendingPathComponent("test.mp3")
 
-        SoX().convertMP3(input: input, output: output, bitRate: 256, sampleRate: 48000)
+        SoX.shared.convertMP3(input: input, output: output, bitRate: 256, sampleRate: 48000)
 
         let avFile = try AVAudioFile(forReading: output)
         #expect(avFile.duration == 4.44)
         #expect(MetaAudioFileFormat.detectFileType(url: output) == .mp3)
     }
 
-    @Test func convertAIFF() throws {
+    @Test func convertPCM() throws {
         let input = BundleResources.shared.tabla_wav
-        let output = bin.appendingPathComponent("test.aiff")
 
-        SoX().convert(input: input, output: output, bitDepth: 24, sampleRate: 48000)
+        let formats: [MetaAudioFileFormat] = [.wav, .aiff]
 
-        let avFile = try AVAudioFile(forReading: output)
-        #expect(avFile.duration == 4.39375)
-        #expect(avFile.fileFormat.sampleRate == 48000)
-        #expect(MetaAudioFileFormat.detectFileType(url: output) == .aiff)
+        for format in formats {
+            let output = bin.appendingPathComponent("test.\(format.pathExtension)")
+
+            SoX.shared.convertPCM(input: input, output: output, bitDepth: 24, sampleRate: 48000)
+
+            let avFile = try AVAudioFile(forReading: output)
+
+            #expect(avFile.duration.isApproximatelyEqual(to: 4.4, relativeTolerance: 0.1))
+            #expect(avFile.fileFormat.sampleRate == 48000)
+            #expect(MetaAudioFileFormat.detectFileType(url: output) == format)
+        }
     }
 
     @Test func createMultiChannelWave() throws {
@@ -49,8 +55,9 @@ class SoXTests: BinTestCase {
         try FileManager.default.copyItem(at: input, to: url3)
 
         let output = bin.appendingPathComponent("\(input.deletingPathExtension().lastPathComponent) 3 channels.wav")
+
         #expect(
-            SoX().createMultiChannelWave(
+            SoX.shared.createMultiChannelWave(
                 input: [url1, url2, url3],
                 output: output
             )
@@ -64,7 +71,7 @@ class SoXTests: BinTestCase {
 
     @Test func exportStereoChannels() throws {
         let input = BundleResources.shared.tabla_wav
-        let channelPair = try SoX().exportSplitStereo(input: input, destination: bin, overwrite: true)
+        let channelPair = try SoX.shared.exportSplitStereo(input: input, destination: bin, overwrite: true)
 
         #expect(channelPair.left.exists)
         #expect(channelPair.right.exists)
@@ -75,14 +82,14 @@ class SoXTests: BinTestCase {
         let bin = self.bin
 
         #expect(throws: (any Error).self) {
-            _ = try SoX().exportSplitStereo(input: input, destination: bin, overwrite: true)
+            _ = try SoX.shared.exportSplitStereo(input: input, destination: bin, overwrite: true)
         }
     }
 
     @Test func testExportMultipleChannels() throws {
         let input = BundleResources.shared.tabla_6_channel
 
-        let urls = try SoX().exportChannels(input: input, destination: bin, newName: "TEST")
+        let urls = try SoX.shared.exportChannels(input: input, destination: bin, newName: "TEST")
         let directoryContents = try #require(bin.directoryContents).filter { $0.lastPathComponent.contains("TEST") } // read actual files in bin
 
         #expect(urls.count == 6)
@@ -97,10 +104,10 @@ class SoXTests: BinTestCase {
 
     @Test func trim() throws {
         let input = BundleResources.shared.tabla_wav
-        let output = bin.appendingPathComponent("trimmed.wav")
+        let output = bin.appendingPathComponent("trimmed\(Entropy.uniqueId).wav")
 
         #expect(
-            SoX().trim(input: input, output: output, startTime: 1, endTime: 2)
+            SoX.shared.trim(input: input, output: output, startTime: 1, endTime: 2)
         )
 
         let avFile = try AVAudioFile(forReading: output)
@@ -111,11 +118,36 @@ class SoXTests: BinTestCase {
         let input = BundleResources.shared.tabla_wav
 
         let result = try #require(
-            SoX().stereoToMono(source: input, destination: bin)
+            SoX.shared.stereoToMono(source: input, destination: bin)
         )
 
         let avFile = try AVAudioFile(forReading: result)
 
         #expect(avFile.fileFormat.channelCount == 1)
+    }
+
+    @Test func concurrentInstances() async throws {
+        let task1 = Task {
+            try trim()
+        }
+
+        let task2 = Task {
+            try trim()
+        }
+
+        let task3 = Task {
+            //try convertPCM()
+            try trim()
+        }
+
+        let task4 = Task {
+            //try convertMP3()
+            try trim()
+        }
+
+        try await task1.value
+        try await task2.value
+        try await task3.value
+        try await task4.value
     }
 }

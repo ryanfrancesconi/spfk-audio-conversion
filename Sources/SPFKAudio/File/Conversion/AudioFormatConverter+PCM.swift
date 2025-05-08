@@ -5,8 +5,8 @@ import SPFKUtils
 
 // MARK: - internal helper functions
 
-public extension AudioFormatConverter {
-    func convertToPCM() async throws {
+extension AudioFormatConverter {
+    public func convertToPCM() async throws {
         guard let inputURL else {
             throw NSError(description: "Input file can't be nil.")
         }
@@ -71,10 +71,12 @@ public extension AudioFormatConverter {
         var inputDescription = AudioStreamBasicDescription()
         var inputDescriptionSize = UInt32(MemoryLayout.stride(ofValue: inputDescription))
 
-        if noErr != ExtAudioFileGetProperty(strongInputFile,
-                                            kExtAudioFileProperty_FileDataFormat,
-                                            &inputDescriptionSize,
-                                            &inputDescription) {
+        if noErr != ExtAudioFileGetProperty(
+            strongInputFile,
+            kExtAudioFileProperty_FileDataFormat,
+            &inputDescriptionSize,
+            &inputDescription
+        ) {
             throw NSError(description: "Unable to get the input file data format.")
         }
 
@@ -95,12 +97,14 @@ public extension AudioFormatConverter {
         }
 
         // Create destination file
-        err = ExtAudioFileCreateWithURL(outputURL as CFURL,
-                                        format,
-                                        &outputDescription,
-                                        nil,
-                                        AudioFileFlags.eraseFile.rawValue, // overwrite old file if present
-                                        &outputFile)
+        err = ExtAudioFileCreateWithURL(
+            outputURL as CFURL,
+            format,
+            &outputDescription,
+            nil,
+            AudioFileFlags.eraseFile.rawValue, // overwrite old file if present
+            &outputFile
+        )
 
         if err != noErr {
             let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(err.string) (\(err.fourCharCodeToString() ?? "?")"
@@ -116,17 +120,21 @@ public extension AudioFormatConverter {
         // You must set this in order to encode or decode a non-PCM file data format.
         // You may set this on PCM files to specify the data format used in your calls
         // to read/write.
-        if noErr != ExtAudioFileSetProperty(strongInputFile,
-                                            kExtAudioFileProperty_ClientDataFormat,
-                                            inputDescriptionSize,
-                                            &outputDescription) {
+        if noErr != ExtAudioFileSetProperty(
+            strongInputFile,
+            kExtAudioFileProperty_ClientDataFormat,
+            inputDescriptionSize,
+            &outputDescription
+        ) {
             throw NSError(description: "Unable to set data format on input file.")
         }
 
-        if noErr != ExtAudioFileSetProperty(strongOutputFile,
-                                            kExtAudioFileProperty_ClientDataFormat,
-                                            inputDescriptionSize,
-                                            &outputDescription) {
+        if noErr != ExtAudioFileSetProperty(
+            strongOutputFile,
+            kExtAudioFileProperty_ClientDataFormat,
+            inputDescriptionSize,
+            &outputDescription
+        ) {
             throw NSError(description: "Unable to set the output file data format.")
         }
 
@@ -181,10 +189,14 @@ public extension AudioFormatConverter {
             throw error
         }
     }
+}
 
-    static func createOutputDescription(options: AudioFormatConverterOptions,
-                                        outputFormatID: AudioFormatID,
-                                        inputDescription: AudioStreamBasicDescription) -> AudioStreamBasicDescription {
+extension AudioFormatConverter {
+    public static func createOutputDescription(
+        options: AudioFormatConverterOptions,
+        outputFormatID: AudioFormatID,
+        inputDescription: AudioStreamBasicDescription
+    ) -> AudioStreamBasicDescription {
         let mFormatID: AudioFormatID = kAudioFormatLinearPCM
 
         let mSampleRate = options.sampleRate ?? inputDescription.mSampleRate
@@ -215,14 +227,39 @@ public extension AudioFormatConverter {
             mFormatFlags &= ~kAudioFormatFlagIsSignedInteger
         }
 
-        return AudioStreamBasicDescription(mSampleRate: mSampleRate,
-                                           mFormatID: mFormatID,
-                                           mFormatFlags: mFormatFlags,
-                                           mBytesPerPacket: mBytesPerPacket,
-                                           mFramesPerPacket: 1,
-                                           mBytesPerFrame: mBytesPerFrame,
-                                           mChannelsPerFrame: mChannelsPerFrame,
-                                           mBitsPerChannel: mBitsPerChannel,
-                                           mReserved: 0)
+        return AudioStreamBasicDescription(
+            mSampleRate: mSampleRate,
+            mFormatID: mFormatID,
+            mFormatFlags: mFormatFlags,
+            mBytesPerPacket: mBytesPerPacket,
+            mFramesPerPacket: 1,
+            mBytesPerFrame: mBytesPerFrame,
+            mChannelsPerFrame: mChannelsPerFrame,
+            mBitsPerChannel: mBitsPerChannel,
+            mReserved: 0
+        )
+    }
+
+    @discardableResult
+    public static func convertToWave(
+        inputURL: URL,
+        outputURL: URL,
+        sampleRate: Double?,
+        bitDepth: UInt32 = 16
+    ) async throws -> URL {
+        var options = AudioFormatConverterOptions()
+        options.bitsPerChannel = bitDepth
+        options.sampleRate = sampleRate
+        options.format = .wav
+
+        let converter = AudioFormatConverter(
+            inputURL: inputURL,
+            outputURL: outputURL,
+            options: options
+        )
+
+        try await converter.convertToPCM()
+
+        return outputURL
     }
 }

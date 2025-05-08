@@ -6,19 +6,43 @@ import SPFKAudioC
 import SPFKMetadata
 import SPFKUtils
 
-/**
- AUDIO FILE FORMATS: 8svx aif aifc aiff aiffc al amb au avr caf cdda cdr cvs cvsd cvu dat dvms f32 f4 f64 f8 fap flac fssd gsm gsrt hcom htk ima ircam la lpc lpc10 lu mat mat4 mat5 maud mp2 mp3 nist ogg paf prc pvf raw s1 s16 s2 s24 s3 s32 s4 s8 sb sd2 sds sf sl sln smp snd sndfile sndr sndt sou sox sph sw txw u1 u16 u2 u24 u3 u32 u4 u8 ub ul uw vms voc vorbis vox w64 wav wavpcm wve xa xi
- PLAYLIST FORMATS: m3u pls
- AUDIO DEVICE DRIVERS: coreaudio
-
- EFFECTS: allpass band bandpass bandreject bass bend biquad chorus channels compand contrast dcshift deemph delay dither divide+ downsample earwax echo echos equalizer fade fir firfit+ flanger gain highpass hilbert input# ladspa loudness lowpass mcompand noiseprof noisered norm oops output# overdrive pad phaser pitch rate remix repeat reverb reverse riaa silence sinc spectrogram speed splice stat stats stretch swap synth tempo treble tremolo trim upsample vad vol
- */
-public struct SoX {
+public class SoX {
     private let sox = SoxWrapper()
 
-    public init() {}
+    // singleton as sox code is full of static variables currently
+    static let shared = SoX()
 
-    public func convert(input: URL, output: URL, bitDepth: UInt32?, sampleRate: Double?) {
+    private init() {}
+
+    // TODO: allow for trim fade time
+    // doesn't accept 32bit files
+    // needs error handling
+    public func trim(
+        input: URL,
+        output: URL,
+        timeChunk: TimeChunk
+    ) -> Bool {
+        trim(input: input, output: output, startTime: timeChunk.start, endTime: timeChunk.end)
+    }
+
+    public func trim(
+        input: URL,
+        output: URL,
+        startTime: TimeInterval,
+        endTime: TimeInterval = 0
+    ) -> Bool {
+        var endTimeStr: String = "0"
+
+        if endTime > 0 {
+            endTimeStr = "=" + String(endTime)
+        }
+
+        sox.trim(input.path, output: output.path, startTime: String(startTime), endTime: endTimeStr)
+
+        return output.exists
+    }
+
+    public func convertPCM(input: URL, output: URL, bitDepth: UInt32?, sampleRate: Double?) {
         // Log.debug(input, "to:", output, bits, sampleRate)
 
         let inputPath = input.path
@@ -80,34 +104,6 @@ public struct SoX {
         } else {
             sox.convert(inputPath, output: outputPath)
         }
-    }
-
-    // TODO: allow for trim fade time
-    // doesn't accept 32bit files
-    // needs error handling
-    public func trim(
-        input: URL,
-        output: URL,
-        timeChunk: TimeChunk
-    ) -> Bool {
-        trim(input: input, output: output, startTime: timeChunk.start, endTime: timeChunk.end)
-    }
-
-    public func trim(
-        input: URL,
-        output: URL,
-        startTime: TimeInterval,
-        endTime: TimeInterval = 0
-    ) -> Bool {
-        var endTimeStr: String = "0"
-
-        if endTime > 0 {
-            endTimeStr = "=" + String(endTime)
-        }
-
-        sox.trim(input.path, output: output.path, startTime: String(startTime), endTime: endTimeStr)
-
-        return output.exists
     }
 
     /// Split stereo files to dual mono

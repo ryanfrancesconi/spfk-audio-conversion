@@ -9,8 +9,6 @@ char *_sox = "sox";
 
 - (void)createMultiChannelWave:(NSArray *)inputs
                         output:(NSString *)output {
-    NSLog(@"createMultiChannelWave");
-
     int count = 2;
 
     // sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
@@ -159,6 +157,7 @@ char *_sox = "sox";
     interm_signal = soxInput->signal; /* NB: deep copy */
 
     sox_encodinginfo_t out_encoding = soxInput->encoding;
+    
     sox_signalinfo_t out_signal = {
         interm_signal.rate,
         1, // mono
@@ -214,15 +213,17 @@ char *_sox = "sox";
        output:(NSString *)output
     startTime:(NSString *)startTime
       endTime:(NSString *)endTime {
+        
     /* All libSoX applications must start by initialising the SoX library */
     if (sox_init() != SOX_SUCCESS) {
-        // error
+        sox_error(1);
         return;
     }
 
     sox_format_t *soxInput, *soxOutput = NULL;
     sox_effects_chain_t *chain;
     sox_effect_t *e;
+
     char *args[10];
 
     soxInput = sox_open_read(input.UTF8String, NULL, NULL, NULL);
@@ -289,6 +290,7 @@ char *_sox = "sox";
     sox_delete_effects_chain(chain);
     sox_close(soxOutput);
     sox_close(soxInput);
+
     sox_quit();
 }
 
@@ -307,6 +309,7 @@ char *_sox = "sox";
 
     SF_INFO inHeader, outHeader;
     SNDFILE *inputSound, *outputSound;
+
     int *inputBuffer;
     int *outputBuffer;
     int framesRead;
@@ -314,6 +317,7 @@ char *_sox = "sox";
 
     strcpy(inFilename, (char *)input.UTF8String);
     strcpy(outFilename, (char *)output.UTF8String);
+
     chanSelect = (char *)channel.UTF8String;
 
     if ((inputSound = sf_open(inFilename, SFM_READ, &inHeader)) == NULL) {

@@ -23,8 +23,6 @@ public class AudioFormatConverter {
 
     // MARK: - private properties
 
-    let sox = SoX()
-
     // The reader needs to exist outside the start func otherwise the async nature of the
     // AVAssetWriterInput will lose its reference
     var reader: AVAssetReader?
@@ -51,37 +49,10 @@ public class AudioFormatConverter {
         options = nil
     }
 
-    // MARK: - Async
+    // MARK: -
 
     /// The entry point for file conversionÏ
     public func start() async throws {
-        try await process()
-    }
-
-    // MARK: Legacy
-
-    /// The entry point for file conversion
-    /// - Parameter completionHandler: the callback that will be triggered when process has completed.
-    public func start(completionHandler: Callback? = nil) {
-        Task {
-            do {
-                try await self.process()
-
-                Task { @MainActor in
-                    completionHandler?(nil)
-                }
-
-            } catch {
-                Task { @MainActor in
-                    completionHandler?(error)
-                }
-            }
-        }
-    }
-
-    // MARK: -
-
-    private func process() async throws {
         guard let inputURL else {
             throw NSError(description: "Input file can't be nil.")
         }

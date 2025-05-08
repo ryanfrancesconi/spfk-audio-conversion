@@ -145,41 +145,36 @@ public class OfflineRenderer {
         send(event: .renderComplete)
     }
 
-    // TODO: REFACTOR: these class var references are bad
+    // TODO: REFACTOR: abortFlag should be Task cancellation
     public func convertAudio() async {
         guard !abortFlag else { return }
 
         var exported = [URL]()
 
         for url in bouncedURLs {
-            let output = await convertAudio(url: url)
+            do {
+                let output = try await convertAudio(url: url)
 
-            guard !abortFlag else {
-                try? output?.delete()
-                return
-            }
+                guard !abortFlag else {
+                    try? output.delete()
+                    return
+                }
 
-            if let output {
                 exported.append(output)
 
                 if url == tempMixURL {
                     convertedMixURL = output
                 }
+
+            } catch {
+                Log.error(error)
             }
         }
 
         convertedFiles += exported
     }
 
-    private func convertAudio(url: URL) async -> URL? {
-        await withCheckedContinuation { continuation in
-            convertAudio(url: url) { output in
-                continuation.resume(returning: output)
-            }
-        }
-    }
-
-    private func convertAudio(url: URL, completionHandler: ((URL?) -> Void)?) {
+    private func convertAudio(url: URL) async throws -> URL {
         var outputName = url.deletingPathExtension().lastPathComponent
 
         outputName = outputName.replacingOccurrences(of: tempString, with: "")
@@ -198,19 +193,14 @@ public class OfflineRenderer {
 
         Log.debug("* Converting", inputURL.path, "to", outputURL.path)
 
-        let converter = AudioFormatConverter(inputURL: inputURL,
-                                             outputURL: outputURL,
-                                             options: currentSettings)
+        let converter = AudioFormatConverter(
+            inputURL: inputURL,
+            outputURL: outputURL,
+            options: currentSettings
+        )
 
-        converter.start { error in
-            if let error {
-                Log.error(error)
-                completionHandler?(nil)
-
-            } else {
-                completionHandler?(outputURL)
-            }
-        }
+        try await converter.start()
+        return outputURL
     }
 
     public func cleanup() {
