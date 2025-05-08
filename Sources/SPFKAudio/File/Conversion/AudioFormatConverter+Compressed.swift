@@ -64,20 +64,22 @@ extension AudioFormatConverter {
 
         var tempFile: URL?
 
-        if !supportedInput {
+        if !supportedInput { // GROSS
             var tempOptions = AudioFormatConverterOptions()
             tempOptions.bitDepthRule = .lessThanOrEqual
             tempOptions.bitsPerChannel = 24
             tempOptions.sampleRate = options.sampleRate
             tempOptions.channels = options.channels
-            tempOptions.format = AudioFileType.wav
+            tempOptions.format = .wav
 
             let tempName = outputURL.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
             let temp = outputURL.deletingLastPathComponent().appendingPathComponent(tempName)
 
-            let tempConverter = AudioFormatConverter(inputURL: inputURL,
-                                                     outputURL: temp,
-                                                     options: tempOptions)
+            let tempConverter = AudioFormatConverter(
+                inputURL: inputURL,
+                outputURL: temp,
+                options: tempOptions
+            )
 
             try await tempConverter.convertToPCM()
 

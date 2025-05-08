@@ -98,7 +98,8 @@ public class AudioFormatConverter {
             // PCM output
             try await convertToPCM()
 
-        } else if outputURL.pathExtension.lowercased() == "mp3" {
+            // special case for MP3 files
+        } else if outputURL.pathExtension.lowercased() == AudioFileType.mp3.pathExtension {
             try await convertToMP3()
 
             // PCM input, compressed output
