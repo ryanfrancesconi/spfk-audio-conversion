@@ -31,21 +31,6 @@ char *_sox = "sox";
 }
 
 // TODO: error handling
-- (void)remix:(NSString *)input
-       output:(NSString *)output
-      channel:(NSString *)channel
-{
-    char *argv[5];
-
-    argv[0] = _sox;
-    argv[1] = (char *)input.UTF8String;
-    argv[2] = (char *)output.UTF8String;
-    argv[3] = (char *)"remix";
-    argv[4] = (char *)channel.UTF8String;
-    sox_main(5, argv);
-}
-
-// TODO: error handling
 - (void)convert:(NSString *)input
          output:(NSString *)output
            bits:(NSString *)bits
@@ -138,6 +123,21 @@ char *_sox = "sox";
 }
 
 // TODO: error handling
+- (void)remix:(NSString *)input
+       output:(NSString *)output
+      channel:(NSString *)channel
+{
+    char *argv[5];
+
+    argv[0] = _sox;
+    argv[1] = (char *)input.UTF8String;
+    argv[2] = (char *)output.UTF8String;
+    argv[3] = (char *)"remix";
+    argv[4] = (char *)channel.UTF8String;
+    sox_main(5, argv);
+}
+
+// TODO: error handling
 - (void)remix2:(NSString *)input
         output:(NSString *)output
        channel:(NSString *)channel {
@@ -157,7 +157,7 @@ char *_sox = "sox";
     interm_signal = soxInput->signal; /* NB: deep copy */
 
     sox_encodinginfo_t out_encoding = soxInput->encoding;
-    
+
     sox_signalinfo_t out_signal = {
         interm_signal.rate,
         1, // mono
@@ -166,9 +166,14 @@ char *_sox = "sox";
         NULL
     };
 
-    soxOutput = sox_open_write(output.UTF8String,
-                               &out_signal,
-                               &out_encoding, NULL, NULL, NULL);
+    soxOutput = sox_open_write(
+        output.UTF8String,
+        &out_signal,
+        &out_encoding,
+        NULL,
+        NULL,
+        NULL
+        );
 
     chain = sox_create_effects_chain(&soxInput->encoding, &soxInput->encoding);
 
@@ -213,7 +218,6 @@ char *_sox = "sox";
        output:(NSString *)output
     startTime:(NSString *)startTime
       endTime:(NSString *)endTime {
-        
     /* All libSoX applications must start by initialising the SoX library */
     if (sox_init() != SOX_SUCCESS) {
         sox_error(1);
@@ -292,78 +296,6 @@ char *_sox = "sox";
     sox_close(soxInput);
 
     sox_quit();
-}
-
-/// This isn't sox. It's sitting in here for a lack of a better place
-/// at the moment.
-///
-/// libsndfile based channel extraction
-/// http://disis.music.vt.edu/eric/LyonSoftware/demux/
-- (int)demux:(NSString *)input
-      output:(NSString *)output
-     channel:(NSString *)channel
-{
-    char inFilename[8192];
-    char outFilename[8192];
-    int chanSelect;
-
-    SF_INFO inHeader, outHeader;
-    SNDFILE *inputSound, *outputSound;
-
-    int *inputBuffer;
-    int *outputBuffer;
-    int framesRead;
-    int i, j;
-
-    strcpy(inFilename, (char *)input.UTF8String);
-    strcpy(outFilename, (char *)output.UTF8String);
-
-    chanSelect = (char *)channel.UTF8String;
-
-    if ((inputSound = sf_open(inFilename, SFM_READ, &inHeader)) == NULL) {
-        printf("\nError : Not able to read input file '%s'\n%s\n", inFilename, sf_strerror(NULL));
-        return 1;
-    }
-
-    if (chanSelect < 0 || chanSelect > inHeader.channels - 1) {
-        printf("selected channel %d is out of range. Legal values are between [0 to %d]\n",
-               chanSelect, inHeader.channels - 1);
-        return 1;
-    }
-
-    outHeader.channels = 1;
-    outHeader.format = inHeader.format;
-    outHeader.samplerate = inHeader.samplerate;
-
-    if ((outputSound = sf_open(outFilename, SFM_WRITE, &outHeader)) == NULL) {
-        printf("\nError : Not able to write output file '%s'\n%s\n", outFilename, sf_strerror(NULL));
-        return 1;
-    }
-
-    if (chanSelect < 0 || chanSelect > inHeader.channels - 1) {
-        printf("selected channel %d is out of range. Legal values are between [0 to %d]\n",
-               chanSelect, inHeader.channels - 1);
-        return 1;
-    }
-
-    int bufferSize = 8192;
-    inputBuffer = (int *)calloc(inHeader.channels * bufferSize, sizeof(int));
-    outputBuffer = (int *)calloc(bufferSize, sizeof(int));
-
-    /* demux loop here - chanSelect determines location within frame to extract sample */
-    do {
-        framesRead = (int)sf_readf_int(inputSound, inputBuffer, bufferSize);
-
-        for (i = 0, j = 0; i < framesRead; i++, j += inHeader.channels) {
-            outputBuffer[i] = inputBuffer[j - chanSelect];
-        }
-
-        sf_write_int(outputSound, outputBuffer, framesRead);
-    } while(framesRead);
-
-    sf_close(outputSound);
-
-    return noErr;
 }
 
 @end

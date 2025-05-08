@@ -6,11 +6,12 @@ import SPFKAudioC
 import SPFKMetadata
 import SPFKUtils
 
-public class SoX {
+public actor SoX {
+    // sox isn't thread safe so access should be isolated to here
     private let sox = SoxWrapper()
 
     // singleton as sox code is full of static variables currently
-    static let shared = SoX()
+    public static let shared = SoX()
 
     private init() {}
 

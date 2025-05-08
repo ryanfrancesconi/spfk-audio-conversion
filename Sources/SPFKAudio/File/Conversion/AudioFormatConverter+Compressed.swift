@@ -111,7 +111,7 @@ extension AudioFormatConverter {
             throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
         }
 
-        SoX.shared.convertMP3(
+        await SoX.shared.convertMP3(
             input: inputURL,
             output: outputURL,
             bitRate: options.bitRate / 1000, // sox bit rate is kbps

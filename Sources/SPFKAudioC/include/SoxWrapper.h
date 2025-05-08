@@ -5,7 +5,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-///  Obj C wrapper for libsox based calls
+///  Obj C wrapper for libsox based calls. Please note that SoX isn't suitable for concurrency and
+///  this API is designed to be used via the SoX object in Swift.
 @interface SoxWrapper : NSObject
 
 - (void)createMultiChannelWave:(NSArray *)inputs
@@ -14,10 +15,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)remix:(NSString *)input
        output:(NSString *)output
       channel:(NSString *)channel;
-
-- (int)demux:(NSString *)input
-      output:(NSString *)output
-     channel:(NSString *)channel;
 
 - (void) trim:(NSString *)input
        output:(NSString *)output
