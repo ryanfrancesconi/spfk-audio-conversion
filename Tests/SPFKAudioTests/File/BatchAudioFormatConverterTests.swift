@@ -12,7 +12,10 @@ class BatchAudioFormatConverterTests: BinTestCase {
         deleteBinOnExit = true
 
         let sources = BundleResources.shared.audioCases.map {
-            let output = bin.appending(component: "\($0.deletingPathExtension().lastPathComponent).m4a", directoryHint: .notDirectory)
+            let output = bin.appending(
+                component: "\($0.deletingPathExtension().lastPathComponent).m4a",
+                directoryHint: .notDirectory
+            )
 
             return AudioFormatConverterSource(
                 input: $0,
@@ -22,13 +25,17 @@ class BatchAudioFormatConverterTests: BinTestCase {
         }
 
         let converter = BatchAudioFormatConverter(inputs: sources)
-        let results = try await converter.start(progressHandler: self)
 
-        #expect(sources.count == 7)
+        let results = try await converter.start(progressHandler: { event in
+            Log.debug(event)
+        })
+
         #expect(sources.count == results.count)
 
         let errors = results.compactMap { $0.error }
-        #expect(errors.count == 2) // two name collisions
+
+        #expect(sources.count == 7) // could change when files are added to tests
+        #expect(errors.count == 2) // could change, two name collisions
 
         #expect(bin.directoryContents?.count == 5)
 
@@ -41,11 +48,5 @@ class BatchAudioFormatConverterTests: BinTestCase {
                 Log.debug("❌ \(source), \(error)")
             }
         }
-    }
-}
-
-extension BatchAudioFormatConverterTests: AsyncProgress1Delegate {
-    func asyncProgress(event: SPFKUtils.AsyncProgress1Event) async {
-        Log.debug(event)
     }
 }

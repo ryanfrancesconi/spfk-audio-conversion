@@ -34,7 +34,7 @@ public struct BatchAudioFormatConverter {
         self.sources = sources
     }
 
-    public func start(progressHandler: AsyncProgress1Delegate? = nil) async throws -> [Result] {
+    public func start(progressHandler: ((AsyncProgress1Event) -> Void)? = nil) async throws -> [Result] {
         try await withThrowingTaskGroup(
             of: Result?.self,
             returning: [Result].self
@@ -72,21 +72,25 @@ public struct BatchAudioFormatConverter {
             var index: Int = batchSize
             var mutableResults = [Result]()
 
+            func sendProgress(for result: Result) {
+                guard let progressHandler else { return }
+
+                let progress: ProgressValue1 = (mutableResults.count.double / count.double)
+
+                let prefix = result.error != nil ? "Error for " : "Converted "
+                let string = prefix + result.source.input.lastPathComponent
+
+                progressHandler(
+                    (string: string, progress: progress)
+                )
+            }
+
             for try await result in taskGroup {
-                guard !Task.isCancelled else {
-                    throw NSError(description: "Cancelled")
-                }
+                try Task.checkCancellation()
 
                 if let result {
                     mutableResults.append(result)
-
-                    if let progressHandler {
-                        let progress: ProgressValue1 = (index.double / count.double)
-
-                        await progressHandler.asyncProgress(
-                            event: (string: "Converting " + result.source.input.lastPathComponent, progress: progress)
-                        )
-                    }
+                    sendProgress(for: result)
                 }
 
                 if index < count {
