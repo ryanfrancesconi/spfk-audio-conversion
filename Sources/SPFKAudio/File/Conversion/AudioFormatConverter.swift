@@ -7,19 +7,7 @@ import SPFKUtils
 
 /// AudioFormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
 public class AudioFormatConverter {
-    /// - Parameter: error This will contain one parameter of type Error which is nil if the conversion was successful.
-    public typealias Callback = (_ error: Error?) -> Void
-
-    // MARK: - properties
-
-    /// The source audio file
-    public var inputURL: URL?
-
-    /// The audio file to be created after conversion
-    public var outputURL: URL?
-
-    /// Options for conversion
-    public var options: AudioFormatConverterOptions?
+    public var source: AudioFormatConverterSource
 
     // MARK: - private properties
 
@@ -30,45 +18,34 @@ public class AudioFormatConverter {
 
     // MARK: - initialization
 
+    public convenience init(inputURL: URL, outputURL: URL, options: AudioFormatConverterOptions? = nil) {
+        let options = options ?? AudioFormatConverterOptions()
+        let source = AudioFormatConverterSource(input: inputURL, output: outputURL, options: options)
+        self.init(source: source)
+    }
+
     /// init with input, output and options - then start()
-    public init(
-        inputURL: URL,
-        outputURL: URL,
-        options: AudioFormatConverterOptions? = nil
-    ) {
-        self.inputURL = inputURL
-        self.outputURL = outputURL
-        self.options = options ?? AudioFormatConverterOptions()
+    public init(source: AudioFormatConverterSource) {
+        self.source = source
     }
 
     deinit {
         reader = nil
         writer = nil
-        inputURL = nil
-        outputURL = nil
-        options = nil
     }
 
     // MARK: -
 
     /// The entry point for file conversionÏ
     public func start() async throws {
-        guard let inputURL else {
-            throw NSError(description: "Input file can't be nil.")
-        }
-
-        guard let outputURL else {
-            throw NSError(description: "Output file can't be nil.")
-        }
-
         var inputFormat: AudioFileType
 
-        if inputURL.pathExtension == "",
-           let ext = (try? MetaAudioFileFormat.getExtensions(for: inputURL))?.first {
+        if source.input.pathExtension == "",
+           let ext = (try? MetaAudioFileFormat.getExtensions(for: source.input))?.first {
             inputFormat = AudioFileType(pathExtension: ext)
 
         } else {
-            inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
+            inputFormat = AudioFileType(pathExtension: source.input.pathExtension)
         }
 
         // verify inputFormat, only allow files with path extensions for speed?
@@ -76,10 +53,10 @@ public class AudioFormatConverter {
             throw NSError(description: "The input file format is in an incompatible format: \(inputFormat)")
         }
 
-        if outputURL.exists {
-            if options?.eraseFile == true {
-                try FileManager.default.removeItem(at: outputURL)
-                Log.debug("eraseFile == true, removed existing file at", outputURL.path)
+        if source.output.exists {
+            if source.options.eraseFile {
+                try FileManager.default.removeItem(at: source.output)
+                Log.debug("eraseFile == true, removed existing file at", source.output.path)
 
             } else {
                 let message = "The output file exists already. You need to choose a unique URL or delete the file."
@@ -87,29 +64,29 @@ public class AudioFormatConverter {
             }
         }
 
-        if options?.format == nil {
-            options?.format = AudioFileType(pathExtension: outputURL.pathExtension)
+        if source.options.format == nil {
+            source.options.format = AudioFileType(pathExtension: source.output.pathExtension)
         }
 
         // Format checks are necessary as AVAssetReader has opinions about compressed
 
         // PCM output, any supported input
-        if Self.isPCM(url: outputURL) == true {
+        if Self.isPCM(url: source.output) == true {
             // PCM output
             try await convertToPCM()
 
             // special case for MP3 files
-        } else if outputURL.pathExtension.lowercased() == AudioFileType.mp3.pathExtension {
+        } else if source.output.pathExtension.lowercased() == AudioFileType.mp3.pathExtension {
             try await convertToMP3()
 
             // PCM input, compressed output
-        } else if Self.isPCM(url: inputURL) == true,
-                  Self.isCompressed(url: outputURL) == true {
+        } else if Self.isPCM(url: source.input) == true,
+                  Self.isCompressed(url: source.output) == true {
             try await convertPCMToCompressed()
 
-            // Compressed input and output, won't do sample rate
-        } else if Self.isCompressed(url: inputURL) == true,
-                  Self.isCompressed(url: outputURL) == true {
+            // Compressed input and output
+        } else if Self.isCompressed(url: source.input) == true,
+                  Self.isCompressed(url: source.output) == true {
             try await convertCompressed()
 
         } else {

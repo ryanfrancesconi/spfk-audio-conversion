@@ -7,7 +7,7 @@ import SPFKUtils
 import Testing
 
 @Suite(.serialized, .tags(.file))
-class FileTests: BinTestCase {
+class AVAudioFileTests: BinTestCase {
     @Test func peak() async throws {
         let input = BundleResources.shared.tabla_wav
         let avFile = try AVAudioFile(forReading: input)

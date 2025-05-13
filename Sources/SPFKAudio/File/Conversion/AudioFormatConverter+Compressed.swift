@@ -3,8 +3,6 @@
 import AVFoundation
 import SPFKUtils
 
-// MARK: - internal helper functions
-
 extension AudioFormatConverter {
     /// Example of the most simplistic AVFoundation conversion.
     /// With this approach you can't really specify any settings other than the limited presets.
@@ -17,63 +15,51 @@ extension AudioFormatConverter {
     /// +exportPresetsCompatibleWithAsset: to obtain a list of presets that are compatible
     /// with a specific AVAsset.*
 
-    public func convertCompressed(presetName: String) async throws -> URL {
-        guard let inputURL = inputURL else {
-            throw Self.createError(message: "Input file can't be nil.")
-        }
-
-        guard let outputURL = outputURL else {
-            throw Self.createError(message: "Output file can't be nil.")
-        }
-
-        let asset = AVURLAsset(url: inputURL)
-
-        guard let session = AVAssetExportSession(asset: asset, presetName: presetName) else {
+    public func convert(with presetName: String) async throws -> URL {
+        guard let session = AVAssetExportSession(asset: source.asset, presetName: presetName) else {
             throw NSError(description: "Failed to create export session")
         }
 
         let list = await session.compatibleFileTypes
 
         guard let outputFileType: AVFileType = list.first else {
-            throw Self.createError(message: "Unable to determine a compatible file type from \(inputURL.path)")
+            throw Self.createError(message: "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)")
         }
 
-        session.outputURL = outputURL
+        session.outputURL = source.output
         session.outputFileType = outputFileType
 
         await session.export()
 
-        return outputURL
+        return source.output
     }
+}
 
+// MARK: - internal helper functions
+
+extension AudioFormatConverter {
     func convertToMP3() async throws {
-        guard var inputURL else {
-            throw NSError(description: "Input file can't be nil.")
-        }
+        var inputURL = source.input
 
-        guard let outputURL else {
-            throw NSError(description: "Output file can't be nil.")
-        }
+        let inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
+        let supportedInput = inputFormat == .wav ||
+            inputFormat == .aiff ||
+            inputFormat == .mp3
 
-        guard let options else {
-            throw NSError(description: "Options can't be nil.")
-        }
-
-        let inputExt = inputURL.pathExtension.lowercased()
-        let supportedInput = inputExt.hasPrefix("wav") || inputExt.hasPrefix("aif") || inputExt.hasPrefix("mp3")
+        let supportedChannels = source.asset.audioFormat?.channelCount ?? 0 <= 2
 
         var tempFile: URL?
 
-        if !supportedInput { // GROSS
+        if !supportedInput || !supportedChannels { // GROSS
             var tempOptions = AudioFormatConverterOptions()
             tempOptions.bitDepthRule = .lessThanOrEqual
             tempOptions.bitsPerChannel = 24
-            tempOptions.sampleRate = options.sampleRate
-            tempOptions.channels = options.channels
+            tempOptions.sampleRate = source.options.sampleRate
+            tempOptions.channels = source.options.channels ?? 2
             tempOptions.format = .wav
 
-            let tempName = outputURL.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
-            let temp = outputURL.deletingLastPathComponent().appendingPathComponent(tempName)
+            let tempName = source.output.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
+            let temp = source.output.deletingLastPathComponent().appendingPathComponent(tempName)
 
             let tempConverter = AudioFormatConverter(
                 inputURL: inputURL,
@@ -91,11 +77,11 @@ extension AudioFormatConverter {
 
         try await processConvertToMP3(
             inputURL: inputURL,
-            outputURL: outputURL,
-            options: options
+            outputURL: source.output,
+            options: source.options
         )
 
-        if let tempFile = tempFile {
+        if let tempFile {
             Log.debug("Removing temp file at", tempFile.path)
             try? tempFile.delete()
         }
@@ -128,22 +114,13 @@ extension AudioFormatConverter {
     /// Convert to compressed first creating a tmp file to PCM to allow more flexible conversion
     /// options to work.
     func convertCompressed() async throws {
-        guard let inputURL else {
-            throw NSError(description: "Input file can't be nil.")
-        }
-
-        guard let outputURL else {
-            throw NSError(description: "Output file can't be nil.")
-        }
-
-        guard let options else {
-            throw NSError(description: "Options can't be nil.")
-        }
-
-        if options.format == .mp3 {
+        if source.options.format == .mp3 {
             try await convertToMP3()
             return
         }
+
+        let inputURL = source.input
+        let outputURL = source.output
 
         let tempName = outputURL.deletingPathExtension().lastPathComponent + "_TEMP.wav"
         let tempFile = outputURL.deletingLastPathComponent().appendingPathComponent(tempName)
@@ -151,8 +128,8 @@ extension AudioFormatConverter {
         var tempOptions = AudioFormatConverterOptions()
         tempOptions.bitDepthRule = .lessThanOrEqual
         tempOptions.bitsPerChannel = 24
-        tempOptions.sampleRate = options.sampleRate
-        tempOptions.channels = options.channels
+        tempOptions.sampleRate = source.options.sampleRate
+        tempOptions.channels = source.options.channels
         tempOptions.format = .wav
 
         let tempConverter = AudioFormatConverter(
@@ -161,27 +138,22 @@ extension AudioFormatConverter {
             options: tempOptions
         )
 
+        defer {
+            Log.debug("Removing \(tempFile)")
+            try? FileManager.default.removeItem(at: tempFile)
+        }
+
         try await tempConverter.start()
 
-        self.inputURL = tempFile
+        source.input = tempFile
 
         try await self.convertPCMToCompressed()
-
-        try? FileManager.default.removeItem(at: tempFile)
     }
 
     /// The AVFoundation way. *This doesn't currently handle compressed input - only compressed output.*
     func convertPCMToCompressed() async throws {
-        guard let inputURL else {
-            throw NSError(description: "Input file can't be nil.")
-        }
-
-        guard let outputURL else {
-            throw NSError(description: "Output file can't be nil.")
-        }
-
-        guard let options, let outputFormat = options.format else {
-            throw NSError(description: "Options can't be nil.")
+        guard let outputFormat = source.options.format else {
+            throw NSError(description: "Options format can't be nil.")
         }
 
         // verify outputFormat
@@ -189,14 +161,13 @@ extension AudioFormatConverter {
             throw NSError(description: "The output file format isn't able to be produced by this class.")
         }
 
-        let asset = AVURLAsset(url: inputURL)
-        self.reader = try AVAssetReader(asset: asset)
+        self.reader = try AVAssetReader(asset: source.asset)
 
         guard let reader else {
             throw NSError(description: "Unable to setup the AVAssetReader.")
         }
 
-        guard let inputFormat = asset.audioFormat else {
+        guard let inputFormat = source.asset.audioFormat else {
             throw NSError(description: "Unable to read the input file format.")
         }
 
@@ -212,7 +183,7 @@ extension AudioFormatConverter {
             throw NSError(description: "Unsupported output format: \(outputFormat)")
         }
 
-        self.writer = try AVAssetWriter(outputURL: outputURL, fileType: format)
+        self.writer = try AVAssetWriter(outputURL: source.output, fileType: format)
 
         guard let writer else {
             throw NSError(description: "Unable to setup the AVAssetWriter.")
@@ -221,7 +192,7 @@ extension AudioFormatConverter {
         // 1. chosen option. 2. same as input file. 3. 16 bit
         // optional in case of compressed audio. That said, the other conversion methods are actually used in
         // that case
-        let bitDepth = (options.bitsPerChannel ?? inputFormat.settings[AVLinearPCMBitDepthKey] ?? 16) as Any
+        let bitDepth = (source.options.bitsPerChannel ?? inputFormat.settings[AVLinearPCMBitDepthKey] ?? 16) as Any
 
         var isFloat = false
 
@@ -229,8 +200,8 @@ extension AudioFormatConverter {
             isFloat = intDepth >= 32
         }
 
-        var sampleRate = options.sampleRate ?? inputFormat.sampleRate
-        let channels = options.channels ?? inputFormat.channelCount
+        var sampleRate = source.options.sampleRate ?? inputFormat.sampleRate
+        let channels = source.options.channels ?? inputFormat.channelCount
 
         if sampleRate == 0 {
             Log.error("Sample rate can't be 0 - assigning to default format of 48k. inputFormat is", inputFormat)
@@ -251,7 +222,7 @@ extension AudioFormatConverter {
                 AVFormatIDKey: formatKey,
                 AVSampleRateKey: sampleRate,
                 AVNumberOfChannelsKey: channels,
-                AVEncoderBitRateKey: Int(options.bitRate) / perChannel,
+                AVEncoderBitRateKey: Int(source.options.bitRate) / perChannel,
                 AVEncoderBitRateStrategyKey: AVAudioBitRateStrategy_Constant,
             ]
         } else {
@@ -262,17 +233,17 @@ extension AudioFormatConverter {
                 AVLinearPCMBitDepthKey: bitDepth,
                 AVLinearPCMIsFloatKey: isFloat,
                 AVLinearPCMIsBigEndianKey: format != .wav,
-                AVLinearPCMIsNonInterleaved: !(options.isInterleaved ?? inputFormat.isInterleaved),
+                AVLinearPCMIsNonInterleaved: !(source.options.isInterleaved ?? inputFormat.isInterleaved),
             ]
         }
 
-        let hint = asset.audioFormat?.formatDescription
+        let hint = source.asset.audioFormat?.formatDescription
 
         let writerInput = AVAssetWriterInput(mediaType: .audio, outputSettings: outputSettings, sourceFormatHint: hint)
 
         writer.add(writerInput)
 
-        guard let track = asset.tracks(withMediaType: .audio).first else {
+        guard let track = source.asset.tracks(withMediaType: .audio).first else {
             throw NSError(description: "No audio was found in the input file.")
         }
 

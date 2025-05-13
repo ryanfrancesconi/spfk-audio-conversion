@@ -1,0 +1,23 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
+import AVFoundation
+import Foundation
+
+public struct AudioFormatConverterSource {
+    /// The source audio file
+    public var input: URL
+
+    /// The audio file to be created after conversion
+    public var output: URL
+
+    /// Options for conversion
+    public var options: AudioFormatConverterOptions
+
+    public private(set) lazy var asset = AVURLAsset(url: input)
+
+    public init(input: URL, output: URL, options: AudioFormatConverterOptions) {
+        self.input = input
+        self.output = output
+        self.options = options
+    }
+}

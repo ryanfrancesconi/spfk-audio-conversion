@@ -7,17 +7,12 @@ import SPFKUtils
 
 extension AudioFormatConverter {
     public func convertToPCM() async throws {
-        guard let inputURL else {
-            throw NSError(description: "Input file can't be nil.")
-        }
-
-        guard let outputURL else {
-            throw NSError(description: "Output file can't be nil.")
-        }
-
-        guard let options, let outputFormat = options.format else {
+        guard let outputFormat = source.options.format else {
             throw NSError(description: "Options can't be nil.")
         }
+
+        let inputURL = source.input
+        let outputURL = source.output
 
         guard outputFormat == .aiff || outputFormat == .wav || outputFormat == .caf,
               var format = outputFormat.audioFileTypeID else {
@@ -80,9 +75,11 @@ extension AudioFormatConverter {
             throw NSError(description: "Unable to get the input file data format.")
         }
 
-        var outputDescription = AudioFormatConverter.createOutputDescription(options: options,
-                                                                             outputFormatID: format,
-                                                                             inputDescription: inputDescription)
+        var outputDescription = AudioFormatConverter.createOutputDescription(
+            options: source.options,
+            outputFormatID: format,
+            inputDescription: inputDescription
+        )
 
         let inputFormat = inputURL.pathExtension.lowercased()
 
