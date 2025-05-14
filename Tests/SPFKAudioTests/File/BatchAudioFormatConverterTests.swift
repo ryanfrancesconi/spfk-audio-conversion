@@ -24,11 +24,9 @@ class BatchAudioFormatConverterTests: BinTestCase {
             )
         }
 
-        let converter = BatchAudioFormatConverter(inputs: sources)
+        let converter = await BatchAudioFormatConverter(inputs: sources)
 
-        let results = try await converter.start(progressHandler: { event in
-            Log.debug(event)
-        })
+        let results = try await converter.start()
 
         #expect(sources.count == results.count)
 
@@ -48,5 +46,11 @@ class BatchAudioFormatConverterTests: BinTestCase {
                 Log.debug("❌ \(source), \(error)")
             }
         }
+    }
+}
+
+extension BatchAudioFormatConverterTests: BatchAudioFormatConverterDelegate {
+    func batchProgress(progressEvent: SPFKUtils.AsyncProgress1Event) async {
+        Log.debug(progressEvent)
     }
 }

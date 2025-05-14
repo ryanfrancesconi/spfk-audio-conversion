@@ -3,9 +3,8 @@
 import AVFoundation
 import SPFKUtils
 
-/// The conversion options, leave any property nil to adopt the value of the input file
+/// The conversion options. In general, leave any property nil to adopt the value of the input file.
 /// bitRate assumes a stereo bit rate and the converter will half it for mono
-///
 public struct AudioFormatConverterOptions {
     public static let bitsPerChannelRange: ClosedRange<UInt32> = 16 ... 32
     public static let bitRange: ClosedRange<UInt32> = 64000 ... 320000

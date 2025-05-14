@@ -3,46 +3,32 @@
 import Foundation
 import SPFKUtils
 
-public struct BatchAudioFormatConverter {
-    public enum Result {
-        case success(source: AudioFormatConverterSource)
-        case failed(source: AudioFormatConverterSource, error: Error)
+public class BatchAudioFormatConverter {
+    public typealias Result = BatchAudioFormatConverterResult
 
-        public var source: AudioFormatConverterSource {
-            switch self {
-            case let .success(source: source):
-                return source
+    public var data = BatchAudioFormatConverterData()
 
-            case let .failed(source: source, error: _):
-                return source
-            }
-        }
+    public weak var delegate: BatchAudioFormatConverterDelegate?
 
-        /// Non nil if the conversion failed for this source
-        public var error: Error? {
-            if case let .failed(_, error) = self {
-                return error
-            }
+    public init() {}
 
-            return nil
-        }
+    public init(inputs sources: [AudioFormatConverterSource]) async {
+        await self.data.update(sources: sources)
     }
 
-    var sources: [AudioFormatConverterSource]
+    public func start() async throws -> [Result] {
+        let collection: [AudioFormatConverterSource] = await data.sources
+        let count = await data.count
+        let batchSize: Int = await data.batchSize
 
-    public init(inputs sources: [AudioFormatConverterSource]) {
-        self.sources = sources
-    }
+        guard collection.isNotEmpty else {
+            throw NSError(description: "No files to process")
+        }
 
-    public func start(progressHandler: ((AsyncProgress1Event) -> Void)? = nil) async throws -> [Result] {
-        try await withThrowingTaskGroup(
+        return try await withThrowingTaskGroup(
             of: Result?.self,
             returning: [Result].self
         ) { taskGroup in
-
-            let collection: [AudioFormatConverterSource] = sources
-            let count = collection.count
-            let batchSize: Int = 8.clamped(to: 0 ... count)
 
             try Task.checkCancellation()
 
@@ -72,17 +58,20 @@ public struct BatchAudioFormatConverter {
             var index: Int = batchSize
             var mutableResults = [Result]()
 
-            func sendProgress(for result: Result) {
-                guard let progressHandler else { return }
+            func sendProgress(for result: Result) async {
+                guard let delegate, count > 0 else { return }
 
-                let progress: ProgressValue1 = (mutableResults.count.double / count.double)
+                await data.increment()
+                let progress: ProgressValue1 = await data.percent
 
-                let prefix = result.error != nil ? "Error for " : "Converted "
-                let string = prefix + result.source.input.lastPathComponent
+                let prefix = result.error != nil ? "Error" : "Converted"
+                // let string = prefix + result.source.input.lastPathComponent
 
-                progressHandler(
-                    (string: string, progress: progress)
+                let event: AsyncProgress1Event = (
+                    string: prefix, progress: progress
                 )
+
+                await delegate.batchProgress(progressEvent: event)
             }
 
             for try await result in taskGroup {
@@ -90,7 +79,7 @@ public struct BatchAudioFormatConverter {
 
                 if let result {
                     mutableResults.append(result)
-                    sendProgress(for: result)
+                    await sendProgress(for: result)
                 }
 
                 if index < count {
@@ -106,4 +95,8 @@ public struct BatchAudioFormatConverter {
             return mutableResults
         }
     }
+}
+
+public protocol BatchAudioFormatConverterDelegate: AnyObject {
+    func batchProgress(progressEvent: AsyncProgress1Event) async
 }
