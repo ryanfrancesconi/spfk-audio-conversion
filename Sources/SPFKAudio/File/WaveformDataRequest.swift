@@ -11,7 +11,8 @@ public struct WaveformDataRequest {
         url: URL,
         samplesPerPixel: Int,
         analysisMode: AnalysisMode = .rms,
-        taper: AUValue = AutomationTaper.audio.taperUp
+        taper: AUValue = AutomationTaper.audio.taperUp,
+        priority: TaskPriority = .high
     ) async throws -> FloatChannelData {
         let audioFile = try AVAudioFile(forReading: url)
 
@@ -19,7 +20,8 @@ public struct WaveformDataRequest {
             audioFile: audioFile,
             samplesPerPixel: samplesPerPixel,
             analysisMode: analysisMode,
-            taper: taper
+            taper: taper,
+            priority: priority
         )
     }
 
@@ -27,7 +29,8 @@ public struct WaveformDataRequest {
         audioFile: AVAudioFile,
         samplesPerPixel: Int,
         analysisMode: AnalysisMode = .rms,
-        taper: AUValue = AutomationTaper.audio.taperUp
+        taper: AUValue = AutomationTaper.audio.taperUp,
+        priority: TaskPriority = .high
     ) async throws -> FloatChannelData {
         // store the current frame
         let currentFrame = audioFile.framePosition
@@ -37,62 +40,73 @@ public struct WaveformDataRequest {
             audioFile.framePosition = currentFrame
         }
 
-        // prevent division by zero, + minimum resolution
-        let samplesPerPixel = max(64, samplesPerPixel)
-        let totalFrames = AVAudioFrameCount(audioFile.length)
+        let task = Task<FloatChannelData, Error>(priority: priority) {
+            // prevent division by zero, + minimum resolution
+            let samplesPerPixel = max(64, samplesPerPixel)
+            let totalFrames = AVAudioFrameCount(audioFile.length)
 
-        guard totalFrames > 0 else {
-            throw NSError(description: "No audio was found in \(audioFile.url.path)")
-        }
-
-        var framesPerBuffer: AVAudioFrameCount = totalFrames / AVAudioFrameCount(samplesPerPixel)
-
-        guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: audioFile.processingFormat,
-            frameCapacity: AVAudioFrameCount(framesPerBuffer)
-        ), buffer.frameCapacity > 0 else {
-            throw NSError(description: "Unable to create buffer")
-        }
-
-        let channelCount = Int(audioFile.processingFormat.channelCount)
-        var data = Array(repeating: [Float](zeros: samplesPerPixel), count: channelCount)
-        var startFrame: AVAudioFramePosition = 0
-
-        for i in 0 ..< samplesPerPixel {
-            try Task.checkCancellation()
-
-            audioFile.framePosition = startFrame
-
-            try audioFile.read(into: buffer, frameCount: framesPerBuffer)
-
-            guard let floatData = buffer.floatChannelData else {
-                throw NSError(description: "Buffer is nil on read")
+            guard totalFrames > 0 else {
+                throw NSError(description: "No audio was found in \(audioFile.url.path)")
             }
 
-            let length = vDSP_Length(buffer.frameLength)
+            var framesPerBuffer: AVAudioFrameCount = totalFrames / AVAudioFrameCount(samplesPerPixel)
 
-            for n in 0 ..< channelCount {
-                var value: Float = 0.0
+            guard let buffer = AVAudioPCMBuffer(
+                pcmFormat: audioFile.processingFormat,
+                frameCapacity: AVAudioFrameCount(framesPerBuffer)
+            ), buffer.frameCapacity > 0 else {
+                throw NSError(description: "Unable to create buffer")
+            }
 
-                if analysisMode == .peak {
-                    var index: vDSP_Length = 0
-                    vDSP_maxvi(floatData[n], 1, &value, &index, length)
+            let channelCount = Int(audioFile.processingFormat.channelCount)
+            var data = Array(repeating: [Float](zeros: samplesPerPixel), count: channelCount)
+            var startFrame: AVAudioFramePosition = 0
 
-                } else {
-                    vDSP_rmsqv(floatData[n], 1, &value, length)
+            for i in 0 ..< samplesPerPixel {
+                try Task.checkCancellation()
+
+                audioFile.framePosition = startFrame
+
+                try audioFile.read(into: buffer, frameCount: framesPerBuffer)
+
+                guard let floatData = buffer.floatChannelData else {
+                    throw NSError(description: "Failed to read from buffer")
                 }
 
-                data[n][i] = value.normalized(from: 0 ... 1, taper: taper)
+                let length = vDSP_Length(buffer.frameLength)
+
+                for n in 0 ..< channelCount {
+                    var value: Float = 0.0
+
+                    if analysisMode == .peak {
+                        var index: vDSP_Length = 0
+                        vDSP_maxvi(floatData[n], 1, &value, &index, length)
+
+                    } else {
+                        // RMS
+                        vDSP_rmsqv(floatData[n], 1, &value, length)
+                    }
+
+                    data[n][i] = value.normalized(from: 0 ... 1, taper: taper)
+                }
+
+                startFrame += AVAudioFramePosition(framesPerBuffer)
+
+                if startFrame + AVAudioFramePosition(framesPerBuffer) > totalFrames {
+                    framesPerBuffer = totalFrames - AVAudioFrameCount(startFrame)
+                    if framesPerBuffer <= 0 { break }
+                }
             }
 
-            startFrame += AVAudioFramePosition(framesPerBuffer)
-
-            if startFrame + AVAudioFramePosition(framesPerBuffer) > totalFrames {
-                framesPerBuffer = totalFrames - AVAudioFrameCount(startFrame)
-                if framesPerBuffer <= 0 { break }
-            }
+            return data
         }
 
-        return data
+        switch await task.result {
+        case let .success(value):
+            return value
+
+        case let .failure(value):
+            throw value
+        }
     }
 }

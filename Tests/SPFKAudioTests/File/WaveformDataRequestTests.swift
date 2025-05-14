@@ -10,7 +10,7 @@ import Testing
 class WaveformDataRequestTests: BinTestCase {
     @Test func getData() async throws {
         let input = BundleResources.shared.tabla_6_channel
-        let data = try await WaveformDataRequest.parse(url: input, samplesPerPixel: 256)
+        let data = try await WaveformDataRequest.parse(url: input, samplesPerPixel: 256, priority: .low)
 
         // channel count for the file
         #expect(data.count == 6)
