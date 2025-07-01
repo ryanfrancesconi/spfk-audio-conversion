@@ -155,7 +155,6 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
 
     /// Replace the contents of the player with this url. Note that if your processingFormat changes
     /// you should dispose this Player and create a new one instead.
-    /// Note, the same URL could be loaded over and over again in the case of renders.
     public func load(url: URL) throws {
         try load(audioFile: try AVAudioFile(forReading: url))
     }

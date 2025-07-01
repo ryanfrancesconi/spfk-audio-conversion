@@ -29,7 +29,9 @@ class WaveformDataRequestTests: BinTestCase {
             } catch {
                 Log.error(error)
 
-                #expect(error.localizedDescription.contains("No audio was found"))
+                #expect(
+                    error.localizedDescription.contains("No audio was found")
+                )
 
                 throw error
             }
