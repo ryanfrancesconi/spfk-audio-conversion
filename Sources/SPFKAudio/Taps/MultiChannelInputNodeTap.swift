@@ -382,7 +382,7 @@ public final class MultiChannelInputNodeTap {
                                            time: time,
                                            write: isRecording)
 
-            } catch let error as NSError {
+            } catch {
                 Log.error("Write failed", error)
             }
         }
