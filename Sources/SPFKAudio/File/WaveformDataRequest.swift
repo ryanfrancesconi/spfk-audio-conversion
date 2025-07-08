@@ -5,7 +5,7 @@ import AVFAudio
 import AVFoundation
 import SPFKUtils
 
-/// Get float channel data from a file suitable for waveform visualization
+/// Get audio data from a file suitable for waveform visualization
 public struct WaveformDataRequest {
     public static func parse(
         url: URL,
