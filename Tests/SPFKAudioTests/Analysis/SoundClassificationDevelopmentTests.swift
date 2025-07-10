@@ -25,6 +25,6 @@ class SoundClassificationDevelopmentTests: BinTestCase {
 
     @Test func knownClassificationsForVersion1() throws {
         let list = try SoundClassification.knownClassificationsForVersion1().sorted()
-        Swift.print(list)
+        Log.debug(list)
     }
 }
