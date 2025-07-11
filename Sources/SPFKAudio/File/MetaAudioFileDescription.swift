@@ -18,7 +18,9 @@ public struct MetaAudioFileDescription: Hashable, Codable {
 
     /// LUFS, true peak and loudness range
     public var loudness: LoudnessDescription?
+}
 
+extension MetaAudioFileDescription {
     public init(parsing url: URL) throws {
         self.url = url
 
