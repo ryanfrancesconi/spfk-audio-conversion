@@ -3,6 +3,7 @@
 import AVFoundation
 import Foundation
 import OTAtomics
+import SPFKMetadata
 import SPFKUtils
 
 /// Wrapper on top of engine renderer with some event handlers

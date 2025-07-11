@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
+import SPFKMetadata
 import SPFKUtils
 
 /// The conversion options. In general, leave any property nil to adopt the value of the input file.
@@ -94,7 +95,7 @@ public struct AudioFormatConverterOptions {
     public init?(audioFile: AVAudioFile) {
         let streamDescription = audioFile.fileFormat.streamDescription.pointee
 
-        format = AudioFileType(rawValue: audioFile.url.pathExtension.lowercased()) ?? .unknown
+        format = AudioFileType(rawValue: audioFile.url.pathExtension.lowercased())
         sampleRate = streamDescription.mSampleRate
         bitsPerChannel = streamDescription.mBitsPerChannel
         channels = streamDescription.mChannelsPerFrame

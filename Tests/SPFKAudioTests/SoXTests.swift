@@ -15,13 +15,13 @@ class SoXTests: BinTestCase {
 
         let avFile = try AVAudioFile(forReading: output)
         #expect(avFile.duration == 4.44)
-        #expect(MetaAudioFileFormat.detectFileType(url: output) == .mp3)
+        #expect(AudioFileType(url: output) == .mp3)
     }
 
     @Test func convertPCM() async throws {
         let input = BundleResources.shared.tabla_wav
 
-        let formats: [MetaAudioFileFormat] = [.wav, .aiff]
+        let formats: [AudioFileType] = [.wav, .aiff]
 
         for format in formats {
             let output = bin.appendingPathComponent("test.\(format.pathExtension)")
@@ -32,7 +32,7 @@ class SoXTests: BinTestCase {
 
             #expect(avFile.duration.isApproximatelyEqual(to: 4.4, relativeTolerance: 0.1))
             #expect(avFile.fileFormat.sampleRate == 48000)
-            #expect(MetaAudioFileFormat.detectFileType(url: output) == format)
+            #expect(AudioFileType(url: output) == format)
         }
     }
 
@@ -66,7 +66,7 @@ class SoXTests: BinTestCase {
         let avFile = try AVAudioFile(forReading: output)
         #expect(avFile.duration == 4.39375)
         #expect(avFile.fileFormat.sampleRate == 48000)
-        #expect(MetaAudioFileFormat.detectFileType(url: output) == .wav)
+        #expect(AudioFileType(url: output) == .wav)
     }
 
     @Test func exportStereoChannels() async throws {

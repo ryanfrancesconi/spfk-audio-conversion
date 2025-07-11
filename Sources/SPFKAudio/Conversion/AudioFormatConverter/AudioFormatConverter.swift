@@ -38,10 +38,11 @@ public class AudioFormatConverter {
 
     /// The entry point for file conversionÏ
     public func start() async throws {
-        var inputFormat: AudioFileType
+        var inputFormat: AudioFileType?
 
         if source.input.pathExtension == "",
-           let ext = (try? MetaAudioFileFormat.getExtensions(for: source.input))?.first {
+           let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
+            
             inputFormat = AudioFileType(pathExtension: ext)
 
         } else {
@@ -49,8 +50,8 @@ public class AudioFormatConverter {
         }
 
         // verify inputFormat, only allow files with path extensions for speed?
-        guard AudioFormatConverter.inputFormats.contains(inputFormat) else {
-            throw NSError(description: "The input file format is in an incompatible format: \(inputFormat)")
+        guard let inputFormat, AudioFormatConverter.inputFormats.contains(inputFormat) else {
+            throw NSError(description: "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")")
         }
 
         if source.output.exists {

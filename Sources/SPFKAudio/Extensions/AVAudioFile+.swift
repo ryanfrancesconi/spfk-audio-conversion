@@ -2,6 +2,7 @@
 
 import Accelerate
 import AVFoundation
+import SPFKMetadata
 import SPFKUtils
 
 extension AVAudioFile {
@@ -89,7 +90,10 @@ extension AVAudioFile {
     ) async throws {
         // if options are nil, create them to match the input file
         let options = options ?? AudioFormatConverterOptions(audioFile: self)
-        let format = options?.format ?? AudioFileType(pathExtension: url.pathExtension)
+
+        guard let format = options?.format ?? AudioFileType(pathExtension: url.pathExtension) else {
+            throw NSError(description: "Unable to determine format for \(url.path)")
+        }
 
         let directory = url.deletingLastPathComponent()
         let filename = url.deletingPathExtension().lastPathComponent
