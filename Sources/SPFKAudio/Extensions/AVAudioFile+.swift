@@ -151,3 +151,22 @@ extension AVAudioFile {
         return try AVAudioFile(url: outputURL, fromBuffer: editedBuffer)
     }
 }
+
+extension AVAudioFile {
+    /// Pull samples from the audio file suitable for visualization
+    public func waveformData(resolution: WaveformDataRequest.Resolution = .medium) async throws -> FloatChannelData {
+        let samplesPerPixel = Int(self.duration * resolution.scale)
+            .clamped(to: resolution.samplesPerPixelRange)
+
+        // Log.debug("Fetching data at", samplesPerPixel, "samplesPerPixel")
+
+        // Pull samples from the audio file
+        let data = try await WaveformDataRequest.parse(
+            audioFile: self,
+            samplesPerPixel: samplesPerPixel,
+            analysisMode: .peak
+        )
+
+        return data
+    }
+}

@@ -6,13 +6,12 @@ import AVFoundation
 import SPFKUtils
 
 /// Get audio data from a file suitable for waveform visualization
-public struct WaveformDataRequest {
+public enum WaveformDataRequest {
     public static func parse(
         url: URL,
         samplesPerPixel: Int,
-        analysisMode: AnalysisMode = .rms,
-        taper: AUValue = AutomationTaper.audio.taperUp,
-        priority: TaskPriority = .high
+        analysisMode: AnalysisMode = .peak,
+        priority: TaskPriority = .medium
     ) async throws -> FloatChannelData {
         let audioFile = try AVAudioFile(forReading: url)
 
@@ -20,7 +19,6 @@ public struct WaveformDataRequest {
             audioFile: audioFile,
             samplesPerPixel: samplesPerPixel,
             analysisMode: analysisMode,
-            taper: taper,
             priority: priority
         )
     }
@@ -28,9 +26,8 @@ public struct WaveformDataRequest {
     public static func parse(
         audioFile: AVAudioFile,
         samplesPerPixel: Int,
-        analysisMode: AnalysisMode = .rms,
-        taper: AUValue = AutomationTaper.audio.taperUp,
-        priority: TaskPriority = .high
+        analysisMode: AnalysisMode = .peak,
+        priority: TaskPriority = .medium
     ) async throws -> FloatChannelData {
         // store the current frame
         let currentFrame = audioFile.framePosition
@@ -87,7 +84,7 @@ public struct WaveformDataRequest {
                         vDSP_rmsqv(floatData[n], 1, &value, length)
                     }
 
-                    data[n][i] = value.normalized(from: 0 ... 1, taper: taper)
+                    data[n][i] = value
                 }
 
                 startFrame += AVAudioFramePosition(framesPerBuffer)
@@ -107,6 +104,36 @@ public struct WaveformDataRequest {
 
         case let .failure(value):
             throw value
+        }
+    }
+}
+
+extension WaveformDataRequest {
+    public enum Resolution {
+        case low
+        case medium
+        case high
+
+        public var samplesPerPixelRange: ClosedRange<Int> {
+            switch self {
+            case .low:
+                return 64 ... 128000
+            case .medium:
+                return 64 ... 256000
+            case .high:
+                return 64 ... 512000
+            }
+        }
+
+        public var scale: Double {
+            switch self {
+            case .low:
+                return 500
+            case .medium:
+                return 1000
+            case .high:
+                return 10000
+            }
         }
     }
 }
