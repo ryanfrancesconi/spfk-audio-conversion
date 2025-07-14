@@ -101,7 +101,7 @@ extension AVAudioFile {
         let outputURL = directory.appendingPathComponent(filename).appendingPathExtension(format.rawValue)
 
         // first print CAF file
-        try extractCAF(
+        try extractToCAFFile(
             to: tempFile,
             from: startTime,
             to: endTime,
@@ -126,7 +126,7 @@ extension AVAudioFile {
     }
 
     /// Will return a 32bit CAF file
-    @discardableResult public func extractCAF(
+    @discardableResult public func extractToCAFFile(
         to outputURL: URL,
         from startTime: TimeInterval,
         to endTime: TimeInterval,

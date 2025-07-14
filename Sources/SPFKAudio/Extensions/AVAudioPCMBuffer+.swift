@@ -2,6 +2,7 @@
 
 import Accelerate
 import AVFoundation
+import SPFKUtils
 
 extension AVAudioPCMBuffer {
     public var duration: TimeInterval {
