@@ -30,11 +30,7 @@ public struct Peak: Equatable {
 
     public init(url: URL) throws {
         let avfile = try AVAudioFile(forReading: url)
-
-        guard let peak = avfile.peak else {
-            throw NSError(description: "Couldn't open file at \(url.path)")
-        }
-
-        self = peak
+        let value = try avfile.toAVAudioPCMBuffer().peak()
+        self = value
     }
 }

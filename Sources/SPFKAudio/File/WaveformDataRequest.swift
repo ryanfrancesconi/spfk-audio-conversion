@@ -9,7 +9,7 @@ import SPFKUtils
 public enum WaveformDataRequest {
     public static func parse(
         url: URL,
-        samplesPerPixel: Int,
+        resolution: WaveformDataRequest.Resolution = .medium,
         analysisMode: AnalysisMode = .peak,
         priority: TaskPriority = .medium
     ) async throws -> FloatChannelData {
@@ -17,7 +17,7 @@ public enum WaveformDataRequest {
 
         return try await parse(
             audioFile: audioFile,
-            samplesPerPixel: samplesPerPixel,
+            resolution: resolution,
             analysisMode: analysisMode,
             priority: priority
         )
@@ -25,7 +25,7 @@ public enum WaveformDataRequest {
 
     public static func parse(
         audioFile: AVAudioFile,
-        samplesPerPixel: Int,
+        resolution: WaveformDataRequest.Resolution = .medium,
         analysisMode: AnalysisMode = .peak,
         priority: TaskPriority = .medium
     ) async throws -> FloatChannelData {
@@ -38,30 +38,44 @@ public enum WaveformDataRequest {
         }
 
         let task = Task<FloatChannelData, Error>(priority: priority) {
-            // prevent division by zero, + minimum resolution
-            let samplesPerPixel = max(64, samplesPerPixel)
             let totalFrames = AVAudioFrameCount(audioFile.length)
 
             guard totalFrames > 0 else {
                 throw NSError(description: "No audio was found in \(audioFile.url.path)")
             }
 
-            var framesPerBuffer: AVAudioFrameCount = totalFrames / AVAudioFrameCount(samplesPerPixel)
+            var samplesPerPixel: Int
+
+            switch resolution {
+            case .low:
+                samplesPerPixel = 128
+            case .medium:
+                samplesPerPixel = 64
+            case .high:
+                samplesPerPixel = 8
+            }
+
+            // analysis buffer size
+            var framesPerBuffer: AVAudioFrameCount = AVAudioFrameCount(samplesPerPixel)
 
             guard let buffer = AVAudioPCMBuffer(
                 pcmFormat: audioFile.processingFormat,
-                frameCapacity: AVAudioFrameCount(framesPerBuffer)
+                frameCapacity: framesPerBuffer
             ), buffer.frameCapacity > 0 else {
                 throw NSError(description: "Unable to create buffer")
             }
 
             let channelCount = Int(audioFile.processingFormat.channelCount)
-            var data = Array(repeating: [Float](zeros: samplesPerPixel), count: channelCount)
+
+            // output data
+            let outputLength = totalFrames.int / samplesPerPixel
+            var data = Array(repeating: [Float](zeros: outputLength), count: channelCount)
+
             var startFrame: AVAudioFramePosition = 0
 
-            for i in 0 ..< samplesPerPixel {
-                try Task.checkCancellation()
+            Log.debug(resolution, "totalFrames", totalFrames, "samplesPerPixel", samplesPerPixel, "data size", outputLength)
 
+            for i in 0 ..< outputLength {
                 audioFile.framePosition = startFrame
 
                 try audioFile.read(into: buffer, frameCount: framesPerBuffer)
@@ -89,9 +103,13 @@ public enum WaveformDataRequest {
 
                 startFrame += AVAudioFramePosition(framesPerBuffer)
 
+                // buffer has reached end of file, trim it
                 if startFrame + AVAudioFramePosition(framesPerBuffer) > totalFrames {
+                    try Task.checkCancellation()
+
                     framesPerBuffer = totalFrames - AVAudioFrameCount(startFrame)
-                    if framesPerBuffer <= 0 { break }
+
+                    guard framesPerBuffer > 0 else { break }
                 }
             }
 
@@ -109,31 +127,9 @@ public enum WaveformDataRequest {
 }
 
 extension WaveformDataRequest {
-    public enum Resolution {
+    public enum Resolution: CaseIterable {
         case low
         case medium
         case high
-
-        public var samplesPerPixelRange: ClosedRange<Int> {
-            switch self {
-            case .low:
-                return 64 ... 128000
-            case .medium:
-                return 64 ... 256000
-            case .high:
-                return 64 ... 512000
-            }
-        }
-
-        public var scale: Double {
-            switch self {
-            case .low:
-                return 500
-            case .medium:
-                return 1000
-            case .high:
-                return 10000
-            }
-        }
     }
 }
