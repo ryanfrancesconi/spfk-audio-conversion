@@ -29,6 +29,7 @@ public extension DynamicPCMBuffer {
                 normalizedBuffer?.floatChannelData?[n][i] = sample
             }
         }
+
         normalizedBuffer?.frameLength = length
 
         return normalizedBuffer

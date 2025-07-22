@@ -98,6 +98,7 @@ extension DynamicPCMBuffer {
         for i in 0 ..< buffer.count {
             // store the absolute value of the sample
             let absSample = abs(buffer[i])
+            
             if absSample > peak {
                 peak = absSample
                 index = i

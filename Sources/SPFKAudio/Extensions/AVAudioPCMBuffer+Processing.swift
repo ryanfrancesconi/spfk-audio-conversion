@@ -47,6 +47,7 @@ extension AVAudioPCMBuffer {
             if position + chunkLength >= frameLength {
                 break
             }
+
             for channel in 0 ..< channelCount {
                 var block = Array(repeating: Float(0), count: chunkLength)
 
@@ -55,8 +56,10 @@ extension AVAudioPCMBuffer {
                     if i + position >= frameLength {
                         break
                     }
+
                     block[i] = floatData[channel][i + position]
                 }
+
                 // scan the block
                 let blockPeak = getPeakAmplitude(from: block)
 
@@ -142,6 +145,7 @@ extension AVAudioPCMBuffer {
                 // we write the reverseBuffer via the j index
                 reversedBuffer.floatChannelData?[n][j] = floatChannelData?[n][i] ?? 0.0
             }
+
             j += 1
         }
 

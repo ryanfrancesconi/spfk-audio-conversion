@@ -6,11 +6,7 @@ import OTAtomics
 import OTCore
 
 public class DynamicPCMBuffer {
-    private(set) var internalBuffer: AVAudioPCMBuffer {
-        didSet {
-            _rms = nil
-        }
-    }
+    private(set) var internalBuffer: AVAudioPCMBuffer
 
     public var channelCount: Int {
         Int(internalBuffer.format.channelCount)
@@ -24,13 +20,13 @@ public class DynamicPCMBuffer {
         internalBuffer.format
     }
 
-    private var _rms: Float?
-    public var rms: Float {
-        if let cachedValue = _rms { return cachedValue }
-        let value = internalBuffer.rmsValue
-        _rms = value
-        return value
-    }
+    public lazy var rms: Float = {
+        internalBuffer.rmsValue
+    }()
+
+    public lazy var peak: Peak? = {
+        try? internalBuffer.peak()
+    }()
 
     @OTAtomicsThreadSafe public internal(set) var _abortFlag: Bool = false
     @OTAtomicsThreadSafe public internal(set) var _isProcessing: Bool = false

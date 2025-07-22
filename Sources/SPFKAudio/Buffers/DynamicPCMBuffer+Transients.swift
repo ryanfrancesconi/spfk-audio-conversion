@@ -13,9 +13,11 @@ extension DynamicPCMBuffer {
 
     /// Find the single highest peak
     /// - Returns: A single `Transient`
-    public func peak(bufferDuration: TimeInterval = 0.01,
-                     startTime: TimeInterval? = nil,
-                     endTime: TimeInterval? = nil) -> Transient? {
+    public func peak(
+        bufferDuration: TimeInterval = 0.01,
+        startTime: TimeInterval? = nil,
+        endTime: TimeInterval? = nil
+    ) -> Transient? {
         defer {
             _abortFlag = false
         }
@@ -157,8 +159,11 @@ extension DynamicPCMBuffer {
 
         progressHandler?(1)
 
-        let data = Transient.ElementData(elements: elementArray,
-                                         transientCollection: transientCollection)
+        let data = Transient.ElementData(
+            elements: elementArray,
+            transientCollection: transientCollection
+        )
+
         return data
     }
 }
