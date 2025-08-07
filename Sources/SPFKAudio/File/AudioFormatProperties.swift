@@ -1,4 +1,4 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKMetadata
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
 import Foundation
@@ -38,5 +38,24 @@ public struct AudioFormatProperties: Hashable, Codable {
             out = "\(channelCount) Channel"
         }
         return out
+    }
+
+    public init(
+        channelCount: AVAudioChannelCount,
+        sampleRate: Double,
+        bitsPerChannel: Int? = nil,
+        duration: TimeInterval
+    ) {
+        self.channelCount = channelCount
+        self.sampleRate = sampleRate
+        self.bitsPerChannel = bitsPerChannel
+        self.duration = duration
+    }
+
+    public init(avAudioFile: AVAudioFile) {
+        self.channelCount = avAudioFile.fileFormat.channelCount
+        self.sampleRate = avAudioFile.fileFormat.sampleRate
+        self.bitsPerChannel = avAudioFile.fileFormat.bitsPerChannel.int
+        self.duration = avAudioFile.duration
     }
 }
