@@ -49,8 +49,8 @@ extension MetaAudioFileDescription {
 
         tagProperties = try TagProperties(url: url)
 
-//        if fileType == .wav {
-//            bextDescription = BEXTDescription(url: url)
-//        }
+        if fileType == .wav {
+            bextDescription = BEXTDescription(url: url)
+        }
     }
 }
