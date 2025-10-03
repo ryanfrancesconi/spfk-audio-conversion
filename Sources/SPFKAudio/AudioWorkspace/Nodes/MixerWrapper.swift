@@ -5,10 +5,6 @@ import AVFoundation
 extension MixerWrapper: EngineNode {
     public var inputNode: AVAudioNode? { mixerNode }
     public var outputNode: AVAudioNode? { mixerNode }
-
-    public func detach() throws {
-        try detachNodes()
-    }
 }
 
 extension MixerWrapper: EngineNodeAU {

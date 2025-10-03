@@ -1,0 +1,52 @@
+import AVFoundation
+import SPFKUtils
+
+extension AudioTrack: EngineNode {
+    public var inputNode: AVAudioNode? { mixer.avAudioNode }
+    public var outputNode: AVAudioNode? { fader.avAudioNode }
+}
+
+public class AudioTrack {
+    /// input
+    let mixer: MixerWrapper
+
+    /// output
+    let fader: Fader
+
+    /// effects
+    let audioUnitChain: AudioUnitChain
+
+    public weak var delegate: AudioTrackDelegate?
+
+    public init(delegate: AudioTrackDelegate? = nil) async throws {
+        self.delegate = delegate
+
+        mixer = MixerWrapper()
+        fader = try await Fader()
+        audioUnitChain = AudioUnitChain()
+        audioUnitChain.delegate = self
+
+        try await audioUnitChain.updateIO(input: mixer.avAudioNode, output: fader.avAudioNode)
+    }
+
+    deinit {
+        Log.debug("* { \(self) }")
+    }
+}
+
+extension AudioTrack: AudioUnitChainDelegate {
+    public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
+        Log.debug(event)
+    }
+
+    public var audioEngineAccess: (any AudioEngineManagerModel)? {
+        self.delegate?.audioEngineAccess
+    }
+
+    public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
+        self.delegate?.availableAudioUnitComponents
+    }
+}
+
+public protocol AudioTrackDelegate: AnyObject, AudioEngineAccess, AudioUnitAvailability {
+}

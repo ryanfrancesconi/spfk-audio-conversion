@@ -14,7 +14,7 @@ final class AudioFilePlayerTests: AudioPlayerTestCase {
 
         let player = try #require(player)
         
-        player.volume = 0.1
+        player.volume = 1
         try player.load(url: BundleResources.shared.tabla_wav)
         try player.schedule(from: 1, to: 2)
 

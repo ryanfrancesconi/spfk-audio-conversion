@@ -13,10 +13,6 @@ extension Fader: EngineNode {
         get { avAudioNode.auAudioUnit.shouldBypassEffect }
         set { avAudioNode.auAudioUnit.shouldBypassEffect = newValue }
     }
-
-    public func detach() throws {
-        try detachNodes()
-    }
 }
 
 /// Stereo Fader.

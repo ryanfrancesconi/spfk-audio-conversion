@@ -187,11 +187,11 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
 extension AudioFilePlayer: EngineNode {
     public var outputNode: AVAudioNode? { playerNode }
 
-    public func detach() throws {
+    public func detachNodes() throws {
         stop()
         engine?.safeDetach(nodes: [playerNode])
 
-        try detachNodes()
+        try detachIONodes()
 
         audioFile = nil
         completionHandler = nil

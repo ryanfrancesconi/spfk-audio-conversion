@@ -17,7 +17,7 @@ public class AudioUnitChain {
 
         case willInsert(index: Int)
         case didInsert(index: Int)
-        
+
         case effectMoved(from: Int, to: Int)
     }
 
@@ -92,8 +92,8 @@ public class AudioUnitChain {
     }
 }
 
-extension AudioUnitChain: EngineAccess {
-    public func engineAccess() -> (any AudioEngineManagerModel)? { delegate?.engineAccess() }
+extension AudioUnitChain: AudioEngineAccess {
+    public var audioEngineAccess: (any AudioEngineManagerModel)? { delegate?.audioEngineAccess }
 }
 
 extension AudioUnitChain {

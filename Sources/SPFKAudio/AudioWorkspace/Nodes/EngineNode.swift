@@ -14,7 +14,7 @@ public protocol NodeInputAccess: AnyObject {
 public protocol EngineNode: NodeInputAccess, NodeOutputAccess {
     var isBypassed: Bool { get set }
 
-    func detach() throws // remove
+    func detachNodes() throws
 }
 
 extension EngineNode {
@@ -28,7 +28,7 @@ extension EngineNode {
 
     public var isOutputNodeConnected: Bool {
         guard let outputNode else {
-            Log.error("outputNode is nil")
+            Log.error("\(self) \(#function): engine is nil")
             return false
         }
 
@@ -39,12 +39,12 @@ extension EngineNode {
         outputNode?.outputFormat(forBus: 0)
     }
 
-    public var engineFormat: AVAudioFormat? {
-        engine?.outputFormat
-    }
-
     public var engine: AVAudioEngine? {
         outputNode?.engine ?? inputNode?.engine
+    }
+
+    public var engineFormat: AVAudioFormat? {
+        engine?.outputFormat
     }
 
     public var isInManualRenderingMode: Bool {
@@ -59,9 +59,15 @@ extension EngineNode {
         try outputNode?.disconnectOutput()
     }
 
+    /// Default behavior is to only detach the IO nodes.
+    /// Can be implemented for custom handling
     public func detachNodes() throws {
+        try detachIONodes()
+    }
+
+    public func detachIONodes() throws {
         guard let engine else {
-            throw NSError(description: "\(self) detachNodes: engine is nil")
+            throw NSError(description: "\(self) \(#function): engine is nil")
         }
 
         if let inputNode {

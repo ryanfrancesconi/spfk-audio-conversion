@@ -7,7 +7,7 @@ import SPFKUtilsC
 extension AVAudioNode: @retroactive TypeDescribable {
     private func error(function: String, string: String) -> NSError {
         Log.printCallStack()
-        
+
         return NSError(description: "\(self.typeName).\(function) Error: \(string)")
     }
 

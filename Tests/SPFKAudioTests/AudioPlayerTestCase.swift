@@ -11,12 +11,12 @@ class AudioPlayerTestCase: BinTestCase {
     var audioWorkspace = AudioWorkspace()
 
     var player: AudioFilePlayer?
-    var audioUnitChain: AudioUnitChain? { audioWorkspace.masterAudioUnitChain }
+    var audioUnitChain: AudioUnitChain? { audioWorkspace.master?.audioUnitChain }
 
     func setup() async throws {
         try await audioWorkspace.rebuild()
 
-        let masterMixer = try #require(audioWorkspace.masterMixer)
+        let masterMixer = try #require(audioWorkspace.master?.mixer)
 
         let player = AudioFilePlayer()
         self.player = player

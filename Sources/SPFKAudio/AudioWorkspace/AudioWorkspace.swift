@@ -22,40 +22,31 @@ public class AudioWorkspace {
 
     private var outputMixer: MixerWrapper?
 
-    var masterMixer: MixerWrapper?
-
-    var masterAudioUnitChain: AudioUnitChain?
-
-    var masterFader: Fader?
+    // All tracks will be connected to this master
+    var master: AudioTrack?
 
     public init() {
     }
 
     /// Rebuild the engine graph. Neceessary on sample rate changes
     public func rebuild() async throws {
-        try shutdown()
+        try await shutdown()
 
-        let outputMixer = MixerWrapper()
+        self.outputMixer = MixerWrapper()
+        self.master = try await AudioTrack(delegate: self)
+
+        guard let outputMixer, let master else { return }
+
         try engineManager.setEngineOutput(to: outputMixer.avAudioNode)
-
-        let masterFader = try await Fader()
-        try engineManager.connectAndAttach(masterFader, to: outputMixer)
-
-        let masterMixer = MixerWrapper()
-        let masterAudioUnitChain = try await AudioUnitChain(input: masterMixer.avAudioNode, output: masterFader.avAudioNode, delegate: self)
-
-        //
-        self.outputMixer = outputMixer
-        self.masterFader = masterFader
-        self.masterMixer = masterMixer
-        self.masterAudioUnitChain = masterAudioUnitChain
+        try engineManager.connectAndAttach(master, to: outputMixer)
     }
 
-    func shutdown() throws {
+    public func shutdown() async throws {
         try stop()
 
-        try masterFader?.detachNodes()
-        try masterMixer?.detachNodes()
+        try master?.detachNodes()
+        try await master?.audioUnitChain.dispose()
+
         try outputMixer?.detachNodes()
     }
 
@@ -70,14 +61,17 @@ public class AudioWorkspace {
     }
 }
 
+extension AudioWorkspace: AudioTrackDelegate {
+}
+
 extension AudioWorkspace: AudioUnitChainDelegate {
     public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
         Log.debug(event)
     }
 
-    public func engineAccess() -> (any AudioEngineManagerModel)? { engineManager }
+    public var audioEngineAccess: (any AudioEngineManagerModel)? { engineManager }
 
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
-        []
+        [] // TODO:
     }
 }
