@@ -87,7 +87,7 @@ extension AVAudioEngine {
         safeAttach(nodes: [dummy])
         connect(dummy, to: mixer, format: format)
 
-        // Log.debug("* Added reset node \(dummy) to mixer with format \(format)")
+        Log.debug("* Added reset node \(dummy) to mixer with format \(format)")
 
         return dummy
     }

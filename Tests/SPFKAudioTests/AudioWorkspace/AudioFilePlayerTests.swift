@@ -8,10 +8,12 @@ import SPFKUtils
 import Testing
 
 @Suite(.serialized, .tags(.realtime))
-final class AudioFilePlayerTests: AudioEngineTestCase {
+final class AudioFilePlayerTests: AudioPlayerTestCase {
     @Test func testEdit() async throws {
         try await setup()
 
+        let player = try #require(player)
+        
         player.volume = 0.1
         try player.load(url: BundleResources.shared.tabla_wav)
         try player.schedule(from: 1, to: 2)
@@ -26,6 +28,6 @@ final class AudioFilePlayerTests: AudioEngineTestCase {
         player.stop()
         #expect(!player.isPlaying)
 
-        _engineManager.stopEngine()
+       try audioWorkspace.stop()
     }
 }

@@ -93,7 +93,7 @@ public class AudioUnitChain {
 }
 
 extension AudioUnitChain: EngineAccess {
-    public var engineManager: AudioEngineManagerModel? { delegate?.engineManager }
+    public func engineAccess() -> (any AudioEngineManagerModel)? { delegate?.engineAccess() }
 }
 
 extension AudioUnitChain {

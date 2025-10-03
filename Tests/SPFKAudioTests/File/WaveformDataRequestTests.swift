@@ -10,13 +10,13 @@ import Testing
 class WaveformDataRequestTests: BinTestCase {
     @Test func getData() async throws {
         let input = BundleResources.shared.tabla_6_channel
-        let data = try await WaveformDataRequest.parse(url: input, samplesPerPixel: 256, priority: .low)
+        let data = try await WaveformDataRequest.parse(url: input, resolution: .low, priority: .low)
 
         // channel count for the file
         #expect(data.count == 6)
 
         for channel in data {
-            #expect(channel.count == 256)
+            #expect(channel.count == 1315)
         }
     }
 
@@ -25,7 +25,7 @@ class WaveformDataRequestTests: BinTestCase {
 
         await #expect(throws: (any Error).self) {
             do {
-                _ = try await WaveformDataRequest.parse(url: input, samplesPerPixel: 256)
+                _ = try await WaveformDataRequest.parse(url: input, resolution: .low)
             } catch {
                 Log.error(error)
 

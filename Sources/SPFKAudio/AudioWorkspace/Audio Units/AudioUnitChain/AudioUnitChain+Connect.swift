@@ -122,7 +122,7 @@ extension AudioUnitChain {
     }
 
     private func connect(_ firstNode: AVAudioNode, to secondNode: AVAudioNode) throws {
-        guard let engineManager else {
+        guard let engineManager = engineAccess() else {
             throw NSError(description: "engine manager is nil")
         }
 

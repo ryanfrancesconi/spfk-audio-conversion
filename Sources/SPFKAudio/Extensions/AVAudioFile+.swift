@@ -12,9 +12,9 @@ extension AVAudioFile {
     }
 
     /// the max level in the file as a Peak struct
-//    public var peak: Peak? {
-//        try? toAVAudioPCMBuffer().peak()
-//    }
+    public var peak: Peak? {
+        try? toAVAudioPCMBuffer().peak()
+    }
 
     /// Convenience init to instantiate a file from an AVAudioPCMBuffer.
     public convenience init(url: URL, fromBuffer buffer: AVAudioPCMBuffer) throws {

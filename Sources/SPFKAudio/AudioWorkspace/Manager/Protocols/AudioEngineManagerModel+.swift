@@ -8,7 +8,8 @@ import SPFKUtils
 extension AudioEngineManagerModel {
     public func connectAndAttach(
         _ engineNode: any EngineNode,
-        to otherEngineNode: any EngineNode, format: AVAudioFormat? = nil
+        to otherEngineNode: any EngineNode,
+        format: AVAudioFormat? = nil
     ) throws {
         guard let sourceNode = engineNode.outputNode else {
             throw NSError(description: "sourceNode must be valid")
@@ -33,10 +34,12 @@ extension AudioEngineManagerModel {
 
         try connectAndAttach(node, to: outputNode, format: systemFormat)
 
-        Log.debug("🔈 Output Node:", outputNode,
-                  "outputFormat:", outputFormat,
-                  "inputFormat:", inputFormat,
-                  "systemFormat", systemFormat)
+        Log.debug(
+            "🔈 Output Node:", outputNode,
+            "outputFormat:", outputFormat,
+            "inputFormat:", inputFormat,
+            "systemFormat", systemFormat
+        )
     }
 }
 
