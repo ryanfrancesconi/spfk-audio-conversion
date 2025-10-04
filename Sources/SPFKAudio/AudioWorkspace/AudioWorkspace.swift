@@ -23,7 +23,7 @@ public class AudioWorkspace {
     private var outputMixer: MixerWrapper?
 
     // All tracks will be connected to this master
-    var master: AudioTrack?
+    public private(set) var master: AudioTrack?
 
     public init() {
     }

@@ -48,7 +48,8 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
     /// The duration of the loaded audio file
     public var duration: TimeInterval {
         guard let audioFile else { return 0 }
-        return TimeInterval(audioFile.length) / audioFile.fileFormat.sampleRate
+
+        return audioFile.duration
     }
 
     public var editedDuration: TimeInterval {
