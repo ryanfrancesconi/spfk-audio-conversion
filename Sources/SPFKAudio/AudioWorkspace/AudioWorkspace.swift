@@ -25,8 +25,7 @@ public class AudioWorkspace {
     // All tracks will be connected to this master
     public private(set) var master: AudioTrack?
 
-    public init() {
-    }
+    public init() {}
 
     /// Rebuild the engine graph. Neceessary on sample rate changes
     public func rebuild() async throws {
@@ -35,7 +34,9 @@ public class AudioWorkspace {
         self.outputMixer = MixerWrapper()
         self.master = try await AudioTrack(delegate: self)
 
-        guard let outputMixer, let master else { return }
+        guard let outputMixer, let master else {
+            return
+        }
 
         try engineManager.setEngineOutput(to: outputMixer.avAudioNode)
         try engineManager.connectAndAttach(master, to: outputMixer)

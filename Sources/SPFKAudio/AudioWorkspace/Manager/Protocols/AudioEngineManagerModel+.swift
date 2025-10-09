@@ -12,11 +12,11 @@ extension AudioEngineManagerModel {
         format: AVAudioFormat? = nil
     ) throws {
         guard let sourceNode = engineNode.outputNode else {
-            throw NSError(description: "sourceNode must be valid")
+            throw NSError(description: "engineNode.outputNode must be valid")
         }
 
         guard let destinationNode = otherEngineNode.inputNode else {
-            throw NSError(description: "destinationNode must be valid")
+            throw NSError(description: "otherEngineNode.inputNode must be valid")
         }
 
         try connectAndAttach(sourceNode, to: destinationNode, format: format)

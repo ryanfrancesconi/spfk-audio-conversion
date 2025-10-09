@@ -195,10 +195,10 @@ extension AudioFilePlayer: EngineNode {
     public var outputNode: AVAudioNode? { playerNode }
 
     public func detachNodes() throws {
-        stop()
+        unload()
+
         try detachIONodes()
 
-        audioFile = nil
         completionHandler = nil
     }
 }
