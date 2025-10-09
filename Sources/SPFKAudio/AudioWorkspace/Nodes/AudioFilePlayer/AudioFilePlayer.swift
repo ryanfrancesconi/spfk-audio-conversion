@@ -168,7 +168,7 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
     /// It's possible this is no longer necessary with updates in macOS - needs testing
     public func load(audioFile: AVAudioFile) throws {
         // check to make sure this isn't the first load. If it is, processingFormat will be nil
-        if let format = processingFormat, format != audioFile.processingFormat {
+        if let processingFormat, processingFormat != audioFile.processingFormat {
             let message = "Warning: Processing format doesn't match. This file is a different format than the previously loaded one. " +
                 "You should make a new Player instance and reconnect. " +
                 "load() is only available for files that are the same format."
@@ -196,8 +196,6 @@ extension AudioFilePlayer: EngineNode {
 
     public func detachNodes() throws {
         stop()
-        engine?.safeDetach(nodes: [playerNode])
-
         try detachIONodes()
 
         audioFile = nil

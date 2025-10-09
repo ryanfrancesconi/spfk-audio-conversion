@@ -44,8 +44,8 @@ extension AudioFilePlayer {
         guard isPlaying else { return }
 
         playerNode.stop()
+        
         lastScheduledTime = nil
-
         isPlaying = false
     }
 }

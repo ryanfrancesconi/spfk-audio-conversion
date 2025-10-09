@@ -4,6 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKAudioC
 import SPFKMetadata
+import SPFKTime
 import SPFKUtils
 
 public actor SoX {
@@ -21,9 +22,14 @@ public actor SoX {
     public func trim(
         input: URL,
         output: URL,
-        timeChunk: TimeChunk
+        timeChunk: ClosedRange<TimeInterval>
     ) -> Bool {
-        trim(input: input, output: output, startTime: timeChunk.start, endTime: timeChunk.end)
+        trim(
+            input: input,
+            output: output,
+            startTime: timeChunk.lowerBound,
+            endTime: timeChunk.upperBound
+        )
     }
 
     public func trim(
@@ -35,6 +41,7 @@ public actor SoX {
         var endTimeStr: String = "0"
 
         if endTime > 0 {
+            // sox syntax
             endTimeStr = "=" + String(endTime)
         }
 

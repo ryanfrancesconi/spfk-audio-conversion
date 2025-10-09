@@ -4,22 +4,21 @@ import AVFoundation
 import SPFKUtils
 import Testing
 
-@Suite(.serialized)
-class ScheduledLoopTests: BinTestCase {
+class ScheduledLoopTests {
     @Test func schedule() throws {
-        let hostTime = mach_absolute_time()
-
-        let loopDuration: TimeInterval = 0.1
-
         var scheduledLoop = ScheduledLoop(label: "testSchedule")
 
-        scheduledLoop.createSchedule(firstDuration: 0,
-                                     duration: loopDuration,
-                                     hostTime: hostTime,
-                                     count: 10000)
+        let hostTime = mach_absolute_time()
+        let loopDuration: TimeInterval = 0.1
+
+        scheduledLoop.createSchedule(
+            firstDuration: 0,
+            duration: loopDuration,
+            hostTime: hostTime,
+            count: 10000
+        )
 
         Log.debug("📆", scheduledLoop)
-        // Log.debug(scheduledLoop.times)
 
         #expect(scheduledLoop.times.count == 10000)
 

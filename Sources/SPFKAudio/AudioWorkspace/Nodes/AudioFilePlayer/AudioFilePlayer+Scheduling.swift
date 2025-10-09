@@ -21,6 +21,7 @@ extension AudioFilePlayer {
         lastScheduledTimeInterval = scheduledTime
 
         preroll(from: startingTime, to: endingTime)
+        
         try scheduleSegment(at: audioTime)
 
         return audioTime
