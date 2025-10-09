@@ -138,6 +138,8 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
 
     public internal(set) var isPlaying: Bool = false
 
+    public var isLoaded: Bool { audioFile != nil }
+
     // MARK: - Initialization
 
     public init() {}
@@ -181,6 +183,10 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
     }
 
     public func unload() {
+        if isPlaying {
+            stop()
+        }
+
         audioFile = nil
     }
 }
