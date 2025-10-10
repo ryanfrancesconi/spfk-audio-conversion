@@ -7,6 +7,7 @@ import SPFKUtils
 
 public struct MetaAudioFileDescription: Hashable, Codable {
     public var url: URL?
+    public var tagColors: [TagColor] = []
 
     public var fileType: AudioFileType?
 
@@ -44,6 +45,9 @@ extension MetaAudioFileDescription {
         audioFormat = AudioFormatProperties(avAudioFile: avAudioFile)
 
         self.url = url
+
+        // will want to store more URL attributes
+        tagColors = url.tagColors
 
         fileType = AudioFileType(url: url)
 
