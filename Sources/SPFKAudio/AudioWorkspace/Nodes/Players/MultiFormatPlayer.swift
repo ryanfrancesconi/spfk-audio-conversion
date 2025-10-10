@@ -36,7 +36,7 @@ public class MultiFormatPlayer {
 
     public private(set) var transportTimer: TransportTimer
 
-    public var currentTime: TimeInterval { transportTimer.position }
+    public var currentTime: TimeInterval { transportTimer.currentTime }
 
     @MainActor
     public init(timerView: NSView, delegate: MultiFormatPlayerDelegate? = nil) {
@@ -97,7 +97,7 @@ public class MultiFormatPlayer {
 
     public func load(audioFile: AVAudioFile) throws {
         guard let audioEngineAccess = delegate?.audioEngineAccess else {
-            throw NSError(description: "\(#file) audioEngineAccess is nil")
+            throw NSError(description: " audioEngineAccess is nil")
         }
 
         if let currentPlayer {
@@ -130,11 +130,11 @@ public class MultiFormatPlayer {
 
     public func play(time: TimeInterval) throws {
         guard let currentPlayer else {
-            throw NSError(description: "\(#file) Player is nil")
+            throw NSError(description: "currentPlayer is nil")
         }
 
         guard isLoaded else {
-            throw NSError(description: "\(#file) No audio file is loaded")
+            throw NSError(description: " No audio file is loaded")
         }
 
         var time = time
@@ -147,7 +147,9 @@ public class MultiFormatPlayer {
 
         Log.debug("Play at", time, "loopRange", loopRange, "isLooping", isLooping)
 
-        if isLooping, let loopRange {
+        if isLooping {
+            let loopRange = loopRange ?? 0 ... duration
+
             var firstDuration: TimeInterval?
 
             if time < loopRange.upperBound {
@@ -174,7 +176,7 @@ public class MultiFormatPlayer {
 
     private func play() throws {
         guard let currentPlayer else {
-            throw NSError(description: "\(#file) Player is nil")
+            throw NSError(description: " Player is nil")
         }
 
         var engineError: Error?
@@ -198,11 +200,11 @@ public class MultiFormatPlayer {
 
     public func stop() throws {
         guard let currentPlayer else {
-            throw NSError(description: "\(#file) Player is nil")
+            throw NSError(description: " Player is nil")
         }
 
         guard isLoaded else {
-            throw NSError(description: "\(#file) No audio file is loaded")
+            throw NSError(description: " No audio file is loaded")
         }
 
         currentPlayer.stop()
@@ -233,7 +235,7 @@ extension MultiFormatPlayer {
 
         if isLooping {
             guard let avTime = scheduledLoop.next() else {
-                throw NSError(description: "\(#file) Didn't get valid time for scheduledLoop.next()")
+                throw NSError(description: " Didn't get valid time for scheduledLoop.next()")
             }
 
             let endTime = loopRange?.upperBound ?? duration
