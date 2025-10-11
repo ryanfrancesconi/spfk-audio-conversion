@@ -31,7 +31,7 @@ extension AudioUnitCacheManager {
         }
         return folder.appendingPathComponent(filename)
     }
-    
+
     var cacheExists: Bool {
         cacheURL?.exists == true
     }
@@ -159,7 +159,7 @@ extension AudioUnitCacheManager {
     /// Called to refresh the internal Audio Unit cache by collecting system AUs
     /// - Parameter completionHandler: handler
     public func createCache() async {
-        sendEvent(.cachingStarted)
+        send(event: .cachingStarted)
 
         // preserve previous enabled values...
 
@@ -178,7 +178,7 @@ extension AudioUnitCacheManager {
 
         await writeCache()
 
-        sendEvent(.cacheUpdated)
+        send(event: .cacheUpdated)
     }
 
     /// Write current component collection to disk
@@ -234,7 +234,7 @@ extension AudioUnitCacheManager {
 
             Log.debug("*AU Wrote cache to", cacheURL)
 
-        } catch let error as NSError {
+        } catch {
             Log.error("*AU There was an error saving the audio unit cache.", error.localizedDescription)
             return
         }

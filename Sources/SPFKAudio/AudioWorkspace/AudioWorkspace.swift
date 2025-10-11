@@ -14,6 +14,8 @@ public class AudioWorkspace {
         return deviceManager
     }()
 
+    public let cacheManager = AudioUnitCacheManager(cachesDirectory: BundleProperties.cachesDirectory)
+
     private var outputMixer: MixerWrapper?
 
     // All tracks will be connected to this master
@@ -65,10 +67,8 @@ extension AudioWorkspace: AudioUnitChainDelegate {
         Log.debug(event)
     }
 
-    public var audioEngineAccess: (any AudioEngineManagerModel)? { engineManager }
-
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
-        [] // TODO:
+        [] // TODO: AudioUnitCacheManager
     }
 }
 
@@ -88,10 +88,12 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
     }
 }
 
+extension AudioWorkspace: AudioEngineAccess {
+    public var audioEngineAccess: (any AudioEngineManagerModel)? { engineManager }
+}
+
 extension AudioWorkspace: AudioDeviceAccess {
-    public var audioDeviceAccess: (any AudioDeviceManagerModel)? {
-        deviceManager
-    }
+    public var audioDeviceAccess: (any AudioDeviceManagerModel)? { deviceManager }
 }
 
 extension AudioWorkspace: AudioDeviceManagerDelegate {

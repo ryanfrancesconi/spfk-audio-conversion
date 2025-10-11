@@ -3,8 +3,8 @@ import Foundation
 import SPFKUtils
 
 extension AudioUnitCacheManager {
-    internal func sendEvent(_ kind: Event) {
-        eventHandler?(kind)
+    internal func send(event: AudioUnitCacheEvent) {
+        eventHandler?(event)
     }
 
     public func addObservers() {
@@ -63,7 +63,7 @@ extension AudioUnitCacheManager {
         // delay the event, it comes in fairly early before some installations are complete
         notificationTimer?.invalidate()
         notificationTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { [weak self] _ in
-            self?.sendEvent(.componentRegistrationsChanged)
+            self?.send(event: .componentRegistrationsChanged)
         }
     }
 
@@ -75,7 +75,7 @@ extension AudioUnitCacheManager {
         Log.error("* Audio Unit Crashed: \(crashedAU.debugDescription)")
 
         Task { @MainActor in
-            self.sendEvent(.componentInvalidated(crashedAU))
+            self.send(event: .componentInvalidated(crashedAU))
         }
     }
 }

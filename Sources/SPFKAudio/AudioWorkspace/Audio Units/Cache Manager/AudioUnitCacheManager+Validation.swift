@@ -75,9 +75,7 @@ extension AudioUnitCacheManager {
 
                 Log.debug("Checking", name)
 
-                sendEvent(
-                    .validating(name: name, index: i, count: components.count)
-                )
+                send(event: .validating(name: name, index: i, count: components.count))
 
                 results.append(
                     validate(component: component)

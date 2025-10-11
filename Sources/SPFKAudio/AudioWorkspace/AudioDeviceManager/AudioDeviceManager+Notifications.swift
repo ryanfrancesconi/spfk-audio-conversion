@@ -1,10 +1,12 @@
-import SPFKUtils
 import Foundation
 import SimplyCoreAudio
+import SPFKUtils
 
 extension AudioDeviceManager {
     /// Listen for notifications from SimplyCoreAudio
     func addHardwareObservers() {
+        removeHardwareObservers()
+
         hardwareObservers = [
             // e.g., subscribing to `deviceListChanged` notification.
             NotificationCenter.default.addObserver(

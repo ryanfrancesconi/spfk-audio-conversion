@@ -5,13 +5,12 @@ import SimplyCoreAudio
 import SPFKUtils
 import SPFKUtilsC
 
-// In general, no longer keeping different device preferences from the system audio due
-// to incompatibilities with AVAudioEngine and its inputNode inflexibility.
-// The exception is: if input is disabled, still use
-// the engine audioUnit output directly to the output device selection.
-// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
-// potentially other bluetooth I/O headsets as well.
-
+/// In general, no longer keeping different device preferences from the system audio due
+/// to incompatibilities with AVAudioEngine and its inputNode inflexibility.
+/// The exception is: if input is disabled, still use
+/// the engine audioUnit output directly to the output device selection.
+/// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
+/// potentially other bluetooth I/O headsets as well.
 public class AudioDeviceManager: AudioDeviceManagerModel {
     public enum Event {
         case sampleRateChanged(Double)
@@ -203,9 +202,6 @@ extension AudioDeviceManager {
             ExceptionCatcherOperation({ [weak self] in
                 guard let self else { return }
 
-                // create input node
-                _ = delegate?.audioEngineAccess?.inputNode
-
                 verifyInputSampleRate()
 
             }, { exception in
@@ -222,6 +218,7 @@ extension AudioDeviceManager {
     /// Make sure the current input device is set to a valid rate,
     /// otherwise choose a different device
     func verifyInputSampleRate() {
+        // will lazily create input node
         let inputFormat = delegate?.audioEngineAccess?.inputFormat
 
         guard let inputSampleRate = inputFormat?.sampleRate,
@@ -240,8 +237,4 @@ extension AudioDeviceManager {
             Log.error(error)
         }
     }
-}
-
-public protocol AudioDeviceManagerDelegate: AnyObject, AudioEngineAccess {
-    func audioDeviceManager(event: AudioDeviceManager.Event)
 }

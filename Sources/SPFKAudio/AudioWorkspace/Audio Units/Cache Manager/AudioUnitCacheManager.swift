@@ -6,7 +6,7 @@ import OTCore
 import SPFKUtils
 
 public class AudioUnitCacheManager {
-    public var eventHandler: ((Event) -> Void)?
+    public var eventHandler: ((AudioUnitCacheEvent) -> Void)?
 
     /// Where it writes its xml cache file. Can be set to an alternate directory for testing.
     public var cachesDirectory: URL?
@@ -83,8 +83,6 @@ public class AudioUnitCacheManager {
 
         Log.debug("*AU \(systemComponentsResponse.results.count) Effects are available now.")
 
-        sendEvent(
-            .cacheLoaded(systemComponentsResponse)
-        )
+        send(event: .cacheLoaded(systemComponentsResponse))
     }
 }
