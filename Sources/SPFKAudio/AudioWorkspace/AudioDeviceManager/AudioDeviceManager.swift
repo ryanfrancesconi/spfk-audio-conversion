@@ -24,7 +24,9 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
     public weak var delegate: AudioDeviceManagerDelegate?
 
     func send(event: Event) {
-        delegate?.audioDeviceManager(event: event)
+        Task { @MainActor in
+            delegate?.audioDeviceManager(event: event)
+        }
     }
 
     var hardwareObservers: [NSObjectProtocol] = []
