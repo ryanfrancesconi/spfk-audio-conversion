@@ -30,7 +30,6 @@ extension AudioEngineManager {
 
         ExceptionCatcherOperation({
             do {
-                // Start the engine.
                 self.engine.prepare()
                 try self.engine.start()
 

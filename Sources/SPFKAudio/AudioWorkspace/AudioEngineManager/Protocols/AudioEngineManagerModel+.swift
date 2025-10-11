@@ -3,30 +3,6 @@ import Foundation
 import SimplyCoreAudio
 import SPFKUtils
 
-// MARK: - Convenience
-
-extension AudioEngineManagerModel {
-    public func connectAndAttach(
-        _ engineNode: any EngineNode,
-        to otherEngineNode: any EngineNode,
-        format: AVAudioFormat? = nil
-    ) throws {
-        guard let sourceNode = engineNode.outputNode else {
-            throw NSError(description: "engineNode.outputNode must be valid")
-        }
-
-        guard let destinationNode = otherEngineNode.inputNode else {
-            throw NSError(description: "otherEngineNode.inputNode must be valid")
-        }
-
-        try connectAndAttach(sourceNode, to: destinationNode, format: format)
-    }
-
-    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode) throws {
-        try connectAndAttach(node1, to: node2, format: systemFormat)
-    }
-}
-
 extension AudioEngineManagerModel {
     /// The engine's singleton output node.
     public func setEngineOutput(to node: AVAudioNode) throws {

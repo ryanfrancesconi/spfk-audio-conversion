@@ -95,6 +95,7 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 
     public var selectedInputDevice: AudioDevice? {
         guard deviceSettings.allowInput else { return nil }
+
         return hardware.defaultInputDevice
     }
 
@@ -217,7 +218,7 @@ extension AudioDeviceManager {
 
     /// Make sure the current input device is set to a valid rate,
     /// otherwise choose a different device
-    func verifyInputSampleRate() {
+    private func verifyInputSampleRate() {
         // will lazily create input node
         let inputFormat = delegate?.audioEngineAccess?.inputFormat
 

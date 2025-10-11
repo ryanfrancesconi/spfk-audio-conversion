@@ -2,7 +2,12 @@ import AVFoundation
 import Foundation
 import SPFKUtils
 
-public protocol AudioEngineManagerModel: AnyObject, EngineRendererModel, CustomStringConvertible, CustomDebugStringConvertible {
+public protocol AudioEngineManagerModel: AnyObject,
+    AudioEngineConnection,
+    EngineRendererModel,
+    CustomStringConvertible,
+    CustomDebugStringConvertible {
+    // -
     var systemFormat: AVAudioFormat? { get }
     var engine: AVAudioEngine { get }
     var allowInput: Bool { get }
@@ -13,5 +18,4 @@ public protocol AudioEngineManagerModel: AnyObject, EngineRendererModel, CustomS
     func stopEngine()
     func resetEngine()
     func rebuildEngine()
-    func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) throws
 }

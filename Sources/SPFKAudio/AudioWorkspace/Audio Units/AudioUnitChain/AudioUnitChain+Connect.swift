@@ -122,13 +122,14 @@ extension AudioUnitChain {
     }
 
     private func connect(_ firstNode: AVAudioNode, to secondNode: AVAudioNode) throws {
-        guard let audioEngineAccess else {
-            throw NSError(description: "engine manager is nil")
+        guard let delegate else {
+            throw NSError(description: "delegate is nil")
         }
 
-        try audioEngineAccess.connectAndAttach(
+        try delegate.connectAndAttach(
             firstNode,
-            to: secondNode
+            to: secondNode,
+            format: nil
         )
     }
 }

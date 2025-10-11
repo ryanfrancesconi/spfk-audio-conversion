@@ -9,6 +9,7 @@ public struct AudioDeviceSettings: Codable, Equatable {
 
     public var allowInput: Bool {
         guard let inputUID else { return false }
+
         return inputUID != Self.inputDeviceDisabledUID
     }
 

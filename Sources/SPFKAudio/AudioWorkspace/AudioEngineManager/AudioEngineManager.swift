@@ -3,15 +3,14 @@ import SimplyCoreAudio
 import SPFKUtils
 
 public class AudioEngineManager {
-    // TODO: make option set
-    public struct ConfigurationEvent {
-        public var sampleRateChanged: Bool
-        public var outputDeviceChanged: Bool
-        public var inputDeviceChanged: Bool
+    public enum ConfigurationOption {
+        case sampleRateChanged
+        case outputDeviceChanged
+        case inputDeviceChanged
     }
 
     public enum Event {
-        case configuration(event: ConfigurationEvent)
+        case configurationChanged(Set<ConfigurationOption>)
         case rebuild
         case error(Error)
     }
@@ -40,7 +39,7 @@ public class AudioEngineManager {
 
     public private(set) var renderer = EngineRenderer()
 
-    public var deviceManager: AudioDeviceManagerModel? {
+    public var deviceManager: (any AudioDeviceManagerModel)? {
         delegate?.audioDeviceAccess
     }
 

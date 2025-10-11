@@ -35,12 +35,12 @@ public class AudioTrack {
 }
 
 extension AudioTrack: AudioUnitChainDelegate {
-    public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
-        Log.debug(event)
+    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) throws {
+        try delegate?.connectAndAttach(node1, to: node2, format: format)
     }
 
-    public var audioEngineAccess: (any AudioEngineManagerModel)? {
-        self.delegate?.audioEngineAccess
+    public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
+        Log.debug(event)
     }
 
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
@@ -48,5 +48,5 @@ extension AudioTrack: AudioUnitChainDelegate {
     }
 }
 
-public protocol AudioTrackDelegate: AnyObject, AudioEngineAccess, AudioUnitAvailability {
+public protocol AudioTrackDelegate: AnyObject, AudioEngineConnection, AudioUnitAvailability {
 }

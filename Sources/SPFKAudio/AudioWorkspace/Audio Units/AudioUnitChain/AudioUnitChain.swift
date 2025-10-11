@@ -92,10 +92,6 @@ public class AudioUnitChain {
     }
 }
 
-extension AudioUnitChain: AudioEngineAccess {
-    public var audioEngineAccess: (any AudioEngineManagerModel)? { delegate?.audioEngineAccess }
-}
-
 extension AudioUnitChain {
     public var description: String {
         get async {

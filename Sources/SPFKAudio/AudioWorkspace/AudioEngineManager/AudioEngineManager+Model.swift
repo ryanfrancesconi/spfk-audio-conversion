@@ -5,11 +5,6 @@ import SPFKUtilsC
 
 extension AudioEngineManager: AudioEngineManagerModel {
     public var systemFormat: AVAudioFormat? {
-        //        get { deviceManager?.systemFormat }
-        //        set {
-        //            deviceManager?.systemFormat = newValue
-        //        }
-    
         deviceManager?.systemFormat
     }
 
@@ -23,7 +18,9 @@ extension AudioEngineManager: AudioEngineManagerModel {
     }
 
     public var outputNode: AVAudioOutputNode { engine.outputNode }
+}
 
+extension AudioEngineManager: AudioEngineConnection {
     public func connectAndAttach(
         _ node1: AVAudioNode,
         to node2: AVAudioNode,
@@ -50,7 +47,9 @@ extension AudioEngineManager: AudioEngineManagerModel {
             throw error
         }
     }
+}
 
+extension AudioEngineManager: EngineRendererModel {
     /// Render the contents of the engine to file
     /// `prerender` is the block containing play commands
     /// `postrender` is an optional block to call when duration has been rendered.

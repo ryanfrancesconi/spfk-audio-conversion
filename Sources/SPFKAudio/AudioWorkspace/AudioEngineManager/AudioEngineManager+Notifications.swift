@@ -68,14 +68,20 @@ extension AudioEngineManager {
         let inputDeviceChanged = deviceManager?.selectedInputDevice?.uid != deviceManager?.deviceSettings.inputUID
         let sampleRateChanged = outputDeviceSampleRate != deviceManager?.systemSampleRate
 
-        _send(
-            event: .configuration(
-                event: ConfigurationEvent(
-                    sampleRateChanged: sampleRateChanged,
-                    outputDeviceChanged: outputDeviceChanged,
-                    inputDeviceChanged: inputDeviceChanged
-                )
-            )
-        )
+        var options = Set<ConfigurationOption>()
+
+        if outputDeviceChanged {
+            options.insert(.outputDeviceChanged)
+        }
+
+        if inputDeviceChanged {
+            options.insert(.inputDeviceChanged)
+        }
+
+        if sampleRateChanged {
+            options.insert(.sampleRateChanged)
+        }
+
+        _send(event: .configurationChanged(options))
     }
 }
