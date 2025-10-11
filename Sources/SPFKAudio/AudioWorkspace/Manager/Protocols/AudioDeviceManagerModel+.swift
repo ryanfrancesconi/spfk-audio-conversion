@@ -27,8 +27,8 @@ extension AudioDeviceManagerModel {
     public var inputDeviceSampleRate: Double? { selectedInputDevice?.nominalSampleRate }
     public var outputDeviceSampleRate: Double? { selectedOutputDevice?.nominalSampleRate }
 
-    public var selectedDeviceSetttings: DeviceSettings {
-        DeviceSettings(
+    public var selectedDeviceSetttings: AudioDeviceSettings {
+        AudioDeviceSettings(
             inputUID: selectedInputDevice?.uid,
             outputUID: selectedOutputDevice?.uid
         )
@@ -169,7 +169,7 @@ extension AudioDeviceManagerModel {
     }
 
     public func isSupported(uid: String) -> Bool {
-        guard uid != DeviceSettings.inputDeviceDisabledUID else { return true }
+        guard uid != AudioDeviceSettings.inputDeviceDisabledUID else { return true }
         guard let device = lookupDevice(uid: uid) else { return false }
         return isSupported(device: device)
     }

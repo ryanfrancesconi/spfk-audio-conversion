@@ -1,6 +1,6 @@
-import SPFKUtils
 import AVFoundation
 import Foundation
+import SPFKUtils
 
 extension AudioEngineManager {
     /**
@@ -43,7 +43,7 @@ extension AudioEngineManager {
 
 extension AudioEngineManager {
     fileprivate var sampleRateHasChanged: Bool {
-        deviceManager.outputDeviceSampleRate != deviceManager.systemSampleRate
+        deviceManager?.outputDeviceSampleRate != deviceManager?.systemSampleRate
     }
 
     private func _send(event: Event) {
@@ -53,8 +53,8 @@ extension AudioEngineManager {
     }
 
     private func parseNotification() {
-        guard let selectedOutputDevice = deviceManager.selectedOutputDevice,
-              let outputDeviceSampleRate = deviceManager.outputDeviceSampleRate else {
+        guard let selectedOutputDevice = deviceManager?.selectedOutputDevice,
+              let outputDeviceSampleRate = deviceManager?.outputDeviceSampleRate else {
             return
         }
 
@@ -64,9 +64,9 @@ extension AudioEngineManager {
             return
         }
 
-        let outputDeviceChanged = deviceManager.selectedOutputDevice?.uid != deviceManager.deviceSettings.outputUID
-        let inputDeviceChanged = deviceManager.selectedInputDevice?.uid != deviceManager.deviceSettings.inputUID
-        let sampleRateChanged = outputDeviceSampleRate != deviceManager.systemSampleRate
+        let outputDeviceChanged = deviceManager?.selectedOutputDevice?.uid != deviceManager?.deviceSettings.outputUID
+        let inputDeviceChanged = deviceManager?.selectedInputDevice?.uid != deviceManager?.deviceSettings.inputUID
+        let sampleRateChanged = outputDeviceSampleRate != deviceManager?.systemSampleRate
 
         _send(
             event: .configuration(

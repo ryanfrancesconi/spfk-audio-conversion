@@ -48,7 +48,12 @@ extension AudioEngineManagerModel {
 extension AudioEngineManagerModel {
     /// Files will render at 32bit PCM then convert after
     public var renderFormat: AVAudioFormat? {
-        AVAudioFormat(
+        guard let systemFormat else {
+            Log.error("Unable to determine System format")
+            return nil
+        }
+
+        return AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: systemFormat.sampleRate,
             channels: systemFormat.channelCount,

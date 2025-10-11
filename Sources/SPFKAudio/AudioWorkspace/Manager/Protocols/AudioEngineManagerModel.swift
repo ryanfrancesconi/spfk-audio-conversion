@@ -3,7 +3,7 @@ import Foundation
 import SPFKUtils
 
 public protocol AudioEngineManagerModel: AnyObject, EngineRendererModel, CustomStringConvertible, CustomDebugStringConvertible {
-    var systemFormat: AVAudioFormat { get set }
+    var systemFormat: AVAudioFormat? { get }
     var engine: AVAudioEngine { get }
     var allowInput: Bool { get }
     var inputNode: AVAudioInputNode? { get }

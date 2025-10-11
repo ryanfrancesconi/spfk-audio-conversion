@@ -3,6 +3,7 @@
 import AVFoundation
 import SimplyCoreAudio
 import SPFKUtils
+import SPFKUtilsC
 
 // In general, no longer keeping different device preferences from the system audio due
 // to incompatibilities with AVAudioEngine and its inputNode inflexibility.
@@ -20,12 +21,10 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         case deviceProcessorOverload
     }
 
-    public var eventHandler: ((Event) -> Void)?
+    public weak var delegate: AudioDeviceManagerDelegate?
 
     func send(event: Event) {
-        Task { @MainActor in
-            eventHandler?(event)
-        }
+        delegate?.audioDeviceManager(event: event)
     }
 
     var hardwareObservers: [NSObjectProtocol] = []
@@ -106,16 +105,18 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
     public var defaultInputDevice: AudioDevice? { hardware.defaultInputDevice }
     public var defaultOutputDevice: AudioDevice? { hardware.defaultOutputDevice }
 
-    public var deviceSettings = DeviceSettings()
+    public var deviceSettings = AudioDeviceSettings()
 
     /// return the current engine in this block so that the `AudioDeviceManager` can set a device on it's output audio unit
-    internal var engineRef: (() -> AVAudioEngine?)?
+    internal var engineRef: AVAudioEngine? {
+        delegate?.audioEngineAccess?.engine
+    }
 
-    public var engineOutputNode: AVAudioOutputNode? { engineRef?()?.outputNode }
+    public var engineOutputNode: AVAudioOutputNode? { engineRef?.outputNode }
 
-    public init(settings: DeviceSettings = DeviceSettings()) {
+    public init(settings: AudioDeviceSettings = AudioDeviceSettings()) {
         // default to the system selected devices if nothing is passed in
-        deviceSettings = DeviceSettings(
+        deviceSettings = AudioDeviceSettings(
             inputUID: settings.inputUID ?? defaultInputDevice?.uid,
             outputUID: settings.outputUID ?? defaultOutputDevice?.uid
         )
@@ -192,4 +193,53 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         try updatePreferredOutputChannels()
         addOutputDeviceObserver(for: device)
     }
+}
+
+extension AudioDeviceManager {
+    public func reconnect() throws {
+        if allowInput {
+            ExceptionCatcherOperation({ [weak self] in
+                guard let self else { return }
+
+                // create input node
+                _ = delegate?.audioEngineAccess?.inputNode
+
+                verifyInputSampleRate()
+
+            }, { exception in
+                Log.error(exception.debugDescription)
+            })
+
+        } else {
+            try reconnectNodeOutput()
+        }
+
+        try updatePreferredOutputChannels()
+    }
+
+    /// Make sure the current input device is set to a valid rate,
+    /// otherwise choose a different device
+    func verifyInputSampleRate() {
+        let inputFormat = delegate?.audioEngineAccess?.inputFormat
+
+        guard let inputSampleRate = inputFormat?.sampleRate,
+              inputSampleRate < AudioDefaults.minimumSampleRateSupported else {
+            return
+        }
+
+        guard let firstCompatibleInputDevice else { return }
+
+        setInput(device: firstCompatibleInputDevice)
+
+        do {
+            try setNominalSampleRate(to: systemSampleRate)
+
+        } catch {
+            Log.error(error)
+        }
+    }
+}
+
+public protocol AudioDeviceManagerDelegate: AnyObject, AudioEngineAccess {
+    func audioDeviceManager(event: AudioDeviceManager.Event)
 }

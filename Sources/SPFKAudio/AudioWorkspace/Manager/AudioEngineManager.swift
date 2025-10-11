@@ -3,6 +3,7 @@ import SimplyCoreAudio
 import SPFKUtils
 
 public class AudioEngineManager {
+    // TODO: make option set
     public struct ConfigurationEvent {
         public var sampleRateChanged: Bool
         public var outputDeviceChanged: Bool
@@ -11,13 +12,14 @@ public class AudioEngineManager {
 
     public enum Event {
         case configuration(event: ConfigurationEvent)
+        case rebuild
         case error(Error)
     }
 
-    public var eventHandler: ((Event) -> Void)?
+    public weak var delegate: AudioEngineManagerDelegate?
 
     func send(event: Event) {
-        eventHandler?(event)
+        delegate?.audioEngineManager(event: event)
     }
 
     // MARK: -
@@ -38,14 +40,11 @@ public class AudioEngineManager {
 
     public private(set) var renderer = EngineRenderer()
 
-    public var deviceManager: AudioDeviceManager
+    public var deviceManager: AudioDeviceManagerModel? {
+        delegate?.audioDeviceAccess
+    }
 
-    public init(settings: DeviceSettings = .init()) {
-        deviceManager = AudioDeviceManager(settings: settings)
-
-        // returns the current engine ref in this block
-        deviceManager.engineRef = { [weak self] in self?.engine }
-
+    public init() {
         rebuildEngine()
     }
 
@@ -54,24 +53,6 @@ public class AudioEngineManager {
     }
 }
 
-extension AudioEngineManager {
-    /// Make sure the current input device is set to a valid rate,
-    /// otherwise choose a different device
-    func verifyInputSampleRate() {
-        guard let inputSampleRate = inputFormat?.sampleRate,
-              inputSampleRate < AudioDefaults.minimumSampleRateSupported else {
-            return
-        }
-
-        guard let firstCompatibleInputDevice = deviceManager.firstCompatibleInputDevice else { return }
-
-        deviceManager.setInput(device: firstCompatibleInputDevice)
-
-        do {
-            try deviceManager.setNominalSampleRate(to: deviceManager.systemSampleRate)
-
-        } catch {
-            Log.error(error)
-        }
-    }
+public protocol AudioEngineManagerDelegate: AnyObject, AudioDeviceAccess {
+    func audioEngineManager(event: AudioEngineManager.Event)
 }

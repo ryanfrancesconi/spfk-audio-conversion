@@ -3,21 +3,15 @@ import SPFKUtils
 
 public class AudioWorkspace {
     public private(set) lazy var engineManager: AudioEngineManager = {
-        var engineManager = AudioEngineManager( /* settings: persistentState */ )
-
-        engineManager.eventHandler = { [weak self] event in
-            guard let self else { return }
-
-            switch event {
-            case let .configuration(event: event):
-                Log.debug(event)
-
-            case let .error(error):
-                Log.error(error)
-            }
-        }
-
+        var engineManager = AudioEngineManager()
+        engineManager.delegate = self
         return engineManager
+    }()
+
+    public private(set) lazy var deviceManager: AudioDeviceManager = {
+        var deviceManager = AudioDeviceManager( /* settings: persistentState */ )
+        deviceManager.delegate = self
+        return deviceManager
     }()
 
     private var outputMixer: MixerWrapper?
@@ -30,6 +24,8 @@ public class AudioWorkspace {
     /// Rebuild the engine graph. Neceessary on sample rate changes
     public func rebuild() async throws {
         try await shutdown()
+
+        engineManager.rebuildEngine()
 
         self.outputMixer = MixerWrapper()
         self.master = try await AudioTrack(delegate: self)
@@ -62,8 +58,7 @@ public class AudioWorkspace {
     }
 }
 
-extension AudioWorkspace: AudioTrackDelegate {
-}
+extension AudioWorkspace: AudioTrackDelegate {}
 
 extension AudioWorkspace: AudioUnitChainDelegate {
     public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
@@ -74,5 +69,33 @@ extension AudioWorkspace: AudioUnitChainDelegate {
 
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
         [] // TODO:
+    }
+}
+
+extension AudioWorkspace: AudioEngineManagerDelegate {
+    public func audioEngineManager(event: AudioEngineManager.Event) {
+        switch event {
+        case let .configuration(event: event):
+            Log.debug(event)
+
+        case let .error(error):
+            Log.error(error)
+
+        case .rebuild:
+            // deviceManager
+            break
+        }
+    }
+}
+
+extension AudioWorkspace: AudioDeviceAccess {
+    public var audioDeviceAccess: (any AudioDeviceManagerModel)? {
+        deviceManager
+    }
+}
+
+extension AudioWorkspace: AudioDeviceManagerDelegate {
+    public func audioDeviceManager(event: AudioDeviceManager.Event) {
+        Log.debug(event)
     }
 }

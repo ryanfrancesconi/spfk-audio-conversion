@@ -1,6 +1,6 @@
+import AVFoundation
 import SPFKUtils
 import SPFKUtilsC
-import AVFoundation
 
 extension AudioEngineManager {
     public func prepareEngine() {
@@ -73,23 +73,10 @@ extension AudioEngineManager {
         // The engine creates a singleton on demand when this property is first accessed.
         _ = outputNode
 
+        delegate?.audioEngineManager(event: .rebuild)
+
         do {
-            if deviceManager.allowInput {
-                ExceptionCatcherOperation({ [weak self] in
-                    guard let self else { return }
-
-                    _ = inputNode
-                    verifyInputSampleRate()
-
-                }, { exception in
-                    Log.error(exception.debugDescription)
-                })
-
-            } else {
-                try deviceManager.reconnectNodeOutput()
-            }
-
-            try deviceManager.updatePreferredOutputChannels()
+            try deviceManager?.reconnect()
 
         } catch {
             Log.error(error)

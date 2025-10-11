@@ -4,14 +4,16 @@ import SPFKUtils
 import SPFKUtilsC
 
 extension AudioEngineManager: AudioEngineManagerModel {
-    public var systemFormat: AVAudioFormat {
-        get { deviceManager.systemFormat }
-        set {
-            deviceManager.systemFormat = newValue
-        }
+    public var systemFormat: AVAudioFormat? {
+        //        get { deviceManager?.systemFormat }
+        //        set {
+        //            deviceManager?.systemFormat = newValue
+        //        }
+    
+        deviceManager?.systemFormat
     }
 
-    public var allowInput: Bool { deviceManager.allowInput }
+    public var allowInput: Bool { deviceManager?.allowInput == true }
 
     /// Don't access the engine.inputNode if input is disabled as the node is lazily created.
     /// This is the only point in the codebase where AVAudioEngine's inputNode is referenced
@@ -28,7 +30,9 @@ extension AudioEngineManager: AudioEngineManagerModel {
         format: AVAudioFormat? = nil
     ) throws {
         //
-        let format = format ?? systemFormat
+        guard let format = format ?? systemFormat else {
+            throw NSError(description: "Unable to determine systemFormat from deviceManager")
+        }
 
         var error: Error?
 
@@ -75,7 +79,7 @@ extension AudioEngineManager: AudioEngineManagerModel {
             // only needed if the engine outputNode is being set to a different device than the default one
             // this is also triggered by the engine configuration notification event
             do {
-                try deviceManager.reconnectNodeOutput()
+                try deviceManager?.reconnectNodeOutput()
             } catch {
                 Log.error(error)
                 return

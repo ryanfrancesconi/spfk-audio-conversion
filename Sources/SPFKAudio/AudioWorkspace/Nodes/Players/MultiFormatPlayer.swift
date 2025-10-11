@@ -13,7 +13,9 @@ extension MultiFormatPlayer: EngineNode {
 public class MultiFormatPlayer {
     public private(set) var mixer: MixerWrapper
 
-    // create a player for each audio format loaded into the mixer
+    public weak var delegate: MultiFormatPlayerDelegate?
+
+    // create a player for each new audio format loaded into the mixer
     private var players: [AVAudioFormat: AudioFilePlayer] = .init()
 
     public var formats: [AVAudioFormat] {
@@ -27,12 +29,8 @@ public class MultiFormatPlayer {
     public var isLoaded: Bool { currentPlayer?.isLoaded == true }
 
     public var isLooping: Bool = false
-
     public var loopRange: ClosedRange<TimeInterval>?
-
     public private(set) var scheduledLoop = ScheduledLoop()
-
-    public weak var delegate: MultiFormatPlayerDelegate?
 
     public private(set) var transportTimer: TransportTimer
 
@@ -65,7 +63,6 @@ public class MultiFormatPlayer {
         players.removeAll()
 
         try mixer.detachNodes()
-
         mixer = MixerWrapper()
     }
 

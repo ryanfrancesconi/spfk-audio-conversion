@@ -6,7 +6,7 @@ import SimplyCoreAudio
 public protocol AudioDeviceManagerModel {
     var systemFormat: AVAudioFormat { get set }
     var engineOutputNode: AVAudioOutputNode? { get }
-    var deviceSettings: DeviceSettings { get set }
+    var deviceSettings: AudioDeviceSettings { get set }
     var bufferSize: UInt32 { get set }
     var inputLatency: UInt32? { get }
     
@@ -17,4 +17,5 @@ public protocol AudioDeviceManagerModel {
     var defaultOutputDevice: AudioDevice? { get }
     func setInput(device: AudioDevice)
     func setOutput(device: AudioDevice) throws
+    func reconnect() throws
 }

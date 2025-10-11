@@ -7,7 +7,7 @@ import SPFKUtils
 
 extension AudioEngineManager {
     public var engineDeviceDescription: String {
-        guard let device = deviceManager.engineDevice else {
+        guard let device = deviceManager?.engineDevice else {
             return "Failed to find engine device"
         }
 
@@ -15,6 +15,10 @@ extension AudioEngineManager {
     }
 
     public var description: String {
+        guard let deviceManager else {
+            return "Device Manager isn't available"
+        }
+        
         var string = ""
         string += "Engine isRunning: \(engineIsRunning)\n"
 
@@ -72,6 +76,10 @@ extension AudioEngineManager {
     }
 
     public func deviceDescription(_ device: AudioDevice) -> String {
+        guard let deviceManager else {
+            return "Device Manager isn't available"
+        }
+        
         let isSelectedOutputDevice = device == deviceManager.selectedOutputDevice
         let isSelectedInputDevice = device == deviceManager.selectedInputDevice
 
