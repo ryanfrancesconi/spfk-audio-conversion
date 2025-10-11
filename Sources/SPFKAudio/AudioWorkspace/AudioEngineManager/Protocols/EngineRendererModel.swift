@@ -8,7 +8,7 @@ public protocol EngineRendererModel {
 
     func render(
         to audioFile: AVAudioFile,
-        duration: Double,
+        duration: TimeInterval,
         renderUntilSilent: Bool,
         prerender: (() -> Void)?,
         postrender: (() -> Void)?,

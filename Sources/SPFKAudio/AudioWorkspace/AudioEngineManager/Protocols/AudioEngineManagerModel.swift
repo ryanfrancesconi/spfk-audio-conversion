@@ -7,12 +7,15 @@ public protocol AudioEngineManagerModel: AnyObject,
     EngineRendererModel,
     CustomStringConvertible,
     CustomDebugStringConvertible {
-    // -
+    // MARK: - Properties
+
     var systemFormat: AVAudioFormat? { get }
     var engine: AVAudioEngine { get }
     var allowInput: Bool { get }
     var inputNode: AVAudioInputNode? { get }
     var outputNode: AVAudioOutputNode { get }
+
+    // MARK: - Engine State
 
     func startEngine() throws
     func stopEngine()

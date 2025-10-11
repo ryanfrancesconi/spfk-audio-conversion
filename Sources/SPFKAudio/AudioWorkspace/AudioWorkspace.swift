@@ -79,6 +79,14 @@ extension AudioWorkspace: AudioUnitChainDelegate {
     }
 }
 
+extension AudioWorkspace: AudioEngineAccess {
+    public var audioEngineAccess: (any AudioEngineManagerModel)? { engineManager }
+}
+
+extension AudioWorkspace: AudioDeviceAccess {
+    public var audioDeviceAccess: (any AudioDeviceManagerModel)? { deviceManager }
+}
+
 extension AudioWorkspace: AudioEngineManagerDelegate {
     // TODO: handle events
     public func audioEngineManager(event: AudioEngineManager.Event) {
@@ -94,14 +102,6 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
             break
         }
     }
-}
-
-extension AudioWorkspace: AudioEngineAccess {
-    public var audioEngineAccess: (any AudioEngineManagerModel)? { engineManager }
-}
-
-extension AudioWorkspace: AudioDeviceAccess {
-    public var audioDeviceAccess: (any AudioDeviceManagerModel)? { deviceManager }
 }
 
 extension AudioWorkspace: AudioDeviceManagerDelegate {

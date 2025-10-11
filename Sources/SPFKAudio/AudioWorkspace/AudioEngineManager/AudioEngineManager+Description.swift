@@ -3,7 +3,7 @@ import AVFoundation
 import SimplyCoreAudio
 import SPFKUtils
 
-// Mostly for debugging purposesF
+// Mostly for debugging purposes
 
 extension AudioEngineManager {
     public var engineDeviceDescription: String {
@@ -18,7 +18,7 @@ extension AudioEngineManager {
         guard let deviceManager else {
             return "Device Manager isn't available"
         }
-        
+
         var string = ""
         string += "Engine isRunning: \(engineIsRunning)\n"
 
@@ -79,84 +79,16 @@ extension AudioEngineManager {
         guard let deviceManager else {
             return "Device Manager isn't available"
         }
-        
+
         let isSelectedOutputDevice = device == deviceManager.selectedOutputDevice
         let isSelectedInputDevice = device == deviceManager.selectedInputDevice
 
-        let aggregateIcon = device.isAggregateDevice ? "👥 (Aggregate) " : ""
+        let selectedInputIcon = isSelectedInputDevice ? "🤚 isSelectedInputDevice " : ""
+        let selectedOutputIcon = isSelectedOutputDevice ? "🤚 isSelectedOutputDevice " : ""
 
-        var directionIcon = "I/O Device ↑↓"
+        let content = "\(selectedInputIcon)\(selectedOutputIcon)\n"
 
-        if device.isInputOnlyDevice {
-            directionIcon = "↓ isInputOnlyDevice"
-
-        } else if device.isOutputOnlyDevice {
-            directionIcon = "↑ isOutputOnlyDevice"
-        }
-
-        let selectedInputIcon = isSelectedInputDevice ? " 🤚 isSelectedInputDevice" : ""
-        let selectedOutputIcon = isSelectedOutputDevice ? " 🤚 isSelectedOutputDevice" : ""
-        let name = " \(device.name) (\(device.id))"
-
-        let properties: [Any?] = [
-            "\(aggregateIcon)\(directionIcon)\(name)\(selectedInputIcon)\(selectedOutputIcon)",
-            "UID: \(device.uid ?? "<nil>")",
-            "transportType: \(device.transportType?.rawValue ?? "<nil>")",
-            "nominalSampleRates: \(device.nominalSampleRates ?? [])",
-            "owning device id: \(device.owningDevice?.id ?? 0)",
-            "manufacturer: \(device.manufacturer ?? "<nil>")",
-            "modelUID: \(device.modelUID ?? "<nil>")",
-            "relatedDevices: \(device.relatedDevices ?? [])",
-            "controlList: \(device.controlList ?? [])",
-            "isHidden: \(device.isHidden)",
-            "ownedObjectIDs: \(device.ownedObjectIDs ?? [])",
-        ]
-
-        var ioItems: [Any?] = ["\n"]
-        ioItems += channelsDescription(device: device, scope: .input)
-        ioItems += channelsDescription(device: device, scope: .output)
-
-        if ioItems.isEmpty {
-            ioItems = ["\n\t\t[No IO info available]]"]
-        }
-
-        var aggregateItems: [String] = []
-
-        if let value = device.ownedAggregateInputDevices, value.isNotEmpty {
-            aggregateItems += ["\townedAggregateInputDevices:"]
-            aggregateItems += value.map { "\t\t" + deviceDescription($0) }
-        }
-
-        if let value = device.ownedAggregateOutputDevices, value.isNotEmpty {
-            aggregateItems += ["\townedAggregateOutputDevices:"]
-            aggregateItems += value.map { "\t\t" + deviceDescription($0) }
-        }
-
-        let content = (properties.compactMap {
-            String(describing: $0 ?? "nil")
-        }).joined(separator: ", ")
-
-        let ioContent = (ioItems.compactMap {
-            String(describing: $0 ?? "nil")
-        }).joined(separator: " ")
-
-        return content + ioContent + aggregateItems.joined(separator: "\n")
-    }
-
-    func channelsDescription(device: AudioDevice, scope: Scope) -> [Any?] {
-        guard device.channels(scope: scope) > 0 else { return [] }
-
-        let names = device.namedChannels(scope: scope).map({ $0.description }).joined(separator: ", ")
-
-        let icon = scope == .input ? "↓" : "↑"
-
-        return [
-            "\(icon) \(scope.title)........\n",
-            "\t\(device.channels(scope: scope)) channel, [\(names)]", "\n",
-            "\tdataSources:", device.dataSources(scope: scope) as Any, "\n",
-            "\tpreferredChannelsForStereo:", device.preferredChannelsForStereo(scope: scope) as Any?, "\n",
-            "\tpresentationLatency:", device.presentationLatency(scope: scope) as Any?, "\n",
-        ]
+        return content + device.detailedDescription
     }
 
     func ioNodeDescription(_ node: AVAudioIONode) -> String {
