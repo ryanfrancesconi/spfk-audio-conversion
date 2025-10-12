@@ -8,13 +8,13 @@ extension AudioTrack: EngineNode {
 
 public class AudioTrack {
     /// input
-    let mixer: MixerWrapper
+    public let mixer: MixerWrapper
 
     /// output
-    let fader: Fader
+    public let fader: Fader
 
     /// effects
-    let audioUnitChain: AudioUnitChain
+    public let audioUnitChain: AudioUnitChain
 
     public weak var delegate: AudioTrackDelegate?
 
