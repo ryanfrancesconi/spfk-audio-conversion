@@ -93,8 +93,8 @@ public class MultiFormatPlayer {
     }
 
     public func load(audioFile: AVAudioFile) throws {
-        guard let audioEngineAccess = delegate?.audioEngineAccess else {
-            throw NSError(description: " audioEngineAccess is nil")
+        guard let delegate else {
+            throw NSError(description: "delegate is nil")
         }
 
         if let currentPlayer {
@@ -106,7 +106,7 @@ public class MultiFormatPlayer {
         if formatPlayer == nil {
             // this format hasn't been added yet so do it now
             let newPlayer = AudioFilePlayer()
-            try audioEngineAccess.connectAndAttach(newPlayer, to: mixer)
+            try delegate.connectAndAttach(newPlayer, to: mixer)
 
             players[audioFile.processingFormat] = newPlayer
             formatPlayer = newPlayer
@@ -259,6 +259,6 @@ extension MultiFormatPlayer {
     }
 }
 
-public protocol MultiFormatPlayerDelegate: AnyObject, AudioEngineAccess {
+public protocol MultiFormatPlayerDelegate: AnyObject, AudioEngineConnection {
     func multiFormatPlayer(timerEvent event: TransportTimerEvent)
 }
