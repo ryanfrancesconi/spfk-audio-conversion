@@ -29,7 +29,15 @@ public class MultiFormatPlayer {
     public var isLoaded: Bool { currentPlayer?.isLoaded == true }
 
     public var isLooping: Bool = false
-    public var loopRange: ClosedRange<TimeInterval>?
+
+    private var _loopRange: ClosedRange<TimeInterval>?
+    public var loopRange: ClosedRange<TimeInterval>? {
+        get { _loopRange }
+        set {
+            _loopRange = newValue?.clamped(to: 0 ... duration)
+        }
+    }
+
     public private(set) var scheduledLoop = ScheduledLoop()
 
     public private(set) var transportTimer: TransportTimer
