@@ -27,7 +27,6 @@ public class MultiFormatPlayer {
     public var duration: TimeInterval { currentPlayer?.duration ?? 0 }
     public var isPlaying: Bool { currentPlayer?.isPlaying == true }
     public var isLoaded: Bool { currentPlayer?.isLoaded == true }
-
     public var isLooping: Bool = false
 
     private var _loopRange: ClosedRange<TimeInterval>?
@@ -42,7 +41,12 @@ public class MultiFormatPlayer {
 
     public private(set) var transportTimer: TransportTimer
 
-    public var currentTime: TimeInterval { transportTimer.currentTime }
+    public var currentTime: TimeInterval {
+        get { transportTimer.currentTime }
+        set {
+            transportTimer.currentTime = newValue
+        }
+    }
 
     @MainActor
     public init(timerView: NSView, delegate: MultiFormatPlayerDelegate? = nil) {
@@ -85,10 +89,15 @@ public class MultiFormatPlayer {
             currentPlayer?.unload()
 
         case let .play(time: time):
-            try play(time: time)
+            try play(time: time ?? currentTime)
 
         case .stop:
             try stop()
+
+        case let .update(time: time):
+            guard !isPlaying else { return }
+
+            currentTime = time
 
         case let .loop(state):
             isLooping = state
@@ -106,6 +115,11 @@ public class MultiFormatPlayer {
         }
 
         if let currentPlayer {
+            guard currentPlayer.audioFile != audioFile else {
+                throw NSError(description: "Same audioFile is already loaded")
+            }
+
+            currentTime = 0
             currentPlayer.unload()
         }
 
@@ -145,6 +159,7 @@ public class MultiFormatPlayer {
         var time = time
 
         if time >= duration {
+            Log.error("time \(time) > duration \(duration) - setting to 0")
             time = 0
         }
 
@@ -253,7 +268,12 @@ extension MultiFormatPlayer {
 
         } else {
             try stop()
-            delegate?.multiFormatPlayer(timerEvent: .time(startTime)) // rewind
+
+            if startTime == 0 {
+                delegate?.multiFormatPlayer(timerEvent: .complete)
+            }
+
+            delegate?.multiFormatPlayer(timerEvent: .time(startTime)) // rewind}
         }
     }
 

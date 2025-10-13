@@ -1,13 +1,15 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
+import AppKit
 import AVFoundation
 import Foundation
 import SPFKMetadata
 import SPFKUtils
 
 public struct MetaAudioFileDescription: Hashable, Codable {
-    public var url: URL?
-    public var finderTags: [FinderTag] = []
+    public var urlProperties: URLProperties?
+
+    public var url: URL? { urlProperties?.url }
 
     public var fileType: AudioFileType?
 
@@ -29,7 +31,10 @@ public struct MetaAudioFileDescription: Hashable, Codable {
         bextDescription: BEXTDescription? = nil,
         loudness: LoudnessDescription? = nil
     ) {
-        self.url = url
+        if let url {
+            urlProperties = URLProperties(url: url)
+        }
+
         self.fileType = fileType
         self.audioFormat = audioFormat
         self.tagProperties = tagProperties
@@ -44,10 +49,7 @@ extension MetaAudioFileDescription {
 
         audioFormat = AudioFormatProperties(avAudioFile: avAudioFile)
 
-        self.url = url
-
-        // will want to store more URL attributes
-        finderTags = url.finderTags
+        urlProperties = URLProperties(url: url)
 
         fileType = AudioFileType(url: url)
 
@@ -56,5 +58,15 @@ extension MetaAudioFileDescription {
         if fileType == .wav {
             bextDescription = BEXTDescription(url: url)
         }
+    }
+}
+
+public struct URLProperties: Hashable, Codable {
+    public var url: URL
+    public var finderTags: FinderTagGroup
+
+    public init(url: URL) {
+        self.url = url
+        self.finderTags = FinderTagGroup(url: url)
     }
 }

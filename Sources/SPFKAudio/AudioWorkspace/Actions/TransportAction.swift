@@ -5,4 +5,5 @@ public enum TransportAction: String, CaseIterable, Equatable {
     case stop
     case rewindAll
     case loop
+    case autoNext
 }

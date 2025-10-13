@@ -5,6 +5,8 @@ import AVFAudio
 import AVFoundation
 import SPFKUtils
 
+// TODO: create incremental reader
+
 /// Get audio data from a file suitable for waveform visualization
 public enum WaveformDataRequest {
     public static func parse(
