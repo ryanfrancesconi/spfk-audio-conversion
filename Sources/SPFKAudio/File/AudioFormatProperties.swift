@@ -64,7 +64,14 @@ public struct AudioFormatProperties: Hashable, Codable {
     }
 
     private mutating func updateFormatDescription() {
-        var out = "\(Int(sampleRate)), "
+        let kHz = (sampleRate / 1000).truncated(decimalPlaces: 1)
+        var kHzString = kHz.string
+
+        if kHz.truncatingRemainder(dividingBy: 1) == 0 {
+            kHzString = kHz.int.string
+        }
+        
+        var out = "\(kHzString) kHz, "
 
         if let bitsPerChannel {
             out += bitsPerChannel > 0 ? "\(bitsPerChannel) bit " : ""

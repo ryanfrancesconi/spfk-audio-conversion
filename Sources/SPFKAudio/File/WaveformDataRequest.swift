@@ -5,7 +5,7 @@ import AVFAudio
 import AVFoundation
 import SPFKUtils
 
-// TODO: create incremental reader
+// TODO: create incremental reader with progress events
 
 /// Get audio data from a file suitable for waveform visualization
 public enum WaveformDataRequest {
@@ -46,16 +46,7 @@ public enum WaveformDataRequest {
                 throw NSError(description: "No audio was found in \(audioFile.url.path)")
             }
 
-            var samplesPerPixel: Int
-
-            switch resolution {
-            case .low:
-                samplesPerPixel = 128
-            case .medium:
-                samplesPerPixel = 64
-            case .high:
-                samplesPerPixel = 8
-            }
+            let samplesPerPixel: Int = resolution.samplesPerPixel
 
             // analysis buffer size
             var framesPerBuffer: AVAudioFrameCount = AVAudioFrameCount(samplesPerPixel)
@@ -133,5 +124,16 @@ extension WaveformDataRequest {
         case low
         case medium
         case high
+
+        public var samplesPerPixel: Int {
+            switch self {
+            case .low:
+                128
+            case .medium:
+                64
+            case .high:
+                8
+            }
+        }
     }
 }
