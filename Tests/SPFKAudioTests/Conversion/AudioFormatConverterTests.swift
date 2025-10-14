@@ -79,6 +79,6 @@ class AudioFormatConverterTests: BinTestCase {
             Log.debug("✓ Wrote \(result.lastPathComponent)")
         }
 
-        #expect(bin.directoryContents?.count == 12)
+        #expect(bin.directoryContents?.count == 13)
     }
 }
