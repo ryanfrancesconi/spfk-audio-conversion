@@ -66,7 +66,7 @@ public enum WaveformDataRequest {
 
             var startFrame: AVAudioFramePosition = 0
 
-            // Log.debug(resolution, "totalFrames", totalFrames, "samplesPerPixel", samplesPerPixel, "data size", outputLength)
+            // Log.debug("duration", audioFile.duration, "resolution", resolution, "totalFrames", totalFrames, "samplesPerPixel", samplesPerPixel, "data size", outputLength)
 
             for i in 0 ..< outputLength {
                 audioFile.framePosition = startFrame
