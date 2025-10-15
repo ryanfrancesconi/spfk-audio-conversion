@@ -10,6 +10,16 @@ extension MultiFormatPlayer: EngineNode {
     public var outputNode: AVAudioNode? { mixer.outputNode }
 }
 
+extension MultiFormatPlayer: TransportStateAccess {
+    public var transportState: TransportState {
+        TransportState(
+            isPlaying: isPlaying,
+            isLooping: isLooping,
+            currentTime: currentTime
+        )
+    }
+}
+
 public class MultiFormatPlayer {
     public private(set) var mixer: MixerWrapper
 
@@ -25,9 +35,7 @@ public class MultiFormatPlayer {
     public private(set) var currentPlayer: AudioFilePlayer?
 
     public var duration: TimeInterval { currentPlayer?.duration ?? 0 }
-    public var isPlaying: Bool { currentPlayer?.isPlaying == true }
     public var isLoaded: Bool { currentPlayer?.isLoaded == true }
-    public var isLooping: Bool = false
 
     private var _loopRange: ClosedRange<TimeInterval>?
     public var loopRange: ClosedRange<TimeInterval>? {
@@ -40,6 +48,10 @@ public class MultiFormatPlayer {
     public private(set) var scheduledLoop = ScheduledLoop()
 
     public private(set) var transportTimer: TransportTimer
+
+    public var isPlaying: Bool { currentPlayer?.isPlaying == true }
+    
+    public private(set) var isLooping: Bool = false
 
     public var currentTime: TimeInterval {
         get { transportTimer.currentTime }
@@ -269,11 +281,13 @@ extension MultiFormatPlayer {
         } else {
             try stop()
 
+            transportTimer.currentTime = startTime
+
             if startTime == 0 {
                 delegate?.multiFormatPlayer(timerEvent: .complete)
             }
 
-            delegate?.multiFormatPlayer(timerEvent: .time(startTime)) // rewind}
+            delegate?.multiFormatPlayer(timerEvent: .time(startTime)) // rewind
         }
     }
 

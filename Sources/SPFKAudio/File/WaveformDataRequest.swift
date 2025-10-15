@@ -124,6 +124,7 @@ extension WaveformDataRequest {
         case low
         case medium
         case high
+        case veryHigh
 
         public var samplesPerPixel: Int {
             switch self {
@@ -133,6 +134,8 @@ extension WaveformDataRequest {
                 64
             case .high:
                 8
+            case .veryHigh:
+                4
             }
         }
     }
