@@ -151,14 +151,3 @@ extension AVAudioFile {
         return try AVAudioFile(url: outputURL, fromBuffer: editedBuffer)
     }
 }
-
-extension AVAudioFile {
-    /// Pull samples from the audio file suitable for visualization
-    public func waveformData(resolution: WaveformDataRequest.Resolution = .medium) async throws -> FloatChannelData {
-        try await WaveformDataRequest.parse(
-            audioFile: self,
-            resolution: resolution,
-            analysisMode: .peak
-        )
-    }
-}
