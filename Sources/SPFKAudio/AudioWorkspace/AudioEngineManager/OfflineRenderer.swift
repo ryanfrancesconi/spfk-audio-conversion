@@ -6,12 +6,14 @@ import OTAtomics
 import SPFKMetadata
 import SPFKUtils
 
+// TODO: REFACTOR: abortFlag should be Task cancellation
+
 /// Wrapper on top of engine renderer with some event handlers
 public class OfflineRenderer {
     public enum Event {
         case renderCancelled
         case renderStarted
-        case renderProgress(event: AsyncProgressEvent)
+        case renderProgress(event: LoadStateEvent)
         case renderComplete
         case renderError(Error)
     }
@@ -120,7 +122,7 @@ public class OfflineRenderer {
 
                     self.send(event:
                         .renderProgress(
-                            event: (string: "Rendering to \(self.filenameNoExtension)...", progress: value * 100)
+                            event: .loading(string: "Rendering to \(self.filenameNoExtension)...", progress: value)
                         )
                     )
                 }

@@ -65,13 +65,8 @@ public class BatchAudioFormatConverter {
                 let progress: ProgressValue1 = await data.percent
 
                 let prefix = result.error != nil ? "Error" : "Converted"
-                // let string = prefix + result.source.input.lastPathComponent
 
-                let event: AsyncProgress1Event = (
-                    string: prefix, progress: progress
-                )
-
-                await delegate.batchProgress(progressEvent: event)
+                await delegate.batchProgress(progressEvent: .loading(string: prefix, progress: progress))
             }
 
             for try await result in taskGroup {
@@ -98,5 +93,5 @@ public class BatchAudioFormatConverter {
 }
 
 public protocol BatchAudioFormatConverterDelegate: AnyObject {
-    func batchProgress(progressEvent: AsyncProgress1Event) async
+    func batchProgress(progressEvent: LoadStateEvent) async
 }
