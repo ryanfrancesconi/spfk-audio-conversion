@@ -9,19 +9,19 @@ extension AVAudioPCMBuffer {
     /// Read the contents of the url into this buffer
     public convenience init?(url: URL) throws {
         let file = try AVAudioFile(forReading: url)
-        try self.init(file: file)
+        try self.init(audioFile: file)
     }
 
     /// Read entire file and return a new AVAudioPCMBuffer with its contents
-    public convenience init?(file: AVAudioFile) throws {
-        file.framePosition = 0
+    public convenience init?(audioFile: AVAudioFile) throws {
+        audioFile.framePosition = 0
 
         self.init(
-            pcmFormat: file.processingFormat,
-            frameCapacity: AVAudioFrameCount(file.length)
+            pcmFormat: audioFile.processingFormat,
+            frameCapacity: AVAudioFrameCount(audioFile.length)
         )
 
-        try file.read(into: self)
+        try audioFile.read(into: self)
     }
 }
 

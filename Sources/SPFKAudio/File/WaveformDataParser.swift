@@ -9,15 +9,17 @@ import SPFKUtils
 public class WaveformDataParser {
     public weak var delegate: WaveformDataParserDelegate?
 
-    private var resolution: WaveformDrawingResolution = .medium
+    public var resolution: WaveformDrawingResolution = .medium
     private var priority: TaskPriority = .medium
     private var task: Task<FloatChannelData, Error>?
 
     public init(
-        resolution: WaveformDrawingResolution = .medium,
+        resolution: WaveformDrawingResolution,
         priority: TaskPriority = .medium,
         delegate: WaveformDataParserDelegate? = nil
     ) {
+        Log.debug(resolution)
+
         self.resolution = resolution
         self.priority = priority
         self.delegate = delegate
@@ -66,6 +68,14 @@ public class WaveformDataParser {
 
 extension WaveformDataParser {
     private func _parse(audioFile: AVAudioFile) async throws -> FloatChannelData {
+        defer {
+            delegate?.waveformDataParser(event: .loaded)
+        }
+
+        guard resolution != .lossless else {
+            return try await readEntire(audioFile: audioFile)
+        }
+
         var lastSentProgress: ProgressValue1 = 0
         func send(progress: ProgressValue1) {
             guard let delegate,
@@ -73,7 +83,7 @@ extension WaveformDataParser {
 
             // don't send too many progress events
             lastSentProgress = progress
-            delegate.waveformDataParser(event: .loading(string: nil, progress: progress))
+            delegate.waveformDataParser(event: .loading(string: "Calculating overview...", progress: progress))
         }
 
         let totalFrames = AVAudioFrameCount(audioFile.length)
@@ -94,31 +104,29 @@ extension WaveformDataParser {
             throw NSError(description: "Unable to create buffer")
         }
 
+        let chunkCount = totalFrames.int / samplesPerPoint
         let channelCount = audioFile.fileFormat.channelCount.int
-        let outputLength = totalFrames.int / samplesPerPoint
-        var floatChannelData = Array(repeating: [Float](zeros: outputLength), count: channelCount)
         var currentFrame: AVAudioFramePosition = 0
-        let chunkLength = framesPerBuffer.int
+
+        var floatChannelData = Array(repeating: [Float](zeros: chunkCount), count: channelCount)
 
         // scan a chunk and take the max magnitude in it, discard the rest
-        for i in 0 ..< outputLength {
+        for i in 0 ..< chunkCount {
             try Task.checkCancellation()
 
             audioFile.framePosition = currentFrame
 
             try audioFile.read(into: buffer, frameCount: framesPerBuffer)
 
-            guard let floatData = buffer.floatChannelData else {
+            guard let rawData = buffer.floatChannelData else {
                 throw NSError(description: "Failed to read from buffer")
             }
-
-            // let length = vDSP_Length(buffer.frameLength).int
 
             for n in 0 ..< channelCount {
                 var value: Float = .nan
 
-                let bufferPointer = UnsafeBufferPointer(start: floatData[n], count: chunkLength)
-                let floatArray = Array(bufferPointer)
+                let bufferPointer = UnsafeBufferPointer(start: rawData[n], count: framesPerBuffer.int)
+                let floatArray = Array<Float>(bufferPointer)
 
                 for item in floatArray {
                     value = Float.maximumMagnitude(item, value)
@@ -141,9 +149,22 @@ extension WaveformDataParser {
             send(progress: currentFrame.double / totalFrames.double)
         }
 
-        delegate?.waveformDataParser(event: .loaded)
-
         return floatChannelData
+    }
+
+    /// read the entire file into memory. should only be used on short files
+    private func readEntire(audioFile: AVAudioFile) async throws -> FloatChannelData {
+        Log.debug("reading entire file \(audioFile.url.path)")
+
+        guard let buffer = try AVAudioPCMBuffer(audioFile: audioFile) else {
+            throw NSError(description: "Unable to create buffer")
+        }
+
+        guard let floatData = buffer.floatData else {
+            throw NSError(description: "Failed to read from buffer")
+        }
+
+        return floatData
     }
 }
 

@@ -50,7 +50,7 @@ class BatchAudioFormatConverterTests: BinTestCase {
 }
 
 extension BatchAudioFormatConverterTests: BatchAudioFormatConverterDelegate {
-    func batchProgress(progressEvent: SPFKUtils.Progress1Event) async {
+    func batchProgress(progressEvent: LoadStateEvent) async {
         Log.debug(progressEvent)
     }
 }

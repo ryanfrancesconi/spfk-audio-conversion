@@ -11,20 +11,45 @@ class WaveformDataParserTests: BinTestCase {
     @Test func parse() async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
 
-        let input = BundleResources.shared.tabla_6_channel
+        let url = BundleResources.shared.tabla_6_channel
 
         let parser = WaveformDataParser(
             resolution: .low,
-            priority: .low
+            priority: .medium
         )
 
-        let data = try await parser.parse(url: input)
+        let data = try await parser.parse(url: url)
 
         // channel count for the file
         #expect(data.count == 6)
 
         for channel in data {
             #expect(channel.count == 1315)
+        }
+    }
+
+    @Test func parseLossless() async throws {
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
+
+        let url = BundleResources.shared.cowbell_wav
+
+        let audioFile = try AVAudioFile(forReading: url)
+        #expect(audioFile.length == 88201)
+        #expect(audioFile.fileFormat.sampleRate == 44100)
+        #expect(audioFile.duration == 2.0000226757369615)
+
+        let parser = WaveformDataParser(
+            resolution: .lossless,
+            priority: .medium
+        )
+
+        let data = try await parser.parse(url: url)
+
+        // channel count for the file
+        #expect(data.count == audioFile.fileFormat.channelCount)
+
+        for channel in data {
+            #expect(channel.count == audioFile.length)
         }
     }
 
@@ -49,12 +74,12 @@ class WaveformDataParserTests: BinTestCase {
     }
 
     @Test func noDataChunk() async throws {
-        let input = BundleResources.shared.no_data_chunk
+        let url = BundleResources.shared.no_data_chunk
         let request = WaveformDataParser(resolution: .low, priority: .low)
 
         await #expect(throws: (any Error).self) {
             do {
-                _ = try await request.parse(url: input)
+                _ = try await request.parse(url: url)
             } catch {
                 Log.error(error)
 
