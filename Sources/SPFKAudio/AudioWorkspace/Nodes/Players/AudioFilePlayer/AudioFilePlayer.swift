@@ -12,18 +12,7 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
     /// The underlying player node
     private(set) var playerNode = AVAudioPlayerNode()
 
-    // MARK: REVIEW
-
-    private var playerTime: TimeInterval {
-        if let nodeTime = playerNode.lastRenderTime,
-           let playerTime = playerNode.playerTime(forNodeTime: nodeTime) {
-            return TimeInterval(playerTime.sampleTime) / playerTime.sampleRate
-        }
-        return 0
-    }
-
     public internal(set) var lastScheduledTime: AVAudioTime?
-    public internal(set) var lastScheduledTimeInterval: TimeInterval?
 
     public var isScheduled: Bool {
         lastScheduledTime != nil
@@ -64,19 +53,19 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
     public var currentFrame: AVAudioFramePosition {
         guard playerNode.engine != nil,
               let nodeTime = playerNode.lastRenderTime,
+              nodeTime.isSampleTimeValid,
               let playerTime = playerNode.playerTime(forNodeTime: nodeTime) else {
             Log.error("Error getting currentFrame, was detached:", playerNode.engine == nil)
             return 0
         }
-        return playerTime.sampleTime
+        return max(0, playerTime.sampleTime)
     }
 
     /// - Returns: Current time of the player in seconds while playing.
     public var currentTime: TimeInterval {
-        let currentDuration = (editEndTime - editStartTime == 0) ? duration : (editEndTime - editStartTime)
-        let current = editStartTime + playerTime.truncatingRemainder(dividingBy: currentDuration)
+        let playerTime = currentFrame.double / sampleRate
 
-        return current
+        return playerTime + editStartTime
     }
 
     private var _editStartTime: TimeInterval = 0

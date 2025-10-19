@@ -1,3 +1,5 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import Foundation
 import SPFKUtils
@@ -41,24 +43,26 @@ public struct LoopScheduler {
 
         // Log.debug("⏰🔁 \(label), scheduled @", avTime.toSeconds(hostTime: hostTime), "now has", times.count, "more iterations left, hostTime", hostTime)
 
-        if times.count == 0 {
-            guard isInfinite else {
-                eventHandler?(.complete)
-                return avTime
-            }
-
-            let futureTime = loopDuration
-
-            appendSchedule(
-                startingIn: avTime.offset(seconds: futureTime).toSeconds(hostTime: hostTime),
-                count: defaultNumberOfLoops
-            )
-
-            // Log.debug("Generated \(numberOfLoops) more loops", self)
-
-            let times = self.times
-            eventHandler?(.updated(times: times))
+        guard times.count == 0 else {
+            return avTime
         }
+
+        guard isInfinite else {
+            eventHandler?(.complete)
+            return avTime
+        }
+
+        let futureTime = loopDuration
+
+        appendSchedule(
+            startingIn: avTime.offset(seconds: futureTime).toSeconds(hostTime: hostTime),
+            count: defaultNumberOfLoops
+        )
+
+        // Log.debug("Generated \(numberOfLoops) more loops", self)
+
+        let times = self.times
+        eventHandler?(.updated(times: times))
 
         return avTime
     }
@@ -94,7 +98,7 @@ public struct LoopScheduler {
 
     /// Append an existing schedule with additional loop times
     /// - Parameter count: how many loops to append
-    public mutating func appendSchedule(
+    private mutating func appendSchedule(
         startingIn initialTime: TimeInterval = 0,
         count: Int? = nil
     ) {
@@ -123,14 +127,6 @@ public struct LoopScheduler {
         }
 
         return AVAudioTime.secondsToAudioTime(hostTime: hostTime, time: seconds)
-    }
-
-    var endTime: TimeInterval {
-        guard let lastTime = times.last else { return 0 }
-
-        let seconds = lastTime.toSeconds(hostTime: hostTime)
-
-        return seconds + loopDuration
     }
 
     private mutating func sort() {

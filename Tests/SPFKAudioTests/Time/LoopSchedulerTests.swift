@@ -42,4 +42,45 @@ class LoopSchedulerTests {
             scheduledLoop.times.last?.toSeconds(hostTime: hostTime) == 0.9
         )
     }
+
+    @Test func appendSchedule() throws {
+        var scheduledLoop = LoopScheduler(label: #function)
+        let hostTime = mach_absolute_time()
+        let loopDuration: TimeInterval = 0.1
+        let count = 10
+
+        scheduledLoop.createSchedule(
+            loopDuration: loopDuration,
+            hostTime: hostTime,
+            count: count
+        )
+
+        scheduledLoop.eventHandler = { event in
+            Log.debug(event)
+
+            switch event {
+            case let .updated(times: times):
+                #expect(times.count == count)
+
+            case .complete:
+                break
+            }
+        }
+
+        for i in 1 ... count {
+            guard let _ = scheduledLoop.next() else {
+                Issue.record("avTime is nil")
+                return
+            }
+
+            Log.debug(scheduledLoop.times.count)
+            
+            let index = count - i
+
+            // the times were reloaded with count more
+            let value = index == 0 ? count : index
+
+            #expect(scheduledLoop.times.count == value)
+        }
+    }
 }

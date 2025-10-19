@@ -13,7 +13,6 @@ extension AudioFilePlayer {
     ) throws -> AVAudioTime {
         let hostTime = hostTime ?? mach_absolute_time()
         let audioTime: AVAudioTime = audioTime(scheduledTime: scheduledTime, hostTime: hostTime)
-        lastScheduledTimeInterval = scheduledTime
 
         try schedule(from: startingTime, to: endingTime, audioTime: audioTime)
         return audioTime

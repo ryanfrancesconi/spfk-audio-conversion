@@ -7,21 +7,28 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-class AudioPlayerTestCase: BinTestCase {
-    var audioWorkspace = AudioWorkspace()
+public class AudioWorkspaceTestCase: BinTestCase {
+    public let audioWorkspace = AudioWorkspace()
 
-    var player: AudioFilePlayer?
     var audioUnitChain: AudioUnitChain? { audioWorkspace.master?.audioUnitChain }
 
-    func setup() async throws {
+    public func setup() async throws {
         try await audioWorkspace.rebuild()
 
+        try audioWorkspace.start()
+    }
+}
+
+class AudioPlayerTestCase: AudioWorkspaceTestCase {
+    var player: AudioFilePlayer?
+
+    override public func setup() async throws {
+        try await super.setup()
+        
         let masterMixer = try #require(audioWorkspace.master?.mixer)
 
         let player = AudioFilePlayer()
         self.player = player
         try audioWorkspace.engineManager.connectAndAttach(player, to: masterMixer)
-
-        try audioWorkspace.start()
     }
 }

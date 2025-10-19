@@ -67,6 +67,7 @@ public class MultiFormatPlayer {
     @MainActor
     public init(timerView: NSView, delegate: MultiFormatPlayerDelegate? = nil) {
         mixer = MixerWrapper()
+        
         self.delegate = delegate
 
         transportTimer = TransportTimer(on: timerView)
