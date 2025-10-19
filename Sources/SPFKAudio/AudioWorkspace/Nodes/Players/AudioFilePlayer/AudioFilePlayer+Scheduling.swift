@@ -11,20 +11,26 @@ extension AudioFilePlayer {
         when scheduledTime: TimeInterval = 0,
         hostTime: UInt64? = nil
     ) throws -> AVAudioTime {
+        let hostTime = hostTime ?? mach_absolute_time()
+        let audioTime: AVAudioTime = audioTime(scheduledTime: scheduledTime, hostTime: hostTime)
+        lastScheduledTimeInterval = scheduledTime
+
+        try schedule(from: startingTime, to: endingTime, audioTime: audioTime)
+        return audioTime
+    }
+
+    public func schedule(
+        from startingTime: TimeInterval? = nil,
+        to endingTime: TimeInterval? = nil,
+        audioTime: AVAudioTime
+    ) throws {
         let startingTime = startingTime ?? editStartTime
         let endingTime = endingTime ?? editEndTime
 
-        let hostTime = hostTime ?? mach_absolute_time()
-        let audioTime: AVAudioTime = audioTime(scheduledTime: scheduledTime, hostTime: hostTime)
-
         lastScheduledTime = audioTime
-        lastScheduledTimeInterval = scheduledTime
-
         preroll(from: startingTime, to: endingTime)
-        
-        try scheduleSegment(at: audioTime)
 
-        return audioTime
+        try scheduleSegment(at: audioTime)
     }
 
     /// a segment must be scheduled before you can play
