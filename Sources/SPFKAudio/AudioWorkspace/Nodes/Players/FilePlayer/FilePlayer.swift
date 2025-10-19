@@ -4,7 +4,7 @@ import AVFoundation
 import SPFKUtils
 
 /// An audio player which is associated with a single file
-open class AudioFilePlayer: EngineNodeAU, Mixable {
+open class FilePlayer: EngineNodeAU, Mixable {
     // MARK: - Nodes
 
     public var avAudioNode: AVAudioNode { playerNode }
@@ -34,71 +34,65 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
         playerNode.engine?.manualRenderingMode
     }
 
-    /// The duration of the loaded audio file
-    public var duration: TimeInterval {
-        guard let audioFile else { return 0 }
-
-        return audioFile.duration
-    }
-
-    public var editedDuration: TimeInterval {
-        (duration - editStartTime) - (duration - editEndTime)
-    }
-
-    public var sampleRate: Double {
-        playerNode.outputFormat(forBus: 0).sampleRate
+    public var sampleRate: Double? {
+        return audioFile?.fileFormat.sampleRate
     }
 
     /// - Returns: The current frame while playing. It will return 0 on error.
-    public var currentFrame: AVAudioFramePosition {
-        guard playerNode.engine != nil,
+    public var currentFrame: AVAudioFramePosition? {
+        guard let engine,
+              engine.isRunning,
               let nodeTime = playerNode.lastRenderTime,
               nodeTime.isSampleTimeValid,
               let playerTime = playerNode.playerTime(forNodeTime: nodeTime) else {
             Log.error("Error getting currentFrame, was detached:", playerNode.engine == nil)
-            return 0
+            return nil
         }
+
         return max(0, playerTime.sampleTime)
     }
 
     /// - Returns: Current time of the player in seconds while playing.
-    public var currentTime: TimeInterval {
+    public var currentTime: TimeInterval? {
+        guard let sampleRate, let currentFrame, let playbackRange else { return nil }
+
         let playerTime = currentFrame.double / sampleRate
 
-        return playerTime + editStartTime
+        return playerTime + playbackRange.lowerBound
     }
 
-    private var _editStartTime: TimeInterval = 0
-
-    /// Get or set the edit start time of the player.
-    public var editStartTime: TimeInterval {
-        get { _editStartTime }
-        set { _editStartTime = max(0, newValue) }
+    /// The duration of the loaded audio file
+    public var duration: TimeInterval? {
+        return audioFile?.duration
     }
 
-    private var _editEndTime: TimeInterval = 0
+    public var editedDuration: TimeInterval? {
+        playbackRange?.duration
+    }
 
-    /// Get or set the edit end time of the player.
-    public var editEndTime: TimeInterval {
-        get { _editEndTime }
+    /// The start time and end time of the audio to be played.
+    /// IE 1 ... 3, starts at 1 second and ends on 3. editedDuration == 2
+    public private(set) var playbackRange: ClosedRange<TimeInterval>?
 
-        set {
-            var newValue = newValue
-
-            if newValue == 0 {
-                newValue = duration
-            }
-
-            _editEndTime = min(newValue, duration)
+    public func updateTimeRange(
+        from startingTime: TimeInterval? = nil,
+        to endingTime: TimeInterval? = nil
+    ) throws {
+        guard let duration else {
+            throw NSError(description: "No audio file is loaded")
         }
-    }
 
-    public var editRange: ClosedRange<TimeInterval> {
-        get { editStartTime ... editEndTime }
-        set {
-            editStartTime = newValue.lowerBound
-            editEndTime = newValue.upperBound
+        let startingTime = startingTime ?? 0
+        let endingTime = endingTime ?? duration
+
+        let lowerBound = max(0, startingTime)
+        let upperBound = min(duration, endingTime)
+
+        guard lowerBound < upperBound else {
+            throw NSError(description: "invalid edit range \(lowerBound)...\(upperBound)")
         }
+
+        playbackRange = lowerBound ... upperBound
     }
 
     ///  - Returns: the internal processingFormat
@@ -107,8 +101,7 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
     // MARK: -
 
     /// Volume 0.0 -> ?, default 1.0, > 1 applies gain
-    /// This is different than gain
-    public var volume: AUValue {
+    public var volume: Float {
         get { playerNode.volume }
         set {
             playerNode.volume = newValue
@@ -167,8 +160,7 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
         self.audioFile = audioFile
 
         processingFormat = audioFile.processingFormat
-
-        preroll()
+        playbackRange = 0 ... audioFile.duration
     }
 
     public func unload() {
@@ -177,10 +169,11 @@ open class AudioFilePlayer: EngineNodeAU, Mixable {
         }
 
         audioFile = nil
+        playbackRange = nil
     }
 }
 
-extension AudioFilePlayer: EngineNode {
+extension FilePlayer: EngineNode {
     public var outputNode: AVAudioNode? { playerNode }
 
     public func detachNodes() throws {

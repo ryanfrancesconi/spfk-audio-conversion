@@ -22,6 +22,8 @@ public struct MetaAudioFileDescription: Hashable, Codable {
 
     /// LUFS, true peak and loudness range
     public var loudness: LoudnessDescription?
+    
+    // TODO: markers
 
     public init(
         url: URL? = nil,

@@ -5,12 +5,12 @@ import SPFKTime
 import SPFKUtils
 import SPFKUtilsC
 
-extension MultiFormatPlayer: EngineNode {
+extension TransportPlayer: EngineNode {
     public var inputNode: AVAudioNode? { mixer.inputNode }
     public var outputNode: AVAudioNode? { mixer.outputNode }
 }
 
-extension MultiFormatPlayer: TransportStateAccess {
+extension TransportPlayer: TransportStateAccess {
     public var transportState: TransportState {
         TransportState(
             isPlaying: isPlaying,
@@ -20,19 +20,25 @@ extension MultiFormatPlayer: TransportStateAccess {
     }
 }
 
-public class MultiFormatPlayer {
+/// A player which supports any audio format, realtime sample rate conversion,
+/// looping and a built in `DisplayLinkTimer` for screen based refresh events such
+/// as tracking a playhead. This class is intended for real time only use such as an
+/// audio editor.
+public class TransportPlayer {
     public private(set) var mixer: MixerWrapper
+    public private(set) var transportTimer: TransportTimer
 
-    public weak var delegate: MultiFormatPlayerDelegate?
+    public weak var delegate: TransportPlayerDelegate?
 
-    // create a player for each new audio format loaded into the mixer
-    private var players: [AVAudioFormat: AudioFilePlayer] = .init()
+    /// cache a player for each new audio format loaded into the mixer
+    private var players: [AVAudioFormat: FilePlayer] = .init()
+
+    /// the player which is actively playing
+    private var currentPlayer: FilePlayer?
 
     public var formats: [AVAudioFormat] {
         players.map { $0.key }
     }
-
-    public private(set) var currentPlayer: AudioFilePlayer?
 
     public var duration: TimeInterval { currentPlayer?.duration ?? 0 }
     public var isLoaded: Bool { currentPlayer?.isLoaded == true }
@@ -51,8 +57,6 @@ public class MultiFormatPlayer {
 
     public private(set) var scheduler = LoopScheduler()
 
-    public private(set) var transportTimer: TransportTimer
-
     public var isPlaying: Bool { currentPlayer?.isPlaying == true }
 
     public private(set) var isLooping: Bool = false
@@ -64,14 +68,30 @@ public class MultiFormatPlayer {
         }
     }
 
-    @MainActor
-    public init(timerView: NSView, delegate: MultiFormatPlayerDelegate? = nil) {
+    /// Will attempt to use a NSScreen display link
+    /// - Parameter delegate: needed to connect to the engine
+    public init(delegate: TransportPlayerDelegate? = nil) throws {
+        transportTimer = try TransportTimer()
         mixer = MixerWrapper()
-        
         self.delegate = delegate
 
-        transportTimer = TransportTimer(on: timerView)
+        initialize()
+    }
 
+    /// Will use a view for the display link
+    /// - Parameters:
+    ///   - timerView: A NSView to use to sync the timer against
+    ///   - delegate: needed to connect to the engine
+    @MainActor
+    public init(timerView: NSView, delegate: TransportPlayerDelegate? = nil) {
+        transportTimer = TransportTimer(on: timerView)
+        mixer = MixerWrapper()
+        self.delegate = delegate
+
+        initialize()
+    }
+
+    private func initialize() {
         transportTimer.eventHandler = { [weak self] event in
             guard let self else { return }
 
@@ -127,6 +147,12 @@ public class MultiFormatPlayer {
             }
         }
     }
+}
+
+extension TransportPlayer {
+    public func load(url: URL) throws {
+        try load(audioFile: try AVAudioFile(forReading: url))
+    }
 
     public func load(audioFile: AVAudioFile) throws {
         guard let delegate else {
@@ -146,7 +172,7 @@ public class MultiFormatPlayer {
 
         if formatPlayer == nil {
             // this format hasn't been added yet so do it now
-            let newPlayer = AudioFilePlayer()
+            let newPlayer = FilePlayer()
             try delegate.connectAndAttach(newPlayer, to: mixer)
 
             players[audioFile.processingFormat] = newPlayer
@@ -158,7 +184,9 @@ public class MultiFormatPlayer {
         try formatPlayer?.load(audioFile: audioFile)
         self.currentPlayer = formatPlayer
     }
+}
 
+extension TransportPlayer {
     public func restart() throws {
         guard isPlaying else { return }
 
@@ -172,7 +200,7 @@ public class MultiFormatPlayer {
         }
 
         guard isLoaded else {
-            throw NSError(description: " No audio file is loaded")
+            throw NSError(description: "No audio file is loaded")
         }
 
         var time = time
@@ -188,11 +216,11 @@ public class MultiFormatPlayer {
             try scheduleLoops(at: time, hostTime: hostTime, count: 5)
 
         } else {
-            let endTime = playbackRange.upperBound // loopRange?.upperBound ?? duration
-            try currentPlayer.schedule(from: time, to: endTime, hostTime: hostTime)
+            try currentPlayer.schedule(from: time, to: playbackRange.upperBound, hostTime: hostTime)
         }
 
         startTimer(at: time, hostTime: hostTime)
+
         try play()
     }
 
@@ -231,79 +259,11 @@ public class MultiFormatPlayer {
 
         currentPlayer.stop()
         scheduler.removeAll()
-
         stopTimer()
     }
 }
 
-extension MultiFormatPlayer {
-    public func update(timerEvent event: TransportTimerEvent) throws {
-        delegate?.multiFormatPlayer(timerEvent: event)
-
-        guard case let .time(transportTime) = event else { return }
-
-        let loopShim: TimeInterval = isLooping ? 0.01 : 0
-        let endTime = loopRange?.upperBound ?? duration
-
-        if transportTime >= endTime - loopShim {
-            try handleComplete()
-        }
-    }
-
-    private func handleComplete() throws {
-        let startTime = loopRange?.lowerBound ?? 0
-
-        if isLooping {
-            guard let nextTime: AVAudioTime = scheduler.next() else {
-                throw NSError(description: "Failed to get next scheduled time")
-            }
-
-            // reset the timer to be relative to the next avTime in the schedule
-            transportTimer.start(avTime: nextTime.offset(seconds: -startTime))
-
-        } else {
-            try stop()
-
-            transportTimer.currentTime = startTime
-
-            if startTime == 0 {
-                delegate?.multiFormatPlayer(timerEvent: .complete)
-            }
-
-            rewind()
-        }
-    }
-
-    private func handle(loopEvent event: LoopScheduler.Event) {
-        do {
-            switch event {
-            // the loop schedule has changed, schedule the new times in the player
-            case let .updated(times: times):
-//                let playbackRange = self.playbackRange
-//
-//                for avTime in times {
-//                    try currentPlayer?.schedule(
-//                        from: playbackRange.lowerBound,
-//                        to: playbackRange.lowerBound + playbackRange.duration,
-//                        audioTime: avTime
-//                    )
-//                }
-
-                try scheduleAudio(times: times)
-
-            // the amount of loops requested is complete
-            case .complete:
-                Task { @MainActor in
-                    try stop()
-                    rewind()
-                }
-            }
-
-        } catch {
-            Log.error(error)
-        }
-    }
-
+extension TransportPlayer {
     private func scheduleLoops(at time: TimeInterval, hostTime: UInt64, count: Int) throws {
         guard let currentPlayer else {
             throw NSError(description: "currentPlayer is nil")
@@ -351,7 +311,66 @@ extension MultiFormatPlayer {
 
     private func rewind() {
         let startTime = loopRange?.lowerBound ?? 0
-        delegate?.multiFormatPlayer(timerEvent: .time(startTime))
+        delegate?.transportPlayer(timerEvent: .time(startTime))
+    }
+}
+
+extension TransportPlayer {
+    public func update(timerEvent event: TransportTimerEvent) throws {
+        delegate?.transportPlayer(timerEvent: event)
+
+        guard case let .time(transportTime) = event else { return }
+
+        let loopShim: TimeInterval = isLooping ? 0.01 : 0
+        let endTime = loopRange?.upperBound ?? duration
+
+        if transportTime >= endTime - loopShim {
+            try handleComplete()
+        }
+    }
+
+    private func handleComplete() throws {
+        let startTime = loopRange?.lowerBound ?? 0
+
+        if isLooping {
+            guard let nextTime: AVAudioTime = scheduler.next() else {
+                throw NSError(description: "Failed to get next scheduled time")
+            }
+
+            // reset the timer to be relative to the next avTime in the schedule
+            transportTimer.start(avTime: nextTime.offset(seconds: -startTime))
+
+        } else {
+            try stop()
+
+            transportTimer.currentTime = startTime
+
+            if startTime == 0 {
+                delegate?.transportPlayer(timerEvent: .complete)
+            }
+
+            rewind()
+        }
+    }
+
+    private func handle(loopEvent event: LoopScheduler.Event) {
+        do {
+            switch event {
+            // the loop schedule has changed, schedule the new times in the player
+            case let .updated(times: times):
+                try scheduleAudio(times: times)
+
+            // the amount of loops requested is complete
+            case .complete:
+                Task { @MainActor in
+                    try stop()
+                    rewind()
+                }
+            }
+
+        } catch {
+            Log.error(error)
+        }
     }
 
     private func startTimer(avTime: AVAudioTime) {
@@ -369,6 +388,6 @@ extension MultiFormatPlayer {
     }
 }
 
-public protocol MultiFormatPlayerDelegate: AnyObject, AudioEngineConnection {
-    func multiFormatPlayer(timerEvent event: TransportTimerEvent)
+public protocol TransportPlayerDelegate: AnyObject, AudioEngineConnection {
+    func transportPlayer(timerEvent event: TransportTimerEvent)
 }

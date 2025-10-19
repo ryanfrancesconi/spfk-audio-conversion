@@ -3,27 +3,7 @@
 import Foundation
 import SPFKUtils
 
-extension AudioFilePlayer {
-    /// Update the edit points
-    public func preroll(from startingTime: TimeInterval = 0, to endingTime: TimeInterval = 0) {
-        var startingTime = startingTime
-        var endingTime = endingTime
-
-        if endingTime == 0 {
-            endingTime = duration
-        }
-
-        if startingTime > endingTime {
-            Log.error("⏰ from", startingTime, "to", endingTime)
-
-            Log.error("startingTime is > than endingTime")
-            startingTime = 0
-        }
-
-        editStartTime = startingTime
-        editEndTime = endingTime
-    }
-
+extension FilePlayer {
     public func play() throws {
         guard playerNode.engine?.isRunning == true else {
             throw NSError(description: "Engine isn't running or available - play() canceled for \(audioFile?.url.lastPathComponent ?? "nil")")
@@ -33,7 +13,7 @@ extension AudioFilePlayer {
             playerNode.stop()
         }
 
-        // plays at the previously scheduled time, nil sigifies now
+        // plays at the previously scheduled time, (nil = now)
         playerNode.play(at: nil)
 
         isPlaying = true
@@ -44,7 +24,7 @@ extension AudioFilePlayer {
         guard isPlaying else { return }
 
         playerNode.stop()
-        
+
         lastScheduledTime = nil
         isPlaying = false
     }
