@@ -29,13 +29,13 @@ public class WaveformDataParser {
         Log.debug("* { WaveformDataParser }")
     }
 
-    public func parse(url: URL) async throws -> FloatChannelData {
+    public func parse(url: URL) async throws -> WaveformData {
         try await parse(
             audioFile: try AVAudioFile(forReading: url)
         )
     }
 
-    public func parse(audioFile: AVAudioFile) async throws -> FloatChannelData {
+    public func parse(audioFile: AVAudioFile) async throws -> WaveformData {
         let benchmark = Benchmark(label: "\(#function) \(audioFile.url.path)"); defer { benchmark.stop() }
 
         // store the current frame before scanning the file
@@ -52,13 +52,22 @@ public class WaveformDataParser {
 
         self.task = task
 
+        var floatChannelData: FloatChannelData
+
         switch await task.result {
         case let .success(value):
-            return value
+            floatChannelData = value
 
-        case let .failure(value):
-            throw value
+        case let .failure(error):
+            throw error
         }
+
+        return WaveformData(
+            floatChannelData: floatChannelData,
+            samplesPerPoint: resolution.samplesPerPoint,
+            audioDuration: audioFile.duration,
+            sampleRate: audioFile.fileFormat.sampleRate
+        )
     }
 
     public func cancel() {
@@ -108,7 +117,7 @@ extension WaveformDataParser {
         let channelCount = audioFile.fileFormat.channelCount.int
         var currentFrame: AVAudioFramePosition = 0
 
-        var floatChannelData = Array(repeating: [Float](zeros: chunkCount), count: channelCount)
+        var floatChannelData = newFloatChannelData(channelCount: channelCount, length: chunkCount)
 
         // scan a chunk and take the max magnitude in it, discard the rest
         for i in 0 ..< chunkCount {

@@ -18,12 +18,12 @@ class WaveformDataParserTests: BinTestCase {
             priority: .medium
         )
 
-        let data = try await parser.parse(url: url)
+        let waveformData = try await parser.parse(url: url)
 
         // channel count for the file
-        #expect(data.count == 6)
+        #expect(waveformData.channelCount == 6)
 
-        for channel in data {
+        for channel in waveformData.floatChannelData {
             #expect(channel.count == 1315)
         }
     }
@@ -43,12 +43,12 @@ class WaveformDataParserTests: BinTestCase {
             priority: .medium
         )
 
-        let data = try await parser.parse(url: url)
+        let waveformData = try await parser.parse(url: url)
 
         // channel count for the file
-        #expect(data.count == audioFile.fileFormat.channelCount)
+        #expect(waveformData.channelCount == audioFile.fileFormat.channelCount)
 
-        for channel in data {
+        for channel in waveformData.floatChannelData {
             #expect(channel.count == audioFile.length)
         }
     }
@@ -92,6 +92,8 @@ class WaveformDataParserTests: BinTestCase {
         }
     }
 }
+
+// MARK: - Experiments
 
 extension WaveformDataParserTests {
     // The `getAudioSamples` function returns the naturtal time scale and
