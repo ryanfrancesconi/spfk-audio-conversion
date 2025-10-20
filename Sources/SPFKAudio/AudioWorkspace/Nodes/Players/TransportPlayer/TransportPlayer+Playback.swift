@@ -31,7 +31,7 @@ extension TransportPlayer {
         let hostTime = mach_absolute_time()
 
         if isLooping {
-            try scheduleLoops(at: time, hostTime: hostTime, count: 5)
+            try scheduleLoops(at: time, hostTime: hostTime)
 
         } else {
             try currentPlayer.schedule(from: time, to: playbackRange.upperBound, hostTime: hostTime)
@@ -82,7 +82,7 @@ extension TransportPlayer {
 }
 
 extension TransportPlayer {
-    private func scheduleLoops(at time: TimeInterval, hostTime: UInt64, count: Int) throws {
+    private func scheduleLoops(at time: TimeInterval, hostTime: UInt64) throws {
         guard let currentPlayer else {
             throw NSError(description: "currentPlayer is nil")
         }
@@ -105,7 +105,6 @@ extension TransportPlayer {
             startingIn: partialLoopDuration,
             loopDuration: loopDuration,
             hostTime: hostTime,
-            count: count
         )
 
         try scheduleAudio(times: scheduler.times)

@@ -6,7 +6,7 @@ import SPFKUtils
 import Testing
 
 @Suite(.tags(.file))
-struct WaveformDataTests {
+class WaveformDataTests {
     let waveformData: WaveformData = {
         let sampleRate: Double = 44100
         let channelCount: Int = 2
@@ -36,7 +36,7 @@ struct WaveformDataTests {
 
     @Test func subdata() throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
-        
+
         let subdata = try waveformData.subdata(in: 0.1 ... 0.2)
 
         #expect(subdata.count == 2)
@@ -52,5 +52,17 @@ struct WaveformDataTests {
         // range is out of bounds so will be clamped to 0 ... duration
         let subdata2 = try waveformData.subdata(in: -1 ... 1)
         #expect(subdata2 == waveformData.floatChannelData)
+    }
+
+    @Test func serialize() throws {
+        let data = try #require(waveformData.dataRepresentation)
+        let base64 = try #require(waveformData.base64EncodedString)
+
+        let newInstance = try WaveformData(base64EncodedString: base64)
+        #expect(waveformData == newInstance)
+
+        let newInstance2 = try WaveformData(data: data)
+        #expect(waveformData == newInstance2)
+        #expect(newInstance == newInstance2)
     }
 }

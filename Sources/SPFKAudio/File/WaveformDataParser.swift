@@ -62,12 +62,16 @@ public class WaveformDataParser {
             throw error
         }
 
-        return WaveformData(
+        let waveformData = WaveformData(
             floatChannelData: floatChannelData,
             samplesPerPoint: resolution.samplesPerPoint,
             audioDuration: audioFile.duration,
             sampleRate: audioFile.fileFormat.sampleRate
         )
+
+        delegate?.waveformDataParser(event: .loaded(url: audioFile.url, waveformData: waveformData))
+
+        return waveformData
     }
 
     public func cancel() {
@@ -77,13 +81,11 @@ public class WaveformDataParser {
 
 extension WaveformDataParser {
     private func _parse(audioFile: AVAudioFile) async throws -> FloatChannelData {
-        defer {
-            delegate?.waveformDataParser(event: .loaded)
-        }
-
         guard resolution != .lossless else {
             return try await readEntire(audioFile: audioFile)
         }
+
+        let url = audioFile.url
 
         var lastSentProgress: ProgressValue1 = 0
         func send(progress: ProgressValue1) {
@@ -92,7 +94,7 @@ extension WaveformDataParser {
 
             // don't send too many progress events
             lastSentProgress = progress
-            delegate.waveformDataParser(event: .loading(string: "Calculating overview...", progress: progress))
+            delegate.waveformDataParser(event: .loading(url: url, progress: progress))
         }
 
         let totalFrames = AVAudioFrameCount(audioFile.length)
@@ -177,6 +179,11 @@ extension WaveformDataParser {
     }
 }
 
+public enum WaveformDataLoadEvent {
+    case loading(url: URL, progress: ProgressValue1)
+    case loaded(url: URL, waveformData: WaveformData)
+}
+
 public protocol WaveformDataParserDelegate: AnyObject {
-    func waveformDataParser(event: LoadStateEvent)
+    func waveformDataParser(event: WaveformDataLoadEvent)
 }
