@@ -6,10 +6,14 @@ import SPFKUtils
 /// Data needed for drawing waveforms
 public struct WaveformData: Equatable, Hashable, Serializable {
     public private(set) var floatChannelData: FloatChannelData
-    public private(set) var samplesPerPoint: Int
     public private(set) var audioDuration: TimeInterval
     public private(set) var sampleRate: Double
+    public private(set) var samplesPerPoint: Int
+
+    // MARK: Derived values
+
     public private(set) var samplesPerSecond: Double
+    public private(set) var resolution: WaveformDrawingResolution
 
     public var channelCount: Int {
         floatChannelData.count
@@ -26,6 +30,7 @@ public struct WaveformData: Equatable, Hashable, Serializable {
         self.audioDuration = audioDuration
         self.sampleRate = sampleRate
         self.samplesPerSecond = sampleRate / samplesPerPoint.double
+        self.resolution = WaveformDrawingResolution(samplesPerPoint: samplesPerPoint)
     }
 
     /// Extract a time range of audio data

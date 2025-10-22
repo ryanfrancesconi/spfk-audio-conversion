@@ -30,11 +30,11 @@ public struct AudioFormatProperties: Hashable, Codable {
         update()
     }
 
-    public init(avAudioFile: AVAudioFile) {
-        self.channelCount = avAudioFile.fileFormat.channelCount
-        self.sampleRate = avAudioFile.fileFormat.sampleRate
-        self.bitsPerChannel = avAudioFile.fileFormat.bitsPerChannel.int
-        self.duration = avAudioFile.duration
+    public init(audioFile: AVAudioFile) {
+        self.channelCount = audioFile.fileFormat.channelCount
+        self.sampleRate = audioFile.fileFormat.sampleRate
+        self.bitsPerChannel = audioFile.fileFormat.bitsPerChannel.int
+        self.duration = audioFile.duration
 
         update()
     }
@@ -70,7 +70,7 @@ public struct AudioFormatProperties: Hashable, Codable {
         if kHz.truncatingRemainder(dividingBy: 1) == 0 {
             kHzString = kHz.int.string
         }
-        
+
         var out = "\(kHzString) kHz, "
 
         if let bitsPerChannel {

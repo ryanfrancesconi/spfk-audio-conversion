@@ -8,12 +8,11 @@ import SPFKUtils
 
 public struct MetaAudioFileDescription: Hashable, Codable {
     public var urlProperties: URLProperties?
-
     public var url: URL? { urlProperties?.url }
 
     public var fileType: AudioFileType?
 
-    public var audioFormat: AudioFormatProperties?
+    public var audioFormatProperties: AudioFormatProperties?
 
     public var tagProperties: TagProperties?
 
@@ -22,7 +21,7 @@ public struct MetaAudioFileDescription: Hashable, Codable {
 
     /// LUFS, true peak and loudness range
     public var loudness: LoudnessDescription?
-    
+
     // TODO: markers
 
     public init(
@@ -38,7 +37,7 @@ public struct MetaAudioFileDescription: Hashable, Codable {
         }
 
         self.fileType = fileType
-        self.audioFormat = audioFormat
+        self.audioFormatProperties = audioFormat
         self.tagProperties = tagProperties
         self.bextDescription = bextDescription
         self.loudness = loudness
@@ -47,9 +46,7 @@ public struct MetaAudioFileDescription: Hashable, Codable {
 
 extension MetaAudioFileDescription {
     public init(parsing url: URL) throws {
-        let avAudioFile = try AVAudioFile(forReading: url)
-
-        audioFormat = AudioFormatProperties(avAudioFile: avAudioFile)
+        audioFormatProperties = AudioFormatProperties(audioFile: try AVAudioFile(forReading: url))
 
         urlProperties = URLProperties(url: url)
 
@@ -60,6 +57,8 @@ extension MetaAudioFileDescription {
         if fileType == .wav {
             bextDescription = BEXTDescription(url: url)
         }
+
+        // parsing LoudnessDescription requires audio analysis. opt in on a command
     }
 }
 
@@ -70,5 +69,7 @@ public struct URLProperties: Hashable, Codable {
     public init(url: URL) {
         self.url = url
         self.finderTags = FinderTagGroup(url: url)
+
+        // TODO: parse more properties like dates
     }
 }

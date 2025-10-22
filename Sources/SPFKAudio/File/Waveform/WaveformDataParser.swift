@@ -36,7 +36,7 @@ public class WaveformDataParser {
     }
 
     public func parse(audioFile: AVAudioFile) async throws -> WaveformData {
-        let benchmark = Benchmark(label: "\(#function) \(audioFile.url.path)"); defer { benchmark.stop() }
+        // let benchmark = Benchmark(label: "\(#function) \(audioFile.url.path)"); defer { benchmark.stop() }
 
         // store the current frame before scanning the file
         let currentFrame = audioFile.framePosition
@@ -69,7 +69,9 @@ public class WaveformDataParser {
             sampleRate: audioFile.fileFormat.sampleRate
         )
 
-        delegate?.waveformDataParser(event: .loaded(url: audioFile.url, waveformData: waveformData))
+        delegate?.waveformDataParser(
+            event: .loaded(url: audioFile.url, waveformData: waveformData)
+        )
 
         return waveformData
     }
