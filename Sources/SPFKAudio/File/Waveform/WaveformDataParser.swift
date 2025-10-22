@@ -18,15 +18,13 @@ public class WaveformDataParser {
         priority: TaskPriority = .medium,
         delegate: WaveformDataParserDelegate? = nil
     ) {
-        Log.debug(resolution)
-
         self.resolution = resolution
         self.priority = priority
         self.delegate = delegate
     }
 
     deinit {
-        Log.debug("* { WaveformDataParser }")
+        // Log.debug("* { WaveformDataParser }")
     }
 
     public func parse(url: URL) async throws -> WaveformData {
