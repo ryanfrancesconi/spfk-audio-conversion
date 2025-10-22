@@ -61,15 +61,3 @@ extension MetaAudioFileDescription {
         // parsing LoudnessDescription requires audio analysis. opt in on a command
     }
 }
-
-public struct URLProperties: Hashable, Codable {
-    public var url: URL
-    public var finderTags: FinderTagGroup
-
-    public init(url: URL) {
-        self.url = url
-        self.finderTags = FinderTagGroup(url: url)
-
-        // TODO: parse more properties like dates
-    }
-}

@@ -1,6 +1,5 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
-import Accelerate
 import AVFoundation
 import SPFKMetadata
 import SPFKUtils
@@ -16,18 +15,11 @@ extension AVAudioFile {
         try? toAVAudioPCMBuffer().peak()
     }
 
-    /// Convenience init to instantiate a file from an AVAudioPCMBuffer.
+    /// Convenience init to write file from an AVAudioPCMBuffer. Will overwrite.
     public convenience init(url: URL, fromBuffer buffer: AVAudioPCMBuffer) throws {
         try self.init(forWriting: url, settings: buffer.format.settings)
-
-        // Write the buffer in file
-        do {
-            framePosition = 0
-            try write(from: buffer)
-        } catch let error as NSError {
-            Log.error(error)
-            throw error
-        }
+        framePosition = 0
+        try write(from: buffer)
     }
 
     /// converts to a 32 bit PCM buffer
@@ -79,6 +71,16 @@ extension AVAudioFile {
 }
 
 extension AVAudioFile {
+    public func normalize() throws {
+        guard let buffer = try AVAudioPCMBuffer(url: self.url) else {
+            throw NSError(description: "failed to read into buffer")
+        }
+
+        let normalized = try buffer.normalize()
+
+        _ = try AVAudioFile(url: self.url, fromBuffer: normalized)
+    }
+
     /// - Returns: An extracted section of this file of the passed in conversion options
     public func extract(
         to url: URL,
@@ -120,6 +122,7 @@ extension AVAudioFile {
         do {
             // clean up temp file
             try FileManager.default.removeItem(at: tempFile)
+
         } catch {
             Log.error("Unable to remove temp file at", tempFile)
         }

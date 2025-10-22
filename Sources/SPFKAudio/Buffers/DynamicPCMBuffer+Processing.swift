@@ -5,34 +5,8 @@ import SPFKUtils
 
 public extension DynamicPCMBuffer {
     /// - Returns: A normalized buffer
-    func normalize() -> AVAudioPCMBuffer? {
-        guard let floatData = internalBuffer.floatChannelData else { return nil }
-
-        let normalizedBuffer = AVAudioPCMBuffer(pcmFormat: internalBuffer.format,
-                                                frameCapacity: internalBuffer.frameCapacity)
-
-        let length: AVAudioFrameCount = internalBuffer.frameLength
-        let channelCount = Int(internalBuffer.format.channelCount)
-
-        guard let peakValue = peak() else {
-            Log.error("Failed getting peak amplitude")
-            return nil
-        }
-
-        let gainFactor: Float = 1 / peakValue.amplitude
-
-        // i is the index in the buffer
-        for i in 0 ..< Int(length) {
-            // n is the channel
-            for n in 0 ..< channelCount {
-                let sample = floatData[n][i] * gainFactor
-                normalizedBuffer?.floatChannelData?[n][i] = sample
-            }
-        }
-
-        normalizedBuffer?.frameLength = length
-
-        return normalizedBuffer
+    func normalize() throws -> AVAudioPCMBuffer {
+        try internalBuffer.normalize()
     }
 
     /// - Returns: A reversed buffer
