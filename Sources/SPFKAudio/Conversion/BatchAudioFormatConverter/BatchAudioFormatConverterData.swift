@@ -9,7 +9,7 @@ public actor BatchAudioFormatConverterData {
     public private(set) var batchSize: Int = 0
     public private(set) var completed: Int = 0
 
-    public var percent: ProgressValue1 {
+    public var percent: UnitInterval {
         guard count > 0 else { return 0 }
 
         return completed.double / count.double

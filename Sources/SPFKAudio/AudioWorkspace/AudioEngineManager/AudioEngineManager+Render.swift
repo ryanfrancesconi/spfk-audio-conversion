@@ -12,7 +12,7 @@ extension AudioEngineManager: EngineRendererModel {
         renderUntilSilent: Bool,
         prerender: (() -> Void)?,
         postrender: (() -> Void)?,
-        progress progressHandler: ((ProgressValue1) -> Void)?
+        progress progressHandler: ((UnitInterval) -> Void)?
     ) throws {
         try renderer.render(
             engine: engine,

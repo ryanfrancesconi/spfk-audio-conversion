@@ -5,6 +5,11 @@ import Foundation
 public enum TransportAction: String, CaseIterable, Equatable {
     case play
     case rewindAll
+    case rewind
+    case forward
     case loop
-    case autoNext
+    case playlistMode // this isn't really a transport action
+    
+    // forward by step
+    // reverse by step
 }

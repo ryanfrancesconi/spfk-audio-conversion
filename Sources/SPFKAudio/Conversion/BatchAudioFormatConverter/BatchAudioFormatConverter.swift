@@ -62,7 +62,7 @@ public class BatchAudioFormatConverter {
                 guard let delegate, count > 0 else { return }
 
                 await data.increment()
-                let progress: ProgressValue1 = await data.percent
+                let progress: UnitInterval = await data.percent
 
                 let prefix = result.error != nil ? "Error" : "Converted"
 

@@ -137,7 +137,7 @@ public class AmplitudeTap {
                 vDSP_rmsqv(data, 1, &value, length)
             }
 
-            amp[n] = value.normalized(from: 0 ... 1, taper: taper)
+            amp[n] = value.normalized(from: AUValue.unitIntervalRange, taper: taper)
         }
 
         eventHandler?(amp)

@@ -87,8 +87,8 @@ extension WaveformDataParser {
 
         let url = audioFile.url
 
-        var lastSentProgress: ProgressValue1 = 0
-        func send(progress: ProgressValue1) {
+        var lastSentProgress: UnitInterval = 0
+        func send(progress: UnitInterval) {
             guard let delegate,
                   progress - lastSentProgress >= 0.06 else { return }
 
@@ -180,7 +180,7 @@ extension WaveformDataParser {
 }
 
 public enum WaveformDataLoadEvent {
-    case loading(url: URL, progress: ProgressValue1)
+    case loading(url: URL, progress: UnitInterval)
     case loaded(url: URL, waveformData: WaveformData)
 }
 

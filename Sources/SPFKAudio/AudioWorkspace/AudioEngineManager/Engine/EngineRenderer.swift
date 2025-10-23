@@ -44,7 +44,7 @@ public class EngineRenderer {
         silenceThreshold: Float = 0.00005,
         prerender: (() -> Void)? = nil,
         postrender: (() -> Void)? = nil,
-        progress progressHandler: ((ProgressValue1) -> Void)? = nil
+        progress progressHandler: ((UnitInterval) -> Void)? = nil
     ) throws {
         guard duration >= 0 else {
             throw NSError(description: "duration needs to be a positive value")
@@ -120,7 +120,7 @@ public class EngineRenderer {
             case .success:
                 try audioFile.write(from: buffer)
 
-                progressValue = min(ProgressValue1(audioFile.framePosition) / Double(targetSamples), 1.0)
+                progressValue = min(UnitInterval(audioFile.framePosition) / Double(targetSamples), 1.0)
                 progressHandler?(progressValue)
 
             case .cannotDoInCurrentContext:

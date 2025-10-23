@@ -75,7 +75,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
         name: "Flip Stereo",
         address: akGetParameterAddress("FaderParameterFlipStereo"),
         defaultValue: 0,
-        range: 0.0 ... 1.0,
+        range: AUValue.unitIntervalRange,
         unit: .boolean
     )
 
@@ -88,7 +88,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
         name: "Mix To Mono",
         address: akGetParameterAddress("FaderParameterMixToMono"),
         defaultValue: 0,
-        range: 0.0 ... 1.0,
+        range: AUValue.unitIntervalRange,
         unit: .boolean
     )
 

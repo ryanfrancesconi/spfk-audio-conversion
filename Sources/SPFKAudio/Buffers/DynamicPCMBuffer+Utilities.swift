@@ -11,7 +11,7 @@ extension DynamicPCMBuffer {
         bufferDuration: TimeInterval = 0.01,
         startTime: TimeInterval? = nil,
         endTime: TimeInterval? = nil,
-        progressHandler: ((ProgressValue1) -> Void)? = nil
+        progressHandler: ((UnitInterval) -> Void)? = nil
     ) -> TransientCollection? {
         // -
 

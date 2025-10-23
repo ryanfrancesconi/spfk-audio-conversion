@@ -210,7 +210,7 @@ extension AVAudioPCMBuffer {
                 }
 
                 // sanity check
-                gain = gain.clamped(to: 0 ... 1)
+                gain = gain.clamped(to: Double.unitIntervalRange)
 
                 let adjustedSample = floatChannelData[n][i] * Float(gain)
 
