@@ -10,10 +10,12 @@ public struct TransportState {
     public var isPlaying: Bool
     public var isLooping: Bool
     public var currentTime: TimeInterval
+    public var duration: TimeInterval
 
-    public init(isPlaying: Bool = false, isLooping: Bool = false, currentTime: TimeInterval = 0) {
+    public init(isPlaying: Bool = false, isLooping: Bool = false, currentTime: TimeInterval = 0, duration: TimeInterval = 0) {
         self.isPlaying = isPlaying
         self.isLooping = isLooping
         self.currentTime = currentTime
+        self.duration = duration
     }
 }

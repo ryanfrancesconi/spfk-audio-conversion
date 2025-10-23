@@ -14,7 +14,8 @@ extension TransportPlayer: TransportStateAccess {
         TransportState(
             isPlaying: isPlaying,
             isLooping: isLooping,
-            currentTime: currentTime
+            currentTime: currentTime,
+            duration: duration
         )
     }
 }

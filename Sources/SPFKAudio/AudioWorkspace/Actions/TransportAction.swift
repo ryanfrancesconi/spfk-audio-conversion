@@ -9,7 +9,4 @@ public enum TransportAction: String, CaseIterable, Equatable {
     case forward
     case loop
     case playlistMode // this isn't really a transport action
-    
-    // forward by step
-    // reverse by step
 }

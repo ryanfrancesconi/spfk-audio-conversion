@@ -67,7 +67,7 @@ public class WaveformDataParser {
             sampleRate: audioFile.fileFormat.sampleRate
         )
 
-        delegate?.waveformDataParser(
+        await delegate?.waveformDataParser(
             event: .loaded(url: audioFile.url, waveformData: waveformData)
         )
 
@@ -88,13 +88,13 @@ extension WaveformDataParser {
         let url = audioFile.url
 
         var lastSentProgress: UnitInterval = 0
-        func send(progress: UnitInterval) {
+        func send(progress: UnitInterval) async {
             guard let delegate,
                   progress - lastSentProgress >= 0.06 else { return }
 
             // don't send too many progress events
             lastSentProgress = progress
-            delegate.waveformDataParser(event: .loading(url: url, progress: progress))
+            await delegate.waveformDataParser(event: .loading(url: url, progress: progress))
         }
 
         let totalFrames = AVAudioFrameCount(audioFile.length)
@@ -157,7 +157,7 @@ extension WaveformDataParser {
                 guard framesPerBuffer > 0 else { break }
             }
 
-            send(progress: currentFrame.double / totalFrames.double)
+            await send(progress: currentFrame.double / totalFrames.double)
         }
 
         return floatChannelData
@@ -185,5 +185,5 @@ public enum WaveformDataLoadEvent {
 }
 
 public protocol WaveformDataParserDelegate: AnyObject {
-    func waveformDataParser(event: WaveformDataLoadEvent)
+    func waveformDataParser(event: WaveformDataLoadEvent) async
 }
