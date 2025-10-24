@@ -3,11 +3,13 @@
 import AVFoundation
 import Foundation
 
-public enum AudioEditorEvent {
-    case loaded(audioFile: AVAudioFile)
-    case unloaded
+public enum AudioEditorEvent: Equatable {
+    case load(audioFile: AVAudioFile)
+    case unload
+
     case play(time: TimeInterval?)
     case stop
     case update(time: TimeInterval)
+
     case loop(state: Bool)
 }

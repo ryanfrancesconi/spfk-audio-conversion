@@ -34,6 +34,14 @@ extension TransportPlayer {
             try scheduleLoops(at: time, hostTime: hostTime)
 
         } else {
+            // let endTime = playbackRange.contains(time) && time > playbackRange.lowerBound ? time : duration
+            
+            if !playbackRange.contains(time) {
+                time = playbackRange.lowerBound // max(playbackRange.lowerBound, time)
+            }
+            
+//            time = time.clamped(to: playbackRange)
+
             try currentPlayer.schedule(from: time, to: playbackRange.upperBound, hostTime: hostTime)
         }
 

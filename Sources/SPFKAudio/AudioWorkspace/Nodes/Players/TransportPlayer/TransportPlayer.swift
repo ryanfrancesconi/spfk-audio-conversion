@@ -109,14 +109,18 @@ public class TransportPlayer {
         mixer = MixerWrapper()
     }
 
-    public func handle(event: AudioEditorEvent) throws {
+    public func togglePlay() throws {
+        try isPlaying ? stop() : play(time: currentTime)
+    }
+
+    public func handle(transportAction event: TransportAction) throws {
         Log.debug(event)
 
         switch event {
-        case let .loaded(audioFile: audioFile):
+        case let .load(audioFile: audioFile):
             try load(audioFile: audioFile)
 
-        case .unloaded:
+        case .unload:
             currentPlayer?.unload()
 
         case let .play(time: time):
@@ -137,6 +141,9 @@ public class TransportPlayer {
                 try stop()
                 try play(time: currentTime)
             }
+
+        default:
+            Log.error("unhandled:", event)
         }
     }
 }
