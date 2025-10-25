@@ -110,7 +110,7 @@ public class TransportPlayer {
     }
 
     public func handle(transportAction event: TransportAction) throws {
-        Log.debug(event)
+        // Log.debug(event)
 
         switch event {
         case let .load(audioFile: audioFile):
