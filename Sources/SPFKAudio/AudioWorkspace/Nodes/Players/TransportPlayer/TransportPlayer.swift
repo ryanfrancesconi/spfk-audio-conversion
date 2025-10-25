@@ -109,10 +109,6 @@ public class TransportPlayer {
         mixer = MixerWrapper()
     }
 
-    public func togglePlay() throws {
-        try isPlaying ? stop() : play(time: currentTime)
-    }
-
     public func handle(transportAction event: TransportAction) throws {
         Log.debug(event)
 
@@ -124,7 +120,7 @@ public class TransportPlayer {
             currentPlayer?.unload()
 
         case let .play(time: time):
-            try play(time: time ?? currentTime)
+            try play(time: time)
 
         case .stop:
             try stop()

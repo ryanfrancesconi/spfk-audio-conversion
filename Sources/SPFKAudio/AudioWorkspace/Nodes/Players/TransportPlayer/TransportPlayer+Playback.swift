@@ -9,10 +9,10 @@ extension TransportPlayer {
         guard isPlaying else { return }
 
         try stop()
-        try play(time: currentTime)
+        try play()
     }
 
-    public func play(time: TimeInterval) throws {
+    public func play(time: TimeInterval? = nil) throws {
         guard let currentPlayer else {
             throw NSError(description: "currentPlayer is nil")
         }
@@ -21,7 +21,7 @@ extension TransportPlayer {
             throw NSError(description: "No audio file is loaded")
         }
 
-        var time = time
+        var time = time ?? currentTime
 
         if time >= duration {
             Log.error("time \(time) > duration \(duration) - setting to 0")
@@ -34,13 +34,9 @@ extension TransportPlayer {
             try scheduleLoops(at: time, hostTime: hostTime)
 
         } else {
-            // let endTime = playbackRange.contains(time) && time > playbackRange.lowerBound ? time : duration
-            
             if !playbackRange.contains(time) {
                 time = playbackRange.lowerBound // max(playbackRange.lowerBound, time)
             }
-            
-//            time = time.clamped(to: playbackRange)
 
             try currentPlayer.schedule(from: time, to: playbackRange.upperBound, hostTime: hostTime)
         }
