@@ -9,10 +9,10 @@ extension TransportPlayer {
         guard isPlaying else { return }
 
         try stop()
-        try play()
+        try play(time: nil)
     }
 
-    public func play(time: TimeInterval? = nil) throws {
+    public func play(time: TimeInterval?) throws {
         guard let currentPlayer else {
             throw NSError(description: "currentPlayer is nil")
         }
@@ -43,10 +43,10 @@ extension TransportPlayer {
 
         startTimer(at: time, hostTime: hostTime)
 
-        try play()
+        try playAndCatchException()
     }
 
-    private func play() throws {
+    private func playAndCatchException() throws {
         guard let currentPlayer else {
             throw NSError(description: "Player is nil")
         }
@@ -129,11 +129,6 @@ extension TransportPlayer {
             )
         }
     }
-
-    private func rewind() {
-        let startTime = loopRange?.lowerBound ?? 0
-        delegate?.transportPlayer(timerEvent: .time(startTime))
-    }
 }
 
 extension TransportPlayer {
@@ -151,27 +146,31 @@ extension TransportPlayer {
     }
 
     private func handleComplete() {
-        let startTime = loopRange?.lowerBound ?? 0
+        do {
+            let startTime = loopRange?.lowerBound ?? 0
 
-        if isLooping {
-            guard let nextTime: AVAudioTime = scheduler.next() else {
-                Log.error("Failed to get next scheduled time")
-                return
+            if isLooping {
+                guard let nextTime: AVAudioTime = scheduler.next() else {
+                    Log.error("Failed to get next scheduled time")
+                    return
+                }
+
+                // reset the timer to be relative to the next avTime in the schedule
+                transportTimer.start(avTime: nextTime.offset(seconds: -startTime))
+
+            } else {
+                try stop()
+
+                transportTimer.currentTime = startTime
+
+                if startTime == 0 {
+                    delegate?.transportPlayer(timerEvent: .complete)
+                }
+
+                try rewindAll()
             }
-
-            // reset the timer to be relative to the next avTime in the schedule
-            transportTimer.start(avTime: nextTime.offset(seconds: -startTime))
-
-        } else {
-            try? stop()
-
-            transportTimer.currentTime = startTime
-
-            if startTime == 0 {
-                delegate?.transportPlayer(timerEvent: .complete)
-            }
-
-            rewind()
+        } catch {
+            Log.error(error)
         }
     }
 
@@ -187,7 +186,7 @@ extension TransportPlayer {
             case .complete:
                 Task { @MainActor in
                     try stop()
-                    rewind()
+                    try rewindAll()
                 }
             }
 
@@ -208,5 +207,80 @@ extension TransportPlayer {
 
     private func stopTimer() {
         transportTimer.stop()
+    }
+}
+
+extension TransportPlayer {
+    public func rewindAll() throws {
+        let wasPlaying = isPlaying
+
+        if wasPlaying {
+            try stop()
+        }
+
+        let startTime = loopRange?.lowerBound ?? 0
+        currentTime = startTime
+
+        delegate?.transportPlayer(timerEvent: .time(startTime))
+
+        if wasPlaying {
+            try play(time: startTime)
+        }
+    }
+
+    public func rewind(by pulse: MusicalPulse?) throws {
+        if let loopRange, loopRange.contains(currentTime) {
+            try move(to: loopRange.lowerBound)
+            return
+        }
+
+        try move(by: stepInterval(for: pulse, direction: .backward))
+    }
+
+    public func forward(by pulse: MusicalPulse?) throws {
+        try move(by: stepInterval(for: pulse, direction: .forward))
+    }
+
+    private func move(by stepTime: TimeInterval) throws {
+        let time = (currentTime + stepTime).clamped(to: 0 ... duration)
+        try move(to: time)
+    }
+
+    private func move(to time: TimeInterval) throws {
+        if isPlaying {
+            shouldRestartAfterEvent = true
+            try stop()
+        }
+
+        currentTime = time
+        delegate?.transportPlayer(timerEvent: .time(time))
+
+        restartAfterEventTask?.cancel()
+        restartAfterEventTask = Task<Void, Error> {
+            try await Task.sleep(seconds: 0.2)
+            try Task.checkCancellation()
+
+            if shouldRestartAfterEvent {
+                shouldRestartAfterEvent = false
+
+                Task { @MainActor in
+                    try play(time: time)
+                }
+            }
+        }
+    }
+
+    private func stepInterval(for pulse: MusicalPulse?, direction: MovementDirection) -> TimeInterval {
+        let value = MusicalMeasureDescription.timeToNearest(
+            pulse: pulse,
+            measure: measure,
+            at: currentTime,
+            direction: direction
+        )
+
+        // generate a test expect of this event
+        // Swift.print("#expect(MusicalMeasureDescription.timeToNearest(pulse: .\(pulse.rawValue), measure: \(measure.description), at: \(currentTime), direction: .\(direction)) == \(value))")
+
+        return value
     }
 }

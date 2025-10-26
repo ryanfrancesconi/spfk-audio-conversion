@@ -22,6 +22,10 @@ public struct MetaAudioFileDescription: Hashable, Codable {
     /// LUFS, true peak and loudness range
     public var loudness: LoudnessDescription?
 
+    public var tempo: Double? {
+        tagProperties?.tags[.bpm]?.double
+    }
+
     // TODO: markers
 
     public init(

@@ -84,7 +84,7 @@ public struct ComponentCollection {
             let monoEffects = unavailableEffects.filter { $0.supportsMono && !$0.supportsStereo }
 
             if monoEffects.isNotEmpty {
-                text += flatten(collection: monoEffects, title: "ADD currently only supports stereo Audio Units. These are mono:")
+                text += flatten(collection: monoEffects, title: "Currently only supporing stereo Audio Units. These are mono:")
                 text += "\n\n"
             }
         }

@@ -15,7 +15,8 @@ extension TransportPlayer: TransportStateAccess {
             isPlaying: isPlaying,
             isLooping: isLooping,
             currentTime: currentTime,
-            duration: duration
+            duration: duration,
+            measure: measure
         )
     }
 }
@@ -57,6 +58,9 @@ public class TransportPlayer {
 
     var scheduler = LoopScheduler()
 
+    // TODO: the source of truth for all other components rather than copying it everywhere
+    public var measure = MusicalMeasureDescription(tempo: 60)
+
     public var isPlaying: Bool { currentPlayer?.isPlaying == true }
 
     public private(set) var isLooping: Bool = false
@@ -67,6 +71,9 @@ public class TransportPlayer {
             transportTimer.currentTime = newValue
         }
     }
+
+    var restartAfterEventTask: Task<Void, Error>?
+    var shouldRestartAfterEvent = false
 
     /// Will attempt to use a NSScreen display link
     /// - Parameter delegate: needed to connect to the engine
@@ -113,8 +120,9 @@ public class TransportPlayer {
         // Log.debug(event)
 
         switch event {
-        case let .load(audioFile: audioFile):
+        case let .load(audioFile: audioFile, tempo: tempo):
             try load(audioFile: audioFile)
+            measure.tempo = tempo ?? 60
 
         case .unload:
             currentPlayer?.unload()
@@ -127,8 +135,16 @@ public class TransportPlayer {
 
         case let .update(time: time):
             guard !isPlaying else { return }
-
             currentTime = time
+
+        case .rewindAll:
+            try rewindAll()
+
+        case let .rewind(pulse):
+            try rewind(by: pulse)
+
+        case let .forward(pulse):
+            try forward(by: pulse)
 
         case let .loop(state):
             isLooping = state
@@ -138,8 +154,8 @@ public class TransportPlayer {
                 try play(time: currentTime)
             }
 
-        default:
-            Log.error("unhandled:", event)
+        case let .playlistMode(state: state):
+            _ = state
         }
     }
 }

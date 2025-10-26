@@ -35,7 +35,7 @@ extension AudioUnitCacheManager {
         )
     }
 
-    /// All the components that ADD currently can support
+    /// All the components that this framework can support
     public static var compatibleComponents: [AVAudioUnitComponent] {
         Log.debug("*AU Requesting compatibleComponents from system...")
 

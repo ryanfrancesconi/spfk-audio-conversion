@@ -2,11 +2,10 @@
 
 import AVFoundation
 import Foundation
+import SPFKTime
 
 public enum TransportAction: Equatable {
-    case togglePlay
-
-    case load(audioFile: AVAudioFile)
+    case load(audioFile: AVAudioFile, tempo: Double?)
     case unload
 
     case play(time: TimeInterval?)
@@ -14,8 +13,8 @@ public enum TransportAction: Equatable {
     case update(time: TimeInterval)
 
     case rewindAll
-    case rewind
-    case forward
+    case rewind(pulse: MusicalPulse?)
+    case forward(pulse: MusicalPulse?)
 
     case loop(state: Bool)
     case playlistMode(state: Bool)
