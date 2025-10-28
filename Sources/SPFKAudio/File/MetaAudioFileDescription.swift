@@ -6,7 +6,7 @@ import Foundation
 import SPFKMetadata
 import SPFKUtils
 
-public struct MetaAudioFileDescription: Hashable, Codable {
+public struct MetaAudioFileDescription: Equatable, Hashable, Codable, Serializable {
     public var urlProperties: URLProperties
 
     public var fileType: AudioFileType?
