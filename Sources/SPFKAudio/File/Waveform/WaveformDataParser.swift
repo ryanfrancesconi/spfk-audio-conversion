@@ -178,12 +178,3 @@ extension WaveformDataParser {
         return floatData
     }
 }
-
-public enum WaveformDataLoadEvent {
-    case loading(url: URL, progress: UnitInterval)
-    case loaded(url: URL, waveformData: WaveformData)
-}
-
-public protocol WaveformDataParserDelegate: AnyObject {
-    func waveformDataParser(event: WaveformDataLoadEvent) async
-}

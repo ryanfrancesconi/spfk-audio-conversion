@@ -6,8 +6,6 @@ import SPFKUtilsC
 
 extension TransportPlayer {
     public func restart() throws {
-        guard isPlaying else { return }
-
         try stop()
         try play(time: nil)
     }
@@ -28,16 +26,16 @@ extension TransportPlayer {
             time = 0
         }
 
+        if !playbackRange.contains(time) {
+            time = playbackRange.lowerBound
+        }
+
         let hostTime = mach_absolute_time()
 
         if isLooping {
             try scheduleLoops(at: time, hostTime: hostTime)
 
         } else {
-            if !playbackRange.contains(time) {
-                time = playbackRange.lowerBound // max(playbackRange.lowerBound, time)
-            }
-
             try currentPlayer.schedule(from: time, to: playbackRange.upperBound, hostTime: hostTime)
         }
 
@@ -77,6 +75,10 @@ extension TransportPlayer {
 
         guard isLoaded else {
             throw NSError(description: "No audio file is loaded")
+        }
+
+        guard isPlaying else {
+            return
         }
 
         currentPlayer.stop()
