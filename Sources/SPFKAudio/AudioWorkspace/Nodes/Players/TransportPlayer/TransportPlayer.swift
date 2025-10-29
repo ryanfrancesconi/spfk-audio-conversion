@@ -15,6 +15,7 @@ extension TransportPlayer: TransportStateAccess {
             isPlaying: isPlaying,
             isLooping: isLooping,
             currentTime: currentTime,
+            currentURL: currentPlayer?.url,
             duration: duration,
             measure: measure
         )

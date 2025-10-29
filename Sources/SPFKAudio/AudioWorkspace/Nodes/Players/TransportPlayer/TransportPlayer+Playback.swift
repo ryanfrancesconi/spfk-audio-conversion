@@ -69,6 +69,11 @@ extension TransportPlayer {
     }
 
     public func stop() throws {
+        defer {
+            scheduler.removeAll()
+            stopTimer()
+        }
+
         guard let currentPlayer else {
             throw NSError(description: "Player is nil")
         }
@@ -82,8 +87,6 @@ extension TransportPlayer {
         }
 
         currentPlayer.stop()
-        scheduler.removeAll()
-        stopTimer()
     }
 }
 

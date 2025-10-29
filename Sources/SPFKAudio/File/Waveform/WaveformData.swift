@@ -33,10 +33,16 @@ public struct WaveformData: Equatable, Hashable, Serializable {
         self.resolution = WaveformDrawingResolution(samplesPerPoint: samplesPerPoint)
     }
 
-    /// Extract a time range of audio data
+    /// Extract a time range of audio data or the entire data if it matches
+    /// 0 ... audioDuration
+    ///
     /// - Parameter timeRange: time range to extract
     /// - Returns: FloatChannelData suitable for drawing
     public func subdata(in timeRange: ClosedRange<TimeInterval>) throws -> FloatChannelData {
+        guard timeRange != 0 ... audioDuration else {
+            return floatChannelData
+        }
+
         let startTime = timeRange.lowerBound.clamped(
             to: 0 ... audioDuration - 0.01
         )

@@ -7,6 +7,7 @@ public struct TransportState {
     public var isPlaying: Bool
     public var isLooping: Bool
     public var currentTime: TimeInterval
+    public var currentURL: URL?
     public var duration: TimeInterval
     public var measure: MusicalMeasureDescription
 
@@ -14,12 +15,14 @@ public struct TransportState {
         isPlaying: Bool = false,
         isLooping: Bool = false,
         currentTime: TimeInterval = 0,
+        currentURL: URL? = nil,
         duration: TimeInterval = 0,
         measure: MusicalMeasureDescription = .init(timeSignature: ._4_4, tempo: 60)
     ) {
         self.isPlaying = isPlaying
         self.isLooping = isLooping
         self.currentTime = currentTime
+        self.currentURL = currentURL
         self.duration = duration
         self.measure = measure
     }

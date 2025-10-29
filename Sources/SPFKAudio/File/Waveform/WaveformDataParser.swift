@@ -57,6 +57,7 @@ public class WaveformDataParser {
             floatChannelData = value
 
         case let .failure(error):
+            Log.error("Failed parsing \(audioFile.url)", error)
             throw error
         }
 
@@ -106,7 +107,7 @@ extension WaveformDataParser {
         let samplesPerPoint: Int = resolution.samplesPerPoint
 
         // analysis buffer size
-        var framesPerBuffer: AVAudioFrameCount = AVAudioFrameCount(samplesPerPoint)
+        var framesPerBuffer = AVAudioFrameCount(samplesPerPoint)
 
         guard let buffer = AVAudioPCMBuffer(
             pcmFormat: audioFile.processingFormat,
@@ -127,7 +128,13 @@ extension WaveformDataParser {
 
             audioFile.framePosition = currentFrame
 
-            try audioFile.read(into: buffer, frameCount: framesPerBuffer)
+            do {
+                try audioFile.read(into: buffer, frameCount: framesPerBuffer)
+
+            } catch {
+                Log.error("audioFile.read error:", error, "skipping chunk \(i)/\(chunkCount)")
+                continue
+            }
 
             guard let rawData = buffer.floatChannelData else {
                 throw NSError(description: "Failed to read from buffer")
