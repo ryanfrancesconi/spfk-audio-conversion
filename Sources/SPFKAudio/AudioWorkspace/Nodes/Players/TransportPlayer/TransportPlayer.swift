@@ -41,6 +41,8 @@ public class TransportPlayer {
         players.map { $0.key }
     }
 
+    public private(set) var outputTap: AmplitudeTap?
+
     public var duration: TimeInterval { currentPlayer?.duration ?? 0 }
     public var isLoaded: Bool { currentPlayer?.isLoaded == true }
 
@@ -93,6 +95,8 @@ public class TransportPlayer {
     public init(timerView: NSView, delegate: TransportPlayerDelegate? = nil) {
         transportTimer = TransportTimer(on: timerView)
         mixer = MixerWrapper()
+        outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleTapEvent)
+
         self.delegate = delegate
 
         initialize()
@@ -100,12 +104,14 @@ public class TransportPlayer {
 
     private func initialize() {
         transportTimer.eventHandler = { [weak self] in self?.update(timerEvent: $0) }
-
         scheduler.eventHandler = { [weak self] in self?.handle(loopEvent: $0) }
     }
 
     /// To be called on sample rate changes
     public func rebuild() throws {
+        outputTap?.dispose()
+        outputTap = nil
+
         for player in players {
             try player.value.detachNodes()
         }
@@ -114,6 +120,11 @@ public class TransportPlayer {
 
         try mixer.detachNodes()
         mixer = MixerWrapper()
+        outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleTapEvent)
+    }
+
+    private func handleTapEvent(_ array: [Float]) {
+        delegate?.transportPlayer(tapEvent: array)
     }
 
     public func handle(transportAction event: TransportAction) throws {

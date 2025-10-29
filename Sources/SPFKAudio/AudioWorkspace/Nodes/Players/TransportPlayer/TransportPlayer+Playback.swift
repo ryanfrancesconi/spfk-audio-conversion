@@ -205,10 +205,12 @@ extension TransportPlayer {
     private func startTimer(at time: TimeInterval, hostTime: UInt64) {
         stopTimer()
         transportTimer.start(at: time, hostTime: hostTime)
+        outputTap?.start()
     }
 
     private func stopTimer() {
         transportTimer.stop()
+        outputTap?.stop()
     }
 }
 

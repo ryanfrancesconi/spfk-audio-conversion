@@ -11,13 +11,11 @@ public class AmplitudeTap {
     /// Determines if the returned amplitude value is the rms or peak value
     public var analysisMode: AnalysisMode = .peak
 
-    // @OTAtomicsThreadSafe
     private var amp: [Float] = Array(repeating: 0, count: 2)
 
     public private(set) var bufferSize: UInt32
 
     /// Tells whether the node is processing (ie. started, playing, or active)
-    // @OTAtomicsThreadSafe
     public private(set) var isStarted: Bool = false
 
     /// The bus to install the tap onto
@@ -106,15 +104,6 @@ public class AmplitudeTap {
         )
     }
 
-    /// Remove the tap on the input
-    public func stop() {
-        removeTap()
-        isStarted = false
-        amp[0] = 0
-        amp[1] = 0
-        eventHandler?(amp)
-    }
-
     // AVAudioNodeTapBlock
     private func process(buffer: AVAudioPCMBuffer, at time: AVAudioTime) {
         guard let floatData = buffer.floatChannelData else { return }
@@ -140,6 +129,15 @@ public class AmplitudeTap {
             amp[n] = value.normalized(from: AUValue.unitIntervalRange, taper: taper)
         }
 
+        eventHandler?(amp)
+    }
+
+    /// Remove the tap on the input
+    public func stop() {
+        removeTap()
+        isStarted = false
+        amp[0] = 0
+        amp[1] = 0
         eventHandler?(amp)
     }
 
