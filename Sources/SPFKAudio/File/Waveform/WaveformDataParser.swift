@@ -122,6 +122,8 @@ extension WaveformDataParser {
 
         var floatChannelData = newFloatChannelData(channelCount: channelCount, length: chunkCount)
 
+        var chunksSkipped: Set<Int> = .init()
+
         // scan a chunk and take the max magnitude in it, discard the rest
         for i in 0 ..< chunkCount {
             try Task.checkCancellation()
@@ -132,7 +134,7 @@ extension WaveformDataParser {
                 try audioFile.read(into: buffer, frameCount: framesPerBuffer)
 
             } catch {
-                Log.error("audioFile.read error:", error, "skipping chunk \(i)/\(chunkCount)")
+                chunksSkipped.insert(i)
                 continue
             }
 
@@ -165,6 +167,10 @@ extension WaveformDataParser {
             }
 
             await send(progress: currentFrame.double / totalFrames.double)
+        }
+
+        if chunksSkipped.isNotEmpty {
+            Log.error("audioFile.read error skipped \(chunksSkipped.count)/\(chunkCount) chunks for \(url.path)")
         }
 
         return floatChannelData
