@@ -51,17 +51,18 @@ public struct MetaAudioFileDescription: Equatable, Hashable, Codable, Serializab
 extension MetaAudioFileDescription {
     public init(parsing url: URL) throws {
         audioFormat = AudioFormatProperties(audioFile: try AVAudioFile(forReading: url))
-
+        
         urlProperties = URLProperties(url: url)
-
+        
         fileType = AudioFileType(url: url)
-
+        
         tagProperties = try TagProperties(url: url)
-
+        
         if fileType == .wav {
             bextDescription = BEXTDescription(url: url)
         }
-
-        // parsing LoudnessDescription requires audio analysis. opt in on a command
+        
+        // loudness = generating a LoudnessDescription requires audio analysis. opt in on a command
+        // these values may also be in the bext chunk
     }
 }
