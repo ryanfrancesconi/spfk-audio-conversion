@@ -147,7 +147,8 @@ public class TransportPlayer {
 
         case let .update(time: time):
             guard !isPlaying else { return }
-            currentTime = time
+
+            currentTime = time.clamped(to: 0 ... duration)
 
         case .rewindAll:
             try rewindAll()
