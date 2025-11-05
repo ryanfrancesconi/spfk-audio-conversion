@@ -11,7 +11,7 @@ class BatchAudioFormatConverterTests: BinTestCase {
     @Test func convertAll() async throws {
         deleteBinOnExit = true
 
-        let sources = BundleResources.shared.audioCases.map {
+        let sources = TestBundleResources.shared.audioCases.map {
             let output = bin.appending(
                 component: "\($0.deletingPathExtension().lastPathComponent).m4a",
                 directoryHint: .notDirectory

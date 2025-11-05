@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .tags(.file))
 class MetaAudioFileDescriptionTests {
     @Test func codable() async throws {
-        let url = BundleResources.shared.mp3_id3
+        let url = TestBundleResources.shared.mp3_id3
         let mafDescription = try MetaAudioFileDescription(parsing: url)
 
         #expect(mafDescription.tagProperties?.tags.count == 28)

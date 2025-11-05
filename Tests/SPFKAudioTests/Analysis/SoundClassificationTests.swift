@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .tags(.file))
 class SoundClassificationTests: BinTestCase {
     @Test func analyze() async throws {
-        let url = BundleResources.shared.tabla_wav
+        let url = TestBundleResources.shared.tabla_wav
 
         let results = try await SoundClassification.analyze(url: url)
 
@@ -23,7 +23,7 @@ class SoundClassificationTests: BinTestCase {
     // if a file is too short then there isn't enough chance for the analysis to succeed, so loop it a few time
     // and process that file
     @Test func duplicateInsufficientDataAndAnalyze() async throws {
-        let url = BundleResources.shared.cowbell_wav
+        let url = TestBundleResources.shared.cowbell_wav
 
         let tmp = try await AudioTools.createLoopedAudio(input: url, minimumDuration: 6)
 

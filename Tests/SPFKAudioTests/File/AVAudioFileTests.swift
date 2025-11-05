@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .tags(.file))
 class AVAudioFileTests: BinTestCase {
     @Test func peak() async throws {
-        let input = BundleResources.shared.tabla_wav
+        let input = TestBundleResources.shared.tabla_wav
         let avFile = try AVAudioFile(forReading: input)
 
         let peak = try #require(avFile.peak)
@@ -20,7 +20,7 @@ class AVAudioFileTests: BinTestCase {
     }
 
     @Test func extract() async throws {
-        let input = BundleResources.shared.pink_noise
+        let input = TestBundleResources.shared.pink_noise
         let avFile = try AVAudioFile(forReading: input)
 
         let output = bin.appending(component: "extracted.wav", directoryHint: .notDirectory)

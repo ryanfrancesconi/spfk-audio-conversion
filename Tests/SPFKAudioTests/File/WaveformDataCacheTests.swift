@@ -11,7 +11,7 @@ class WaveformDataCacheTests: BinTestCase {
     static func createCache() async throws -> WaveformDataCache {
         let cache = WaveformDataCache()
 
-        for file in BundleResources.shared.audioCases {
+        for file in TestBundleResources.shared.audioCases {
             let waveformData = try await WaveformDataParser(resolution: .medium).parse(url: file)
 
             await cache.insert(

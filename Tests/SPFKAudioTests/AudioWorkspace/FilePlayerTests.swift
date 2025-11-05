@@ -12,7 +12,7 @@ final class FilePlayerTests: AudioPlayerTestCase {
     @Test func edit() async throws {
         try await setup()
         let player = try #require(player)
-        try player.load(url: BundleResources.shared.tabla_wav)
+        try player.load(url: TestBundleResources.shared.tabla_wav)
 
         let duration = try #require(player.duration)
         #expect(duration == 4.39375)
@@ -58,7 +58,7 @@ final class FilePlayerTests: AudioPlayerTestCase {
         let player = try #require(player)
         player.volume = 0.5
 
-        try player.load(url: BundleResources.shared.tabla_wav)
+        try player.load(url: TestBundleResources.shared.tabla_wav)
         try player.schedule(from: 1, to: 3)
         try player.play()
 

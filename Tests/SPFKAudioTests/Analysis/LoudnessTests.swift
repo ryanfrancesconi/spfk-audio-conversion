@@ -8,7 +8,7 @@ import Testing
 @Suite(.tags(.file))
 final class LoudnessTests: BinTestCase {
     @Test func testMeasureLoudness() async throws {
-        let url = BundleResources.shared.tabla_wav
+        let url = TestBundleResources.shared.tabla_wav
 
         let loudness = try await Loudness.analyze(url: url)
 
@@ -21,7 +21,7 @@ final class LoudnessTests: BinTestCase {
 
     /// Will also test looped audio
     @Test func testMeasureLoudnessShortFile() async throws {
-        let url = BundleResources.shared.cowbell_wav
+        let url = TestBundleResources.shared.cowbell_wav
 
         let loudness = try await Loudness.analyze(url: url)
 
@@ -31,7 +31,7 @@ final class LoudnessTests: BinTestCase {
     @Test func testAverageLoudness() async throws {
         let targetLevel: Double = -23
 
-        let urls = [BundleResources.shared.mp3_id3, BundleResources.shared.tabla_wav, BundleResources.shared.cowbell_wav]
+        let urls = [TestBundleResources.shared.mp3_id3, TestBundleResources.shared.tabla_wav, TestBundleResources.shared.cowbell_wav]
 
         var values = [LoudnessDescription]()
 

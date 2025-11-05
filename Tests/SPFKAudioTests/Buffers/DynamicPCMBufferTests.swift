@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .tags(.file))
 class DynamicPCMBufferTests: BinTestCase {
     @Test func createElements() throws {
-        let url = BundleResources.shared.tabla_wav
+        let url = TestBundleResources.shared.tabla_wav
         let buffer = try DynamicPCMBuffer(url: url)
 
         #expect(buffer.channelCount == 2)
@@ -26,7 +26,7 @@ class DynamicPCMBufferTests: BinTestCase {
     }
 
     @Test func loopBuffer() throws {
-        let url = BundleResources.shared.tabla_wav
+        let url = TestBundleResources.shared.tabla_wav
 
         guard let buffer = try AVAudioPCMBuffer(url: url) else {
             Issue.record("Failed to create buffer")

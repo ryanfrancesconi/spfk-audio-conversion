@@ -8,7 +8,7 @@ import Testing
 @Suite(.tags(.file))
 class SoXTests: BinTestCase {
     @Test func convertMP3() async throws {
-        let input = BundleResources.shared.tabla_wav
+        let input = TestBundleResources.shared.tabla_wav
         let output = bin.appendingPathComponent("test.mp3")
 
         await SoX.shared.convertMP3(input: input, output: output, bitRate: 256, sampleRate: 48000)
@@ -19,7 +19,7 @@ class SoXTests: BinTestCase {
     }
 
     @Test func convertPCM() async throws {
-        let input = BundleResources.shared.tabla_wav
+        let input = TestBundleResources.shared.tabla_wav
 
         let formats: [AudioFileType] = [.wav, .aiff]
 
@@ -37,7 +37,7 @@ class SoXTests: BinTestCase {
     }
 
     @Test func createMultiChannelWave() async throws {
-        let input = BundleResources.shared.tabla_wav
+        let input = TestBundleResources.shared.tabla_wav
 
         let url1 = bin.appendingPathComponent("wave1.wav")
         try? url1.delete()
@@ -70,7 +70,7 @@ class SoXTests: BinTestCase {
     }
 
     @Test func exportStereoChannels() async throws {
-        let input = BundleResources.shared.tabla_wav
+        let input = TestBundleResources.shared.tabla_wav
         let channelPair = try await SoX.shared.exportSplitStereo(input: input, destination: bin, overwrite: true)
 
         #expect(channelPair.left.exists)
@@ -78,7 +78,7 @@ class SoXTests: BinTestCase {
     }
 
     @Test func exportInvalidStereoChannels() async throws {
-        let input = BundleResources.shared.no_data_chunk
+        let input = TestBundleResources.shared.no_data_chunk
         let bin = self.bin
 
         await #expect(throws: (any Error).self) {
@@ -87,7 +87,7 @@ class SoXTests: BinTestCase {
     }
 
     @Test func testExportMultipleChannels() async throws {
-        let input = BundleResources.shared.tabla_6_channel
+        let input = TestBundleResources.shared.tabla_6_channel
 
         let urls = try await SoX.shared.exportChannels(input: input, destination: bin, newName: "TEST")
         let directoryContents = try #require(bin.directoryContents).filter { $0.lastPathComponent.contains("TEST") } // read actual files in bin
@@ -103,7 +103,7 @@ class SoXTests: BinTestCase {
     }
 
     @Test func trim() async throws {
-        let input = BundleResources.shared.tabla_wav
+        let input = TestBundleResources.shared.tabla_wav
         let output = bin.appendingPathComponent("trimmed\(Entropy.uniqueId).wav")
 
         #expect(
@@ -115,7 +115,7 @@ class SoXTests: BinTestCase {
     }
 
     @Test func stereoToMono() async throws {
-        let input = BundleResources.shared.tabla_wav
+        let input = TestBundleResources.shared.tabla_wav
 
         let result = try #require(
             await SoX.shared.stereoToMono(source: input, destination: bin)

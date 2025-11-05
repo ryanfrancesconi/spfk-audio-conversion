@@ -11,7 +11,7 @@ class WaveformDataParserTests: BinTestCase {
     @Test func parse() async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
 
-        let url = BundleResources.shared.tabla_6_channel
+        let url = TestBundleResources.shared.tabla_6_channel
 
         let parser = WaveformDataParser(
             resolution: .low,
@@ -33,7 +33,7 @@ class WaveformDataParserTests: BinTestCase {
     @Test func parseLossless() async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
 
-        let url = BundleResources.shared.cowbell_wav
+        let url = TestBundleResources.shared.cowbell_wav
 
         let audioFile = try AVAudioFile(forReading: url)
         #expect(audioFile.length == 88201)
@@ -56,7 +56,7 @@ class WaveformDataParserTests: BinTestCase {
     }
 
     @Test func cancel() async throws {
-        let input = BundleResources.shared.tabla_6_channel
+        let input = TestBundleResources.shared.tabla_6_channel
 
         let parser = WaveformDataParser(
             resolution: .low,
@@ -76,7 +76,7 @@ class WaveformDataParserTests: BinTestCase {
     }
 
     @Test func noDataChunk() async throws {
-        let url = BundleResources.shared.no_data_chunk
+        let url = TestBundleResources.shared.no_data_chunk
         let request = WaveformDataParser(resolution: .low, priority: .low)
 
         await #expect(throws: (any Error).self) {
