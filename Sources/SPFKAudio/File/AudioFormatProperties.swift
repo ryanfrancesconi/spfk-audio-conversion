@@ -2,7 +2,6 @@
 
 import AVFoundation
 import Foundation
-import OrderedCollections
 import SPFKTime
 
 public struct AudioFormatProperties: Hashable, Codable {
@@ -16,11 +15,6 @@ public struct AudioFormatProperties: Hashable, Codable {
     public private(set) var durationDescription: String = ""
     public private(set) var formatDescription: String = ""
     public private(set) var channelsDescription: String = ""
-
-    public var dictionary: OrderedDictionary<String, String> { [
-        "Format": formatDescription,
-        "Duration": durationDescription,
-    ] }
 
     public init(
         channelCount: AVAudioChannelCount,
