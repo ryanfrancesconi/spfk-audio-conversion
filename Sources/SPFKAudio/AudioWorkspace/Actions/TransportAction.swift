@@ -11,6 +11,7 @@ public enum TransportAction: Equatable {
     case play(time: TimeInterval?)
     case stop
     case update(time: TimeInterval)
+    case scrub(time: TimeInterval)
 
     case rewindAll
     case rewind(pulse: MusicalPulse?)

@@ -75,6 +75,10 @@ public class TransportPlayer {
         }
     }
 
+    public var lastScheduledHostTime: UInt64? {
+        currentPlayer?.lastScheduledTime?.hostTime
+    }
+
     var restartAfterEventTask: Task<Void, Error>?
     var shouldRestartAfterEvent = false
 
@@ -96,7 +100,7 @@ public class TransportPlayer {
     public init(timerView: NSView, delegate: TransportPlayerDelegate? = nil) {
         transportTimer = TransportTimer(on: timerView)
         mixer = MixerWrapper()
-        outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleTapEvent)
+        outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleAmplitudeEvent)
 
         self.delegate = delegate
 
@@ -121,54 +125,28 @@ public class TransportPlayer {
 
         try mixer.detachNodes()
         mixer = MixerWrapper()
-        outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleTapEvent)
+        outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleAmplitudeEvent)
     }
 
-    private func handleTapEvent(_ array: [Float]) {
-        delegate?.transportPlayer(tapEvent: array)
+    private func handleAmplitudeEvent(_ array: [Float]) {
+        delegate?.transportPlayer(amplitudeEvent: array)
     }
 
-    public func handle(transportAction event: TransportAction) throws {
-        // Log.debug(event)
+    public func unload() {
+        currentPlayer?.unload()
+    }
 
-        switch event {
-        case let .load(audioFile: audioFile, tempo: tempo):
-            try load(audioFile: audioFile)
-            measure.tempo = tempo ?? 60
+    public func update(time: TimeInterval) {
+        guard !isPlaying else { return }
+        currentTime = time.clamped(to: 0 ... duration)
+    }
 
-        case .unload:
-            currentPlayer?.unload()
+    public func update(looping state: Bool) throws {
+        isLooping = state
 
-        case let .play(time: time):
-            try play(time: time)
-
-        case .stop:
+        if isPlaying {
             try stop()
-
-        case let .update(time: time):
-            guard !isPlaying else { return }
-
-            currentTime = time.clamped(to: 0 ... duration)
-
-        case .rewindAll:
-            try rewindAll()
-
-        case let .rewind(pulse):
-            try rewind(by: pulse)
-
-        case let .forward(pulse):
-            try forward(by: pulse)
-
-        case let .loop(state):
-            isLooping = state
-
-            if isPlaying {
-                try stop()
-                try play(time: currentTime)
-            }
-
-        case let .playlistMode(state: state):
-            _ = state
+            try play(time: currentTime)
         }
     }
 }

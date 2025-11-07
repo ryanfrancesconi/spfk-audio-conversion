@@ -10,7 +10,7 @@ extension TransportPlayer {
         try play(time: nil)
     }
 
-    public func play(time: TimeInterval?) throws {
+    public func play(time: TimeInterval?, hostTime: UInt64? = nil) throws {
         guard let currentPlayer else {
             throw NSError(description: "currentPlayer is nil")
         }
@@ -30,7 +30,7 @@ extension TransportPlayer {
             time = playbackRange.lowerBound
         }
 
-        let hostTime = mach_absolute_time()
+        let hostTime = hostTime ?? mach_absolute_time()
 
         if isLooping {
             try scheduleLoops(at: time, hostTime: hostTime)
@@ -271,7 +271,9 @@ extension TransportPlayer {
                 shouldRestartAfterEvent = false
 
                 Task { @MainActor in
-                    try play(time: time)
+
+                    // this needs to be an event sent out if another player needs to sync to this one
+                    delegate?.transportPlayer(shouldRestartAtTime: time)
                 }
             }
         }
