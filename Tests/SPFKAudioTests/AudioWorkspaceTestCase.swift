@@ -51,6 +51,14 @@ class TransportPlayerTestCase: AudioWorkspaceTestCase {
 }
 
 extension TransportPlayerTestCase: TransportPlayerDelegate {
+    func transportPlayer(amplitudeEvent event: [Float]) {
+        
+    }
+    
+    func transportPlayer(shouldRestartAtTime time: TimeInterval) {
+        
+    }
+    
     func transportPlayer(timerEvent event: TransportTimerEvent) {
         // Log.debug(event)
     }
