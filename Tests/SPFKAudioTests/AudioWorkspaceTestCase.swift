@@ -56,7 +56,7 @@ extension TransportPlayerTestCase: TransportPlayerDelegate {
     }
     
     func transportPlayer(shouldRestartAtTime time: TimeInterval) {
-        
+        try? player?.play(time: time)
     }
     
     func transportPlayer(timerEvent event: TransportTimerEvent) {
