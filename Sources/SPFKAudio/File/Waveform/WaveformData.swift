@@ -4,7 +4,7 @@ import Foundation
 import SPFKUtils
 
 /// Data needed for drawing waveforms
-public struct WaveformData: Equatable, Hashable, Serializable {
+public struct WaveformData: Hashable, Codable {
     public private(set) var floatChannelData: FloatChannelData
     public private(set) var audioDuration: TimeInterval
     public private(set) var sampleRate: Double

@@ -8,9 +8,6 @@ public struct AudioFormatProperties: Hashable, Codable {
     public private(set) var channelCount: AVAudioChannelCount
     public private(set) var sampleRate: Double
     public private(set) var bitsPerChannel: Int?
-
-    /// Date Rate in kbps
-    public private(set) var dataRate: Int?
     public private(set) var duration: TimeInterval = 0
 
     // MARK: cached descriptions for displaying in the UI
@@ -23,13 +20,11 @@ public struct AudioFormatProperties: Hashable, Codable {
         channelCount: AVAudioChannelCount,
         sampleRate: Double,
         bitsPerChannel: Int? = nil,
-        dataRate: Int? = nil,
         duration: TimeInterval
     ) {
         self.channelCount = channelCount
         self.sampleRate = sampleRate
         self.bitsPerChannel = bitsPerChannel
-        self.dataRate = dataRate
         self.duration = duration
 
         update()
@@ -40,7 +35,6 @@ public struct AudioFormatProperties: Hashable, Codable {
         self.sampleRate = audioFile.fileFormat.sampleRate
         self.bitsPerChannel = audioFile.fileFormat.bitsPerChannel.int
         self.duration = audioFile.duration
-        self.dataRate = audioFile.dataRate
 
         update()
     }
@@ -83,9 +77,9 @@ public struct AudioFormatProperties: Hashable, Codable {
             out += bitsPerChannel > 0 ? ", \(bitsPerChannel) bit" : ""
         }
 
-        if let dataRate {
-            out += dataRate > 0 ? ", \(dataRate) kbit/s" : ""
-        }
+//        if let dataRate {
+//            out += dataRate > 0 ? ", \(dataRate) kbit/s" : ""
+//        }
 
         if channelsDescription != "" {
             out += ", \(channelsDescription)"

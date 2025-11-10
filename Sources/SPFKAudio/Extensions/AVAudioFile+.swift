@@ -11,13 +11,12 @@ extension AVAudioFile {
     }
 
     /// Estimated data rate in kbps
-    public var dataRate: Int? {
+    public var dataRate: Double? {
         guard duration > 0,
               let fileSize = url.fileSize else { return nil }
 
         let fileSizeInBits = fileSize * 8 // Convert bytes to bits
-        let bitrate = Double(fileSizeInBits) / duration / 1000
-        return Int(bitrate).roundToNearestPowerOfTwo()
+        return Double(fileSizeInBits) / duration / 1000
     }
 
     /// the max level in the file as a Peak struct

@@ -5,7 +5,7 @@ import Foundation
 import SPFKTime
 
 public enum TransportAction: Equatable {
-    case load(audioFile: AVAudioFile, tempo: Double?)
+    case load(url: URL, tempo: Double?)
     case unload
 
     case play(time: TimeInterval?)
