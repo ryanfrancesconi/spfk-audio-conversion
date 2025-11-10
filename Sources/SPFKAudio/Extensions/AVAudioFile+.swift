@@ -10,6 +10,16 @@ extension AVAudioFile {
         TimeInterval(length) / fileFormat.sampleRate
     }
 
+    /// Estimated data rate in kbps
+    public var dataRate: Int? {
+        guard duration > 0,
+              let fileSize = url.fileSize else { return nil }
+
+        let fileSizeInBits = fileSize * 8 // Convert bytes to bits
+        let bitrate = Double(fileSizeInBits) / duration / 1000
+        return Int(bitrate).roundToNearestPowerOfTwo()
+    }
+
     /// the max level in the file as a Peak struct
     public var peak: Peak? {
         try? toAVAudioPCMBuffer().peak()

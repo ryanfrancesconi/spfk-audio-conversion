@@ -42,6 +42,13 @@ extension AVAudioFormat {
         streamDescription.pointee.mBitsPerChannel
     }
 
+    public var bitRate: Double {
+        let desc = streamDescription.pointee
+        return desc.mSampleRate *
+            desc.mBitsPerChannel.double *
+            desc.mChannelsPerFrame.double
+    }
+
     public static func createPCMFormat(
         bitsPerChannel: UInt32,
         channels: UInt32,
