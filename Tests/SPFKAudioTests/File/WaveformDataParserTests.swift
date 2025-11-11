@@ -26,8 +26,6 @@ class WaveformDataParserTests: BinTestCase {
         for channel in waveformData.floatChannelData {
             #expect(channel.count == 1315)
         }
-
-        try waveformData.base64EncodedString?.write(to: bin.appendingPathComponent("waveformData"), atomically: false, encoding: .utf8)
     }
 
     @Test func parseLossless() async throws {
