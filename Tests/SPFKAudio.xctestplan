@@ -15,7 +15,7 @@
     {
       "parallelizable" : false,
       "target" : {
-        "containerPath" : "container:",
+        "containerPath" : "container:Packages\/SPFKAudio",
         "identifier" : "SPFKAudioTests",
         "name" : "SPFKAudioTests"
       }
