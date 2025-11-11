@@ -3,7 +3,7 @@ import SimplyCoreAudio
 import SPFKUtils
 
 public class AudioEngineManager {
-    public enum ConfigurationOption {
+    public enum ConfigurationOption: Hashable {
         case sampleRateChanged
         case outputDeviceChanged
         case inputDeviceChanged

@@ -11,6 +11,14 @@ extension TransportPlayer {
     }
 
     public func play(time: TimeInterval?, hostTime: UInt64? = nil) throws {
+        guard let engine = mixer.engine else {
+            throw NSError(description: "Engine is nil")
+        }
+
+        guard engine.isRunning else {
+            throw NSError(description: "Engine isn't running")
+        }
+
         guard let currentPlayer else {
             throw NSError(description: "currentPlayer is nil")
         }

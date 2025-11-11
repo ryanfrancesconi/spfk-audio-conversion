@@ -90,12 +90,14 @@ extension AudioWorkspace: AudioDeviceAccess {
 extension AudioWorkspace: AudioEngineManagerDelegate {
     // TODO: handle events
     public func audioEngineManager(event: AudioEngineManager.Event) {
+        Log.debug(event)
+
         switch event {
         case let .configurationChanged(options):
-            Log.debug(options)
+            break
 
         case let .error(error):
-            Log.error(error)
+            break
 
         case .rebuild:
             // deviceManager
@@ -107,5 +109,22 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
 extension AudioWorkspace: AudioDeviceManagerDelegate {
     public func audioDeviceManager(event: AudioDeviceManager.Event) {
         Log.debug(event)
+
+        switch event {
+        case let .sampleRateChanged(sampleRate):
+            _ = sampleRate
+        case let .inputDeviceChanged(device: device):
+            _ = device
+        case let .outputDeviceChanged(device: device):
+            _ = device
+        case let .deviceListChanged(addedDevices: addedDevices, removedDevices: removedDevices):
+            break
+        case .deviceProcessorOverload:
+            break
+        }
     }
+}
+
+public protocol AudioWorkspaceDelegate: AnyObject {
+    func audioWorkspaceShouldRebuild(_ audioWorkspace: AudioWorkspace)
 }

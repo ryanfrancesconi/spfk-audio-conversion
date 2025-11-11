@@ -6,7 +6,7 @@ import SPFKUtils
 extension FilePlayer {
     public func play() throws {
         guard playerNode.engine?.isRunning == true else {
-            throw NSError(description: "Engine isn't running or available - play() canceled for \(audioFile?.url.lastPathComponent ?? "nil")")
+            throw NSError(description: "FilePlayer.play() Engine isn't running or available - play() canceled for \(audioFile?.url.lastPathComponent ?? "nil")")
         }
 
         if isPlaying {

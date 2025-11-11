@@ -25,6 +25,8 @@ extension AudioEngineManager {
             queue: .main
         ) { [weak self] notification in
 
+            Log.debug(notification)
+
             guard let self,
                   let notificationEngine = notification.object as? AVAudioEngine,
                   engine == notificationEngine
@@ -53,8 +55,12 @@ extension AudioEngineManager {
     }
 
     private func parseNotification() {
-        guard let selectedOutputDevice = deviceManager?.selectedOutputDevice,
-              let outputDeviceSampleRate = deviceManager?.outputDeviceSampleRate else {
+        guard let deviceManager else {
+            return
+        }
+
+        guard let selectedOutputDevice = deviceManager.selectedOutputDevice,
+              let outputDeviceSampleRate = deviceManager.outputDeviceSampleRate else {
             return
         }
 
@@ -64,9 +70,10 @@ extension AudioEngineManager {
             return
         }
 
-        let outputDeviceChanged = deviceManager?.selectedOutputDevice?.uid != deviceManager?.deviceSettings.outputUID
-        let inputDeviceChanged = deviceManager?.selectedInputDevice?.uid != deviceManager?.deviceSettings.inputUID
-        let sampleRateChanged = outputDeviceSampleRate != deviceManager?.systemSampleRate
+        let outputDeviceChanged = deviceManager.selectedOutputDevice?.uid != deviceManager.deviceSettings.outputUID
+        let inputDeviceChanged = deviceManager.selectedInputDevice?.uid != deviceManager.deviceSettings.inputUID
+
+        let sampleRateChanged = outputDeviceSampleRate != deviceManager.systemSampleRate
 
         var options = Set<ConfigurationOption>()
 
