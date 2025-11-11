@@ -25,14 +25,9 @@ extension AudioEngineManager {
             queue: .main
         ) { [weak self] notification in
 
-            Log.debug(notification)
+            guard let self else { return }
 
-            guard let self,
-                  let notificationEngine = notification.object as? AVAudioEngine,
-                  engine == notificationEngine
-            else { return }
-
-            parseNotification()
+            parse(notification: notification)
         }
     }
 
@@ -54,7 +49,12 @@ extension AudioEngineManager {
         }
     }
 
-    private func parseNotification() {
+    private func parse(notification: Notification) {
+        guard let notificationEngine = notification.object as? AVAudioEngine,
+              engine == notificationEngine else { return }
+
+        Log.debug(notification)
+
         guard let deviceManager else {
             return
         }
