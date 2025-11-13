@@ -6,6 +6,8 @@ import OTAtomics
 import OTCore
 import SPFKUtils
 
+// TODO: make async, remove OTAtomicsThreadSafe
+
 public class EngineRenderer {
     @OTAtomicsThreadSafe private var abortFlag: Bool = false
 

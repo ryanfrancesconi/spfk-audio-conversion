@@ -20,7 +20,7 @@ extension TransportPlayer {
         }
 
         guard let currentPlayer else {
-            throw NSError(description: "currentPlayer is nil")
+            throw NSError(description: "play: currentPlayer is nil")
         }
 
         guard isLoaded else {
@@ -57,22 +57,8 @@ extension TransportPlayer {
             throw NSError(description: "Player is nil")
         }
 
-        var engineError: Error?
-
-        ExceptionCatcherOperation({
-            do {
-                try currentPlayer.play()
-
-            } catch {
-                Log.error(error)
-            }
-        }, { exception in
-            engineError = NSError(description: exception.debugDescription)
-
-        })
-
-        if let engineError {
-            throw engineError
+        try ExceptionTrap.withThrowing { [currentPlayer] in
+            try currentPlayer.play()
         }
     }
 
@@ -101,7 +87,7 @@ extension TransportPlayer {
 extension TransportPlayer {
     private func scheduleLoops(at time: TimeInterval, hostTime: UInt64) throws {
         guard let currentPlayer else {
-            throw NSError(description: "currentPlayer is nil")
+            throw NSError(description: "scheduleLoops: currentPlayer is nil")
         }
 
         let playbackRange = self.playbackRange
@@ -129,7 +115,7 @@ extension TransportPlayer {
 
     private func scheduleAudio(times: [AVAudioTime]) throws {
         guard let currentPlayer else {
-            throw NSError(description: "currentPlayer is nil")
+            throw NSError(description: ": currentPlayer is nil")
         }
 
         let loopDuration = playbackRange.duration

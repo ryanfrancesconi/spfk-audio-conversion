@@ -4,6 +4,7 @@ import SPFKUtils
 public enum AudioDefaults {
     public static let defaultSampleRate: Double = 48000
     public static var minimumSampleRateSupported: Double = 44100
+    public static var enforceMinimumSamplateRate = false
 
     private static var _systemFormat = AVAudioFormat(
         standardFormatWithSampleRate: defaultSampleRate,

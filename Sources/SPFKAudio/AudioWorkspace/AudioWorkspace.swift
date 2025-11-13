@@ -14,6 +14,8 @@ public class AudioWorkspace {
         return deviceManager
     }()
 
+    public weak var delegate: AudioWorkspaceDelegate?
+
     public let cacheManager = AudioUnitCacheManager(cachesDirectory: BundleProperties.cachesDirectory)
 
     private var outputMixer: MixerWrapper?
@@ -34,11 +36,13 @@ public class AudioWorkspace {
         self.master = try await AudioTrack(delegate: self)
 
         guard let outputMixer, let master else {
-            return
+            throw NSError(description: "Failed to create mixers on rebuild")
         }
 
         try engineManager.setEngineOutput(to: outputMixer.avAudioNode)
         try engineManager.connectAndAttach(master, to: outputMixer)
+
+        try deviceManager.reconnect()
     }
 
     public func shutdown() async throws {
@@ -50,12 +54,16 @@ public class AudioWorkspace {
         try outputMixer?.detachNodes()
     }
 
+    public var isRunning: Bool { engineManager.engineIsRunning }
+
     public func start() throws {
-        try engineManager.startEngine()
+        if !isRunning {
+            try engineManager.startEngine()
+        }
     }
 
     public func stop() throws {
-        if engineManager.engineIsRunning {
+        if isRunning {
             engineManager.stopEngine()
         }
     }
@@ -88,20 +96,23 @@ extension AudioWorkspace: AudioDeviceAccess {
 }
 
 extension AudioWorkspace: AudioEngineManagerDelegate {
+    public func audioEngineManagerAllowInputDevice() -> Bool {
+        deviceManager.allowInput
+    }
+
     // TODO: handle events
     public func audioEngineManager(event: AudioEngineManager.Event) {
         Log.debug(event)
 
         switch event {
-        case let .configurationChanged(options):
-            break
-
         case let .error(error):
-            break
+            Log.error(error)
 
         case .rebuild:
-            // deviceManager
             break
+
+        case .configurationChanged:
+            deviceManager.handleEngineConfigurationChanged()
         }
     }
 }
@@ -118,13 +129,35 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
         case let .outputDeviceChanged(device: device):
             _ = device
         case let .deviceListChanged(addedDevices: addedDevices, removedDevices: removedDevices):
-            break
+            _ = addedDevices; _ = removedDevices
         case .deviceProcessorOverload:
             break
+        case let .error(error):
+            _ = error
+        case let .configurationChanged(options):
+            _ = options
+
+            do {
+                try handleConfigurationChanged(options: options)
+            } catch {
+                Log.error(error)
+            }
+        }
+    }
+}
+
+extension AudioWorkspace {
+    func handleConfigurationChanged(options: Set<AudioDeviceManager.ConfigurationOption>) throws {
+        if options.contains(.sampleRateChanged) {
+            delegate?.audioWorkspaceShouldRebuild(self)
+
+        } else {
+            delegate?.audioWorkspaceShouldRestart(self)
         }
     }
 }
 
 public protocol AudioWorkspaceDelegate: AnyObject {
     func audioWorkspaceShouldRebuild(_ audioWorkspace: AudioWorkspace)
+    func audioWorkspaceShouldRestart(_ audioWorkspace: AudioWorkspace)
 }

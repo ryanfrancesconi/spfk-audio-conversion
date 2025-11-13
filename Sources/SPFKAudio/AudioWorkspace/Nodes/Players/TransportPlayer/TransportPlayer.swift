@@ -38,6 +38,8 @@ public class TransportPlayer {
     /// the player which is actively playing
     private(set) var currentPlayer: FilePlayer?
 
+    public var url: URL? { currentPlayer?.url }
+
     public var formats: [AVAudioFormat] {
         players.map { $0.key }
     }
@@ -118,12 +120,16 @@ public class TransportPlayer {
         outputTap = nil
 
         for player in players {
+            player.value.stop()
             try player.value.detachNodes()
         }
+
+        currentPlayer = nil
 
         players.removeAll()
 
         try mixer.detachNodes()
+
         mixer = MixerWrapper()
         outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleAmplitudeEvent)
     }

@@ -53,20 +53,10 @@ extension AVAudioNode {
             throw error(function: #function, string: "engine is nil")
         }
 
-        var error: Error?
-
-        ExceptionCatcherOperation({ [weak self] in
+        try ExceptionTrap.withThrowing { [weak self] in
             guard let self else { return }
 
             engine.disconnectNodeOutput(self)
-
-        }, { exception in
-            Log.error(exception)
-            error = exception.error
-        })
-
-        if let error {
-            throw error
         }
     }
 
@@ -76,20 +66,9 @@ extension AVAudioNode {
             throw error(function: #function, string: "engine is nil")
         }
 
-        var error: Error?
-
-        ExceptionCatcherOperation({ [weak self] in
+        try ExceptionTrap.withThrowing { [weak self] in
             guard let self else { return }
-
             engine.disconnectNodeInput(self)
-
-        }, { exception in
-            Log.error(exception)
-            error = exception.error
-        })
-
-        if let error {
-            throw error
         }
     }
 
@@ -98,20 +77,9 @@ extension AVAudioNode {
             throw error(function: #function, string: "engine is nil")
         }
 
-        var error: Error?
-
-        ExceptionCatcherOperation({ [weak self] in
+        try ExceptionTrap.withThrowing { [weak self] in
             guard let self else { return }
-
             engine.detach(self)
-
-        }, { exception in
-            Log.error(exception)
-            error = exception.error
-        })
-
-        if let error {
-            throw error
         }
     }
 

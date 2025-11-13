@@ -4,6 +4,10 @@ import SimplyCoreAudio
 import SPFKUtils
 
 extension AudioDeviceManagerModel {
+    public var sampleRateHasChanged: Bool {
+        outputDeviceSampleRate != systemSampleRate
+    }
+
     public var systemSampleRate: Double {
         get { systemFormat.sampleRate }
 
@@ -178,20 +182,13 @@ extension AudioDeviceManagerModel {
         AudioDevice.lookup(by: uid)
     }
 
-    public func requestAudioAccess(completionHandler: @escaping (Bool?) -> Void) {
+    public func requestAudioInputAccess() async -> Bool? {
         guard hasInputDevice && deviceSettings.allowInput else {
             Log.error("🎤 Audio Disabled or no Input device.")
-            completionHandler(nil)
-            return
+            return nil
         }
 
-        Task {
-            let allowed = await AVCaptureDevice.requestAccess(for: .audio)
-
-            Task { @MainActor in
-                completionHandler(allowed)
-            }
-        }
+        return await AVCaptureDevice.requestAccess(for: .audio)
     }
 
     public func setNominalSampleRate(to sampleRate: Double) throws {
@@ -207,21 +204,23 @@ extension AudioDeviceManagerModel {
 
     public func setOutputSampleRate(to newValue: Double) throws {
         guard let selectedOutputDevice else { return }
-        try setSampleRate(device: selectedOutputDevice, sampleRate: newValue)
+        try setSampleRate(device: selectedOutputDevice, to: newValue)
     }
 
     public func setInputSampleRate(to newValue: Double) throws {
         guard let selectedInputDevice else { return }
-        try setSampleRate(device: selectedInputDevice, sampleRate: newValue)
+        try setSampleRate(device: selectedInputDevice, to: newValue)
     }
 
     public func supportedSampleRates(for device: AudioDevice) -> [Double] {
         device.nominalSampleRates?.sorted() ?? []
     }
 
-    internal func setSampleRate(device: AudioDevice, sampleRate: Double) throws {
-        guard sampleRate >= AudioDefaults.minimumSampleRateSupported else {
-            throw NSError(description: "This sample rate \(sampleRate) isn't supported. The minimum rate is \(AudioDefaults.minimumSampleRateSupported)")
+    internal func setSampleRate(device: AudioDevice, to sampleRate: Double) throws {
+        if AudioDefaults.enforceMinimumSamplateRate {
+            guard sampleRate >= AudioDefaults.minimumSampleRateSupported else {
+                throw NSError(description: "This sample rate \(sampleRate) isn't supported. The minimum rate is \(AudioDefaults.minimumSampleRateSupported)")
+            }
         }
 
         guard let deviceSampleRate = device.nominalSampleRate else {
@@ -234,9 +233,10 @@ extension AudioDeviceManagerModel {
         }
 
         let supportedRates = supportedSampleRates(for: device)
-        let supportedRatesString = supportedRates.map({ $0.string }).joined(separator: ", ")
 
         guard supportedRates.contains(sampleRate) else {
+            let supportedRatesString = supportedRates.map({ $0.string }).joined(separator: ", ")
+
             throw NSError(description: "\(device.name) doesn't support \(sampleRate) Hz. Available rate\(supportedRates.pluralString) \(supportedRatesString)")
         }
 
@@ -244,6 +244,6 @@ extension AudioDeviceManagerModel {
             throw NSError(description: "Unable to set \(device.name) to \(sampleRate)")
         }
 
-        Log.debug("🔈 Updated \(device.name) sample rate to", sampleRate)
+        Log.debug("🔈 ✓ Updated \(device.name) sample rate to", sampleRate)
     }
 }

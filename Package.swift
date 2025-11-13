@@ -23,16 +23,16 @@ private let products: [PackageDescription.Product] = [
 ]
 
 private let dependencies: [PackageDescription.Package.Dependency] = [
-    .package(path: "../SPFKTesting"),
-    .package(path: "../SPFKUtils"),
-    .package(path: "../SPFKMetadata"),
-    .package(path: "../SPFKTime"),
+    .package(name: "SPFKTesting", path: "../SPFKTesting"),
+    .package(name: "SPFKUtils", path: "../SPFKUtils"),
+    .package(name: "SPFKMetadata", path: "../SPFKMetadata"),
+    .package(name: "SPFKTime", path: "../SPFKTime"),
 
 //    .package(url: "https://github.com/ryanfrancesconi/SPFKTesting", branch: "main"),
 //    .package(url: "https://github.com/ryanfrancesconi/SPFKUtils", branch: "main"),
 //    .package(url: "https://github.com/ryanfrancesconi/SPFKMetadata", branch: "main"),
-
-    .package(url: "https://github.com/ryanfrancesconi/SimplyCoreAudio", branch: "add"),
+//    .package(url: "https://github.com/ryanfrancesconi/SimplyCoreAudio", branch: "development"),
+    .package(name: "SimplyCoreAudio", path: "../../../../lib/SimplyCoreAudio"),
 ]
 
 private let targets: [PackageDescription.Target] = [

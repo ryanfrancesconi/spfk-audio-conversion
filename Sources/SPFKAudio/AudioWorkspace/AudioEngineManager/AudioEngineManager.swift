@@ -3,15 +3,9 @@ import SimplyCoreAudio
 import SPFKUtils
 
 public class AudioEngineManager {
-    public enum ConfigurationOption: Hashable {
-        case sampleRateChanged
-        case outputDeviceChanged
-        case inputDeviceChanged
-    }
-
     public enum Event {
-        case configurationChanged(Set<ConfigurationOption>)
         case rebuild
+        case configurationChanged
         case error(Error)
     }
 
@@ -39,13 +33,10 @@ public class AudioEngineManager {
 
     public private(set) var renderer = EngineRenderer()
 
-    public var deviceManager: (any AudioDeviceManagerModel)? {
-        delegate?.audioDeviceAccess
-    }
+    public var allowInput: Bool { delegate?.audioEngineManagerAllowInputDevice() == true }
 
-    public init() {
-        rebuildEngine()
-    }
+    /// Note: must call rebuildEngine before using
+    public init() {}
 
     deinit {
         removeEngineObserver()

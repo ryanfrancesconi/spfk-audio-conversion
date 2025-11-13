@@ -15,8 +15,15 @@ public class AudioWorkspaceTestCase: BinTestCase {
 
     public func setup() async throws {
         try await audioWorkspace.rebuild()
-
         try audioWorkspace.start()
+    }
+
+    deinit {
+        do {
+            try audioWorkspace.stop()
+        } catch {
+            Log.error(error)
+        }
     }
 }
 
@@ -52,13 +59,12 @@ class TransportPlayerTestCase: AudioWorkspaceTestCase {
 
 extension TransportPlayerTestCase: TransportPlayerDelegate {
     func transportPlayer(amplitudeEvent event: [Float]) {
-        
     }
-    
+
     func transportPlayer(shouldRestartAtTime time: TimeInterval) {
         try? player?.play(time: time)
     }
-    
+
     func transportPlayer(timerEvent event: TransportTimerEvent) {
         // Log.debug(event)
     }

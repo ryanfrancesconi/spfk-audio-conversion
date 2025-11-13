@@ -3,17 +3,15 @@ import SPFKUtils
 import SPFKUtilsC
 
 extension AudioEngineManager {
-    public func prepareEngine() {
+    public func prepareEngine() throws {
         guard !engineIsRunning else { return }
 
-        // engine.prepare()
         Log.debug("🔈 engine.prepare()")
 
-        ExceptionCatcherOperation({
-            self.engine.prepare()
-        }, { exception in
-            Log.error(exception)
-        })
+        try ExceptionTrap.withThrowing { [weak self] in
+            guard let self else { return }
+            engine.prepare()
+        }
     }
 
     // TODO: REFACTOR: does this need to be on main?
@@ -26,22 +24,11 @@ extension AudioEngineManager {
 
         Log.debug("🔈 Attempting to start engine with outputFormat", outputFormat, "inputFormat", inputFormat)
 
-        var engineError: Error?
+        try ExceptionTrap.withThrowing { [weak self] in
+            guard let self else { return }
 
-        ExceptionCatcherOperation({
-            do {
-                self.engine.prepare()
-                try self.engine.start()
-
-            } catch {
-                engineError = error
-            }
-        }, { exception in
-            engineError = NSError(description: exception.debugDescription)
-        })
-
-        if let engineError {
-            throw engineError
+            engine.prepare()
+            try engine.start()
         }
     }
 
@@ -62,6 +49,7 @@ extension AudioEngineManager {
     }
 
     public func rebuildEngine() {
+        stopEngine()
         removeEngineObserver()
 
         Log.debug("🔈 Creating new Engine...")
@@ -73,13 +61,6 @@ extension AudioEngineManager {
         _ = outputNode
 
         delegate?.audioEngineManager(event: .rebuild)
-
-        do {
-            try deviceManager?.reconnect()
-
-        } catch {
-            Log.error(error)
-        }
 
         addEngineObserver()
     }

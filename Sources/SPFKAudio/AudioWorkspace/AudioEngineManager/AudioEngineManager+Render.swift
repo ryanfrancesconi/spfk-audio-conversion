@@ -26,17 +26,20 @@ extension AudioEngineManager: EngineRendererModel {
             progress: progressHandler
         )
 
-        if !allowInput {
-            // only needed if the engine outputNode is being set to a different device than the default one
-            // this is also triggered by the engine configuration notification event
-            do {
-                try deviceManager?.reconnectNodeOutput()
-            } catch {
-                Log.error(error)
-                return
-            }
-        }
+//        if !allowInput {
+//            // only needed if the engine outputNode is being set to a different device than the default one
+//            // this is also triggered by the engine configuration notification event
+//            do {
+//                try deviceManager?.reconnectNodeOutput()
+//            } catch {
+//                Log.error(error)
+//                return
+//            }
+//            
+//        }
 
+        // send event engine mode switched, offline realtime
+        
         try startEngine()
     }
 

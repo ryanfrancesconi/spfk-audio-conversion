@@ -39,56 +39,14 @@ extension AudioEngineManager {
 }
 
 extension AudioEngineManager {
-    fileprivate var sampleRateHasChanged: Bool {
-        deviceManager?.outputDeviceSampleRate != deviceManager?.systemSampleRate
-    }
-
-    private func _send(event: Event) {
-        Task { @MainActor in
-            self.send(event: event)
-        }
-    }
-
     private func parse(notification: Notification) {
         guard let notificationEngine = notification.object as? AVAudioEngine,
               engine == notificationEngine else { return }
 
         Log.debug(notification)
 
-        guard let deviceManager else {
-            return
+        Task { @MainActor in
+            send(event: .configurationChanged)
         }
-
-        guard let selectedOutputDevice = deviceManager.selectedOutputDevice,
-              let outputDeviceSampleRate = deviceManager.outputDeviceSampleRate else {
-            return
-        }
-
-        guard outputDeviceSampleRate >= AudioDefaults.minimumSampleRateSupported else {
-            let errorEvent: Event = .error(NSError(description: "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)"))
-            _send(event: errorEvent)
-            return
-        }
-
-        let outputDeviceChanged = deviceManager.selectedOutputDevice?.uid != deviceManager.deviceSettings.outputUID
-        let inputDeviceChanged = deviceManager.selectedInputDevice?.uid != deviceManager.deviceSettings.inputUID
-
-        let sampleRateChanged = outputDeviceSampleRate != deviceManager.systemSampleRate
-
-        var options = Set<ConfigurationOption>()
-
-        if outputDeviceChanged {
-            options.insert(.outputDeviceChanged)
-        }
-
-        if inputDeviceChanged {
-            options.insert(.inputDeviceChanged)
-        }
-
-        if sampleRateChanged {
-            options.insert(.sampleRateChanged)
-        }
-
-        _send(event: .configurationChanged(options))
     }
 }

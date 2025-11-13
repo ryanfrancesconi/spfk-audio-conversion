@@ -18,6 +18,15 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         case outputDeviceChanged(device: AudioDevice)
         case deviceListChanged(addedDevices: [AudioDevice], removedDevices: [AudioDevice])
         case deviceProcessorOverload
+        case error(Error)
+
+        case configurationChanged(Set<ConfigurationOption>)
+    }
+
+    public enum ConfigurationOption: Hashable {
+        case sampleRateChanged
+        case outputDeviceChanged
+        case inputDeviceChanged
     }
 
     public weak var delegate: AudioDeviceManagerDelegate?
@@ -62,10 +71,8 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         }
     }
 
-    // TODO: once this model protocol is adopted, won't need this static struct and can keep a class variable here
     public var systemFormat: AVAudioFormat {
         get { AudioDefaults.systemFormat }
-
         set {
             AudioDefaults.systemFormat = newValue
 
@@ -193,6 +200,7 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         device.isDefaultOutputDevice = true
 
         try updatePreferredOutputChannels()
+
         addOutputDeviceObserver(for: device)
     }
 }
@@ -200,14 +208,10 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 extension AudioDeviceManager {
     public func reconnect() throws {
         if allowInput {
-            ExceptionCatcherOperation({ [weak self] in
+            try ExceptionTrap.withThrowing { [weak self] in
                 guard let self else { return }
-
                 verifyInputSampleRate()
-
-            }, { exception in
-                Log.error(exception.debugDescription)
-            })
+            }
 
         } else {
             try reconnectNodeOutput()

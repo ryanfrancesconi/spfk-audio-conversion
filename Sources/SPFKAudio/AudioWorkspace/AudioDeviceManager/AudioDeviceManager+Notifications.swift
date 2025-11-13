@@ -39,7 +39,7 @@ extension AudioDeviceManager {
                 forName: .defaultInputDeviceChanged,
                 object: nil,
                 queue: .main
-            ) { [weak self] notification in
+            ) { [weak self] _ in
 
                 guard let self else { return }
 
@@ -48,7 +48,7 @@ extension AudioDeviceManager {
                     return
                 }
 
-                guard let notificationDevice = notification.object as? AudioDevice else { return }
+                guard let notificationDevice = defaultInputDevice else { return }
 
                 guard notificationDevice.uid != deviceSettings.inputUID else {
                     Log.debug("Same device is already selected", notificationDevice)
@@ -71,7 +71,11 @@ extension AudioDeviceManager {
                     return
                 }
 
-                guard let notificationDevice = notification.object as? AudioDevice else { return }
+                guard let notificationDevice = self.defaultOutputDevice else {
+                    Log.error(notification.object)
+                    assertionFailure()
+                    return
+                }
 
                 guard notificationDevice.uid != deviceSettings.outputUID else {
                     Log.debug("Same device is already selected", notificationDevice)
@@ -165,5 +169,44 @@ extension AudioDeviceManager {
             guard let sampleRate = device.nominalSampleRate else { return }
             send(event: .sampleRateChanged(sampleRate))
         }
+    }
+}
+
+extension AudioDeviceManager {
+    public func handleEngineConfigurationChanged() {
+        guard let selectedOutputDevice = selectedOutputDevice,
+              let outputDeviceSampleRate = outputDeviceSampleRate else {
+            return
+        }
+
+        guard outputDeviceSampleRate >= AudioDefaults.minimumSampleRateSupported else {
+            let errorEvent: Event = .error(
+                NSError(description: "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)")
+            )
+
+            send(event: errorEvent)
+            return
+        }
+
+        let outputDeviceChanged = selectedOutputDevice.uid != deviceSettings.outputUID
+        let inputDeviceChanged = selectedInputDevice?.uid != deviceSettings.inputUID
+
+        let sampleRateChanged = outputDeviceSampleRate != systemSampleRate
+
+        var options = Set<ConfigurationOption>()
+
+        if outputDeviceChanged {
+            options.insert(.outputDeviceChanged)
+        }
+
+        if inputDeviceChanged {
+            options.insert(.inputDeviceChanged)
+        }
+
+        if sampleRateChanged {
+            options.insert(.sampleRateChanged)
+        }
+
+        send(event: .configurationChanged(options))
     }
 }

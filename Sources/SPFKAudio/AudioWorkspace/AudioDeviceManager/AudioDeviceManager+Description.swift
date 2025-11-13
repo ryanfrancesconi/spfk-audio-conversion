@@ -1,12 +1,51 @@
-
-import AVFoundation
+import Foundation
 import SimplyCoreAudio
-import SPFKUtils
+
+extension AudioDeviceManager {
+    public var description: String {
+        var string = ""
+
+        string += "↑ Selected Output Device: \(selectedOutputDevice?.name ?? "No Output") @ \(selectedOutputDevice?.actualSampleRate ?? 0) Hz, \(numberOfOutputChannels) Channel\n"
+
+        if let selectedInputDevice = selectedInputDevice {
+            string += "↓ Selected Input Device: \(selectedInputDevice.name) @ \(selectedInputDevice.actualSampleRate ?? 0) Hz, \(numberOfInputChannels) Channel\n\n"
+        } else {
+            string += "↓ Input Device: Disabled or no device detected on this system. ⚠️\n\n"
+        }
+
+        if let engineDevice {
+            string += deviceDescription(engineDevice) + "\n"
+        }
+
+        string += "\n"
+
+        let outputDevices = allOutputDevices.map { $0.name }.sorted()
+        string += "↑ Output Devices: " + outputDevices.joined(separator: ", ")
+        string += "\n"
+
+        let inputDevices = allInputDevices.map { $0.name }.sorted()
+        string += "↓ Input Devices: " + inputDevices.joined(separator: ", ")
+        string += "\n\n"
+
+        return string
+    }
+
+    public func deviceDescription(_ device: AudioDevice) -> String {
+        let isSelectedOutputDevice = device == selectedOutputDevice
+        let isSelectedInputDevice = device == selectedInputDevice
+
+        let selectedInputIcon = isSelectedInputDevice ? "🤚 isSelectedInputDevice " : ""
+        let selectedOutputIcon = isSelectedOutputDevice ? "🤚 isSelectedOutputDevice " : ""
+
+        let content = "\(selectedInputIcon)\(selectedOutputIcon)\n"
+
+        return content + device.detailedDescription
+    }
+}
 
 extension AudioDevice {
     public var detailedDescription: String {
-        let aggregateIcon = isAggregateDevice ? "👥 (Aggregate) " : ""
-
+        let aggregateIcon = isAggregateDevice ? " (Aggregate) " : ""
         var directionIcon = "I/O Device ↑↓"
 
         if isInputOnlyDevice {
