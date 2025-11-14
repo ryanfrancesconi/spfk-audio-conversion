@@ -41,13 +41,13 @@ public struct RegionFadeDescription {
         }
     }
     
-    public var taper = AutomationTaper.audio {
+    public var taper = AudioTaper.default {
         willSet {
-            if newValue.taperUp != taper.taperUp {
+            if newValue.value != taper.value {
                 fadeInCache = nil
             }
 
-            if newValue.taperDown != taper.taperDown {
+            if newValue.inverseValue != taper.inverseValue {
                 fadeOutCache = nil
             }
         }

@@ -7,8 +7,6 @@ extension AudioEngineManager: AudioEngineManagerModel {
         AudioDefaults.systemFormat
     }
 
-//    public var allowInput: Bool { deviceManager?.allowInput == true }
-
     /// Don't access the engine.inputNode if input is disabled as the node is lazily created.
     /// This is the only point in the codebase where AVAudioEngine's inputNode is referenced
     public var inputNode: AVAudioInputNode? {

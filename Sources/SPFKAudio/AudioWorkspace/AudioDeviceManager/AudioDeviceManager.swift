@@ -107,7 +107,7 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
     }
 
     public var selectedOutputDevice: AudioDevice? {
-        allowInput ? hardware.defaultOutputDevice :
+        allowInput ? defaultOutputDevice :
             selectedEngineOutputDevice
     }
 
@@ -116,12 +116,12 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 
     public var deviceSettings = AudioDeviceSettings()
 
-    /// return the current engine in this block so that the `AudioDeviceManager` can set a device on it's output audio unit
-    internal var engineRef: AVAudioEngine? {
-        delegate?.audioEngineAccess?.engine
-    }
+    public var engineOutputNode: AVAudioOutputNode? { delegate?.audioEngineOutputNode }
 
-    public var engineOutputNode: AVAudioOutputNode? { engineRef?.outputNode }
+    public var matchesSystemSettings: Bool {
+        deviceSettings.inputUID == defaultInputDevice?.uid &&
+            deviceSettings.outputUID == defaultOutputDevice?.uid
+    }
 
     public init(settings: AudioDeviceSettings = AudioDeviceSettings()) {
         // default to the system selected devices if nothing is passed in
@@ -129,6 +129,8 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
             inputUID: settings.inputUID ?? defaultInputDevice?.uid,
             outputUID: settings.outputUID ?? defaultOutputDevice?.uid
         )
+
+        Log.debug(deviceSettings)
 
         addHardwareObservers()
     }
@@ -224,10 +226,15 @@ extension AudioDeviceManager {
     /// otherwise choose a different device
     private func verifyInputSampleRate() {
         // will lazily create input node
-        let inputFormat = delegate?.audioEngineAccess?.inputFormat
+        guard let inputFormat = delegate?.audioEngineInputNode?.outputFormat(forBus: 0) else {
+            Log.error("Failed to get input format")
+            return
+        }
 
-        guard let inputSampleRate = inputFormat?.sampleRate,
-              inputSampleRate < AudioDefaults.minimumSampleRateSupported else {
+        let inputSampleRate = inputFormat.sampleRate
+
+        guard AudioDefaults.isSupported(sampleRate: inputSampleRate) else {
+            Log.error("invalid inputFormat", inputFormat)
             return
         }
 

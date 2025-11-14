@@ -12,7 +12,7 @@ extension AudioDeviceManagerModel {
         get { systemFormat.sampleRate }
 
         set {
-            guard newValue >= AudioDefaults.minimumSampleRateSupported else {
+            guard AudioDefaults.isSupported(sampleRate: newValue) else {
                 Log.error(newValue, "isn't a supported sample rate so ignoring this event")
                 return
             }
@@ -124,7 +124,7 @@ extension AudioDeviceManagerModel {
 
     public var firstCompatibleInputDevice: AudioDevice? {
         let compatibleInputs = allInputDevices.filter {
-            $0.nominalSampleRates?.contains(where: { $0 >= AudioDefaults.minimumSampleRateSupported }) == true
+            $0.nominalSampleRates?.contains(where: { AudioDefaults.isSupported(sampleRate: $0) }) == true
         }.sorted { lhs, _ in
             // favor built-in mic
             lhs.transportType == .builtIn
@@ -169,7 +169,7 @@ extension AudioDeviceManagerModel {
     public func isSupported(device: AudioDevice) -> Bool {
         guard let sampleRates = device.nominalSampleRates?.sorted(),
               let highestRate = sampleRates.last else { return false }
-        return highestRate >= AudioDefaults.minimumSampleRateSupported
+        return AudioDefaults.isSupported(sampleRate: highestRate)
     }
 
     public func isSupported(uid: String) -> Bool {
@@ -217,10 +217,8 @@ extension AudioDeviceManagerModel {
     }
 
     internal func setSampleRate(device: AudioDevice, to sampleRate: Double) throws {
-        if AudioDefaults.enforceMinimumSamplateRate {
-            guard sampleRate >= AudioDefaults.minimumSampleRateSupported else {
-                throw NSError(description: "This sample rate \(sampleRate) isn't supported. The minimum rate is \(AudioDefaults.minimumSampleRateSupported)")
-            }
+        guard AudioDefaults.isSupported(sampleRate: sampleRate) else {
+            throw NSError(description: "This sample rate \(sampleRate) isn't supported.")
         }
 
         guard let deviceSampleRate = device.nominalSampleRate else {

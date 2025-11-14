@@ -30,7 +30,7 @@ public struct AutomationCurve: Equatable {
     /// Create a curve from a set of UI points (and passed in taper) such as for track automation
     public init(
         automationPoints: [AutomationPoint],
-        taper: AutomationTaper = .audio,
+        taper: AudioTaper = .default,
         resolution: Float = Self.defaultResolution
     ) {
         let points = Self.convertToTaperedSegment(automationPoints: automationPoints, taper: taper)

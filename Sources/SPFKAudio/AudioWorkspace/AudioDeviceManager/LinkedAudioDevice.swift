@@ -57,7 +57,7 @@ public struct LinkedAudioDevice: CustomStringConvertible {
     }
 
     private func check(rates: [Double]) -> Bool {
-        rates.contains { $0 >= AudioDefaults.minimumSampleRateSupported }
+        rates.contains { AudioDefaults.isSupported(sampleRate: $0) }
     }
 
     public init(input: AudioDevice? = nil, output: AudioDevice? = nil) {

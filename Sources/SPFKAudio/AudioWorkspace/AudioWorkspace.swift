@@ -118,8 +118,16 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
 }
 
 extension AudioWorkspace: AudioDeviceManagerDelegate {
+    public var audioEngineOutputNode: AVAudioOutputNode {
+        engineManager.engine.outputNode
+    }
+
+    public var audioEngineInputNode: AVAudioInputNode? {
+        engineManager.inputNode
+    }
+
     public func audioDeviceManager(event: AudioDeviceManager.Event) {
-        Log.debug(event)
+        Log.debug("🔊", event)
 
         switch event {
         case let .sampleRateChanged(sampleRate):

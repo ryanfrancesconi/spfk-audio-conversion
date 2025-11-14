@@ -29,15 +29,15 @@ extension RegionFadeDescription {
                 targetValue: Self.minimumGain,
                 startTime: -0.1,
                 rampDuration: 0,
-                rampTaper: AutomationTaper.linear.taperUp,
-                rampSkew: AutomationTaper.linear.skew
+                rampTaper: AudioTaper.linear.value,
+                rampSkew: AudioTaper.linear.skew
             ),
 
             ParameterAutomationPoint(
                 targetValue: maximumGain,
                 startTime: 0,
                 rampDuration: rampDuration,
-                rampTaper: taper.taperUp,
+                rampTaper: taper.value,
                 rampSkew: taper.skew
             ),
         ]
@@ -81,15 +81,15 @@ extension RegionFadeDescription {
                 targetValue: maximumGain,
                 startTime: startTime - 0.02,
                 rampDuration: 0.02,
-                rampTaper: AutomationTaper.linear.taperDown,
-                rampSkew: AutomationTaper.linear.skew
+                rampTaper: AudioTaper.linear.inverseValue,
+                rampSkew: AudioTaper.linear.skew
             ),
 
             ParameterAutomationPoint(
                 targetValue: Self.minimumGain,
                 startTime: startTime,
                 rampDuration: rampDuration,
-                rampTaper: taper.taperDown,
+                rampTaper: taper.inverseValue,
                 rampSkew: taper.skew
             ),
         ]

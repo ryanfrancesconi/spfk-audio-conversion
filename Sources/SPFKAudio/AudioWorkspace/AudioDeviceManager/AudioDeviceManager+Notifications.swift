@@ -48,14 +48,14 @@ extension AudioDeviceManager {
                     return
                 }
 
-                guard let notificationDevice = defaultInputDevice else { return }
+                guard let defaultInputDevice else { return }
 
-                guard notificationDevice.uid != deviceSettings.inputUID else {
-                    Log.debug("Same device is already selected", notificationDevice)
+                guard defaultInputDevice.uid != deviceSettings.inputUID else {
+                    Log.debug("Same device is already selected", defaultInputDevice)
                     return
                 }
 
-                send(event: .inputDeviceChanged(device: notificationDevice))
+                send(event: .inputDeviceChanged(device: defaultInputDevice))
 
             },
 
@@ -71,18 +71,18 @@ extension AudioDeviceManager {
                     return
                 }
 
-                guard let notificationDevice = self.defaultOutputDevice else {
+                guard let defaultOutputDevice else {
                     Log.error(notification.object)
                     assertionFailure()
                     return
                 }
 
-                guard notificationDevice.uid != deviceSettings.outputUID else {
-                    Log.debug("Same device is already selected", notificationDevice)
+                guard defaultOutputDevice.uid != deviceSettings.outputUID else {
+                    Log.debug("Same device is already selected", defaultOutputDevice)
                     return
                 }
 
-                send(event: .outputDeviceChanged(device: notificationDevice))
+                send(event: .outputDeviceChanged(device: defaultOutputDevice))
 
             },
 
@@ -179,7 +179,7 @@ extension AudioDeviceManager {
             return
         }
 
-        guard outputDeviceSampleRate >= AudioDefaults.minimumSampleRateSupported else {
+        guard AudioDefaults.isSupported(sampleRate: outputDeviceSampleRate) else {
             let errorEvent: Event = .error(
                 NSError(description: "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)")
             )

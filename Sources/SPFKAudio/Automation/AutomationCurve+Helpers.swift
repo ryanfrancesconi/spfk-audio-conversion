@@ -138,7 +138,7 @@ extension AutomationCurve {
     /// - Returns: an array of ParameterAutomationPoint suitable for creating an AutomationCurve
     static func convertToTaperedSegment(
         automationPoints: [AutomationPoint],
-        taper: AutomationTaper
+        taper: AudioTaper
     ) -> [ParameterAutomationPoint] {
         guard automationPoints.isNotEmpty else { return [] }
 
@@ -148,8 +148,8 @@ extension AutomationCurve {
         var curvePoints = [ParameterAutomationPoint]()
 
         // The first point should have linear attributes
-        var rampTaper: AUValue = AutomationTaper.linear.taperUp
-        var rampSkew: AUValue = AutomationTaper.linear.skew
+        var rampTaper: AUValue = AudioTaper.linear.value
+        var rampSkew: AUValue = AudioTaper.linear.skew
 
         for i in 0 ..< baseEvents.count {
             let event = baseEvents[i]
@@ -158,7 +158,7 @@ extension AutomationCurve {
                 // The taper values should be adjusted depending on if we're going up or down
                 // otherwise you end up with reverse taper for down.
                 let isDown = baseEvents[i - 1].targetValue > event.targetValue
-                rampTaper = isDown ? taper.taperDown : taper.taperUp
+                rampTaper = isDown ? taper.inverseValue : taper.value
                 rampSkew = taper.skew
             }
 
