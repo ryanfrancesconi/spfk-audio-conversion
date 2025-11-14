@@ -58,8 +58,8 @@ extension MultiChannelInputNodeTap {
                 file = try AVAudioFile(forWriting: url,
                                        settings: fileFormat.settings)
 
-            } catch let error as NSError {
-                Log.debug(error)
+            } catch {
+                Log.error(error)
             }
         }
 

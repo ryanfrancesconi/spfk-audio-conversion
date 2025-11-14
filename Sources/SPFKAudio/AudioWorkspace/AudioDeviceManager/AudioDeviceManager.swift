@@ -118,11 +118,6 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 
     public var engineOutputNode: AVAudioOutputNode? { delegate?.audioEngineOutputNode }
 
-    public var matchesSystemSettings: Bool {
-        deviceSettings.inputUID == defaultInputDevice?.uid &&
-            deviceSettings.outputUID == defaultOutputDevice?.uid
-    }
-
     public init(settings: AudioDeviceSettings = AudioDeviceSettings()) {
         // default to the system selected devices if nothing is passed in
         deviceSettings = AudioDeviceSettings(

@@ -4,6 +4,11 @@ import SimplyCoreAudio
 import SPFKUtils
 
 extension AudioDeviceManagerModel {
+    public var matchesSystemSettings: Bool {
+        deviceSettings.inputUID == defaultInputDevice?.uid &&
+            deviceSettings.outputUID == defaultOutputDevice?.uid
+    }
+
     public var sampleRateHasChanged: Bool {
         outputDeviceSampleRate != systemSampleRate
     }

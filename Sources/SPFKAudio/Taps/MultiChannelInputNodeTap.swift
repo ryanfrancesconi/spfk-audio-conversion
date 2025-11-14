@@ -5,12 +5,13 @@ import OTAtomics
 import OTCore
 import SPFKUtils
 
+// MARK: - Needs Refactor
+
 /// MultiChannelInputNodeTap is a tap intended to process multiple channels of audio
 /// from AVAudioInputNode, or the AVAudioEngine's inputNode. In the case of the engine,
 /// the input node will have a set of channels that correspond to the hardware being
 /// used. This class will read from those channels and write discrete mono files for
 /// each similar to how common DAWs record multiple channels from multiple inputs.
-
 public final class MultiChannelInputNodeTap {
     public enum Event {
         case tapInstalled
@@ -32,7 +33,7 @@ public final class MultiChannelInputNodeTap {
     }
 
     /// Receive update events during the lifecyle of this class
-    public var eventHandler: ((Event) -> Void)?
+    public weak var delegate: MultiChannelInputNodeTapDelegate?
 
     /// A simple name and channel pair for each channel being recorded
     public private(set) var fileChannels: [FileChannel]? {
@@ -120,17 +121,21 @@ public final class MultiChannelInputNodeTap {
             if _recordEnabled {
                 // Log.debug("🚰 Installing Tap with format", recordFormat, "requested bufferSize", bufferSize)
 
-                inputNode.installTap(onBus: 0,
-                                     bufferSize: bufferSize,
-                                     format: recordFormat,
-                                     block: process(buffer:time:))
-                eventHandler?(.tapInstalled)
+                inputNode.installTap(
+                    onBus: 0,
+                    bufferSize: bufferSize,
+                    format: recordFormat,
+                    block: process(buffer:time:)
+                )
+
+                delegate?.tapInstalled(self, on: inputNode)
 
             } else {
                 // Log.debug("🚰 Removing Tap")
 
                 inputNode.removeTap(onBus: 0)
-                eventHandler?(.tapRemoved)
+
+                delegate?.tapRemoved(self, from: inputNode)
             }
         }
     }
@@ -188,12 +193,14 @@ public final class MultiChannelInputNodeTap {
             // 1 is the 'input' element, 0 is output
             let inputElement: AudioUnitElement = 1
 
-            if noErr != AudioUnitSetProperty(audioUnit,
-                                             kAudioOutputUnitProperty_ChannelMap,
-                                             kAudioUnitScope_Output,
-                                             inputElement,
-                                             newValue,
-                                             channelMapSize) {
+            if noErr != AudioUnitSetProperty(
+                audioUnit,
+                kAudioOutputUnitProperty_ChannelMap,
+                kAudioUnitScope_Output,
+                inputElement,
+                newValue,
+                channelMapSize
+            ) {
                 Log.error("Failed setting channel map")
                 return
             }
@@ -225,11 +232,14 @@ public final class MultiChannelInputNodeTap {
         Log.debug("inputNode", outputFormat.channelCount, "channels at", sampleRate, "Hz")
     }
 
-    deinit {
-        Log.debug("* { MultiChannelInputNodeTap }")
+    public func dispose() {
         files.removeAll()
         inputNode = nil
-        eventHandler = nil
+        delegate = nil
+    }
+
+    deinit {
+        Log.debug("* { MultiChannelInputNodeTap }")
     }
 
     /// Convenience function for testing
@@ -344,6 +354,8 @@ public final class MultiChannelInputNodeTap {
         return nil
     }
 
+    var writeTask: Task<Void, Error>?
+
     // AVAudioNodeTapBlock
     private func process(buffer: AVAudioPCMBuffer, time: AVAudioTime) {
         guard let bufferFormat else {
@@ -356,12 +368,15 @@ public final class MultiChannelInputNodeTap {
             Log.error("buffer.floatChannelData is nil")
             return
         }
+
         let channelCount = Int(buffer.format.channelCount)
 
         for channel in 0 ..< channelCount {
             // a temp buffer used to write this chunk to the file
-            guard let channelBuffer = AVAudioPCMBuffer(pcmFormat: bufferFormat,
-                                                       frameCapacity: buffer.frameLength) else {
+            guard let channelBuffer = AVAudioPCMBuffer(
+                pcmFormat: bufferFormat,
+                frameCapacity: buffer.frameLength
+            ) else {
                 Log.error("Failed creating channelBuffer")
                 return
             }
@@ -378,9 +393,11 @@ public final class MultiChannelInputNodeTap {
             }
 
             do {
-                try files[channel].process(buffer: channelBuffer,
-                                           time: time,
-                                           write: isRecording)
+                try files[channel].process(
+                    buffer: channelBuffer,
+                    time: time,
+                    write: isRecording
+                )
 
             } catch {
                 Log.error("Write failed", error)
@@ -388,10 +405,7 @@ public final class MultiChannelInputNodeTap {
         }
 
         if recordEnabled {
-            // Log.debug(buffer.frameLength, "@", time)
-            eventHandler?(
-                .dataReceived(frameLength: buffer.frameLength, time: time)
-            )
+            delegate?.dataWritten(self, at: time)
         }
     }
 
@@ -401,6 +415,7 @@ public final class MultiChannelInputNodeTap {
         guard !isRecording else {
             return
         }
+
         isRecording = true
 
         if !filesReady { createFiles() }
@@ -416,6 +431,7 @@ public final class MultiChannelInputNodeTap {
         guard isRecording else {
             return
         }
+
         isRecording = false
         filesReady = false
 
@@ -426,4 +442,10 @@ public final class MultiChannelInputNodeTap {
 
         Log.debug("⏹", files.count, "files")
     }
+}
+
+public protocol MultiChannelInputNodeTapDelegate: AnyObject {
+    func tapInstalled(_ nodeInputTap: MultiChannelInputNodeTap, on node: AVAudioInputNode)
+    func tapRemoved(_ nodeInputTap: MultiChannelInputNodeTap, from node: AVAudioInputNode)
+    func dataWritten(_ nodeInputTap: MultiChannelInputNodeTap, at time: AVAudioTime)
 }
