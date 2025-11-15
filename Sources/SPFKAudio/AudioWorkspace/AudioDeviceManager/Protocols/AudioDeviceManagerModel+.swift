@@ -65,122 +65,12 @@ extension AudioDeviceManagerModel {
     }
 }
 
-extension AudioDeviceManagerModel {
-    /// This is a lookup based on the preference UID
-    /// Device can be different than the system if inputNode
-    /// is disabled. Otherwise return nil.
-    public var selectedEngineOutputDevice: AudioDevice? {
-        guard !deviceSettings.allowInput,
-              let uid = deviceSettings.outputUID,
-              let device = AudioDevice.lookup(by: uid) else {
-            return nil
-        }
-
-        return device
-    }
-
-    public var selectedOutputDeviceName: String {
-        selectedOutputDevice?.name ?? "(Unnamed Output Device)"
-    }
-
-    /// - Returns: A collection of named channels for the selected input device
-    public var selectedInputDeviceChannels: [AudioDevice.NamedChannel] {
-        selectedInputDevice?.namedChannels(scope: .input) ?? []
-    }
-
-    /// - Returns: A collection of named channels for the selected output device
-    public var selectedOutputDeviceChannels: [AudioDevice.NamedChannel] {
-        selectedOutputDevice?.namedChannels(scope: .output) ?? []
-    }
-
-    public var numberOfInputChannels: Int {
-        guard let layoutChannels = selectedInputDevice?.channels(scope: .input) else {
-            return 0
-        }
-        return Int(layoutChannels)
-    }
-
-    public var numberOfOutputChannels: Int {
-        guard let layoutChannels = selectedOutputDevice?.channels(scope: .output) else {
-            return 0
-        }
-        return Int(layoutChannels)
-    }
-
-    public var allNonAggregateDevices: [AudioDevice] {
-        allDevices.filter { !$0.isAggregateDevice }
-    }
-
-    public var allInputDevices: [AudioDevice] {
-        allNonAggregateDevices.filter {
-            $0.channels(scope: .input) > 0
-        }
-    }
-
-    public var allOutputDevices: [AudioDevice] {
-        allDevices.filter {
-            $0.channels(scope: .output) > 0
-        }
-    }
-
-    public var allNonAggregateOutputDevices: [AudioDevice] {
-        allNonAggregateDevices.filter { $0.channels(scope: .output) > 0 }
-    }
-
-    public var firstCompatibleInputDevice: AudioDevice? {
-        let compatibleInputs = allInputDevices.filter {
-            $0.nominalSampleRates?.contains(where: { AudioDefaults.isSupported(sampleRate: $0) }) == true
-        }.sorted { lhs, _ in
-            // favor built-in mic
-            lhs.transportType == .builtIn
-        }
-
-        return compatibleInputs.first
-    }
-
-    /// Search for input and output devices that have matching `modelUID` values such
-    /// as for bluetooth headphones that have an integrated mic.
-    public var deviceIOPairs: [LinkedAudioDevice] {
-        var out = [LinkedAudioDevice]()
-
-        let allDevices = allDevices
-
-        let uids = allDevices.compactMap { $0.modelUID }.removingDuplicates()
-
-        for uid in uids {
-            let devices = allDevices.filter { $0.modelUID == uid }
-
-            let input = devices.first { $0.isInputOnlyDevice }
-            let output = devices.first { $0.isOutputOnlyDevice }
-
-            if let input, let output {
-                out.append(
-                    LinkedAudioDevice(input: input, output: output)
-                )
-            }
-        }
-        return out
-    }
-}
-
 // MARK: - Utilities
 
 extension AudioDeviceManagerModel {
     /// CADefaultDeviceAggregate-49419-1
     internal func isEngineDefaultAggregate(device: AudioDevice) -> Bool {
         device.name.hasPrefix("CADefaultDevice")
-    }
-
-    public func isSupported(device: AudioDevice) -> Bool {
-        guard let sampleRates = device.nominalSampleRates?.sorted(),
-              let highestRate = sampleRates.last else { return false }
-        return AudioDefaults.isSupported(sampleRate: highestRate)
-    }
-
-    public func isSupported(uid: String) -> Bool {
-        guard uid != AudioDeviceSettings.inputDeviceDisabledUID else { return true }
-        guard let device = lookupDevice(uid: uid) else { return false }
-        return isSupported(device: device)
     }
 
     public func lookupDevice(uid: String) -> AudioDevice? {
@@ -194,59 +84,5 @@ extension AudioDeviceManagerModel {
         }
 
         return await AVCaptureDevice.requestAccess(for: .audio)
-    }
-
-    public func setNominalSampleRate(to sampleRate: Double) throws {
-        try setOutputSampleRate(to: sampleRate)
-
-        do {
-            try setInputSampleRate(to: sampleRate)
-
-        } catch {
-            Log.error(error)
-        }
-    }
-
-    public func setOutputSampleRate(to newValue: Double) throws {
-        guard let selectedOutputDevice else { return }
-        try setSampleRate(device: selectedOutputDevice, to: newValue)
-    }
-
-    public func setInputSampleRate(to newValue: Double) throws {
-        guard let selectedInputDevice else { return }
-        try setSampleRate(device: selectedInputDevice, to: newValue)
-    }
-
-    public func supportedSampleRates(for device: AudioDevice) -> [Double] {
-        device.nominalSampleRates?.sorted() ?? []
-    }
-
-    internal func setSampleRate(device: AudioDevice, to sampleRate: Double) throws {
-        guard AudioDefaults.isSupported(sampleRate: sampleRate) else {
-            throw NSError(description: "This sample rate \(sampleRate) isn't supported.")
-        }
-
-        guard let deviceSampleRate = device.nominalSampleRate else {
-            throw NSError(description: "Failed to get current rate for \(device.name)")
-        }
-
-        guard deviceSampleRate != sampleRate else {
-            Log.debug("🔈 \(device.name) is already set to \(sampleRate)")
-            return
-        }
-
-        let supportedRates = supportedSampleRates(for: device)
-
-        guard supportedRates.contains(sampleRate) else {
-            let supportedRatesString = supportedRates.map({ $0.string }).joined(separator: ", ")
-
-            throw NSError(description: "\(device.name) doesn't support \(sampleRate) Hz. Available rate\(supportedRates.pluralString) \(supportedRatesString)")
-        }
-
-        if !device.setNominalSampleRate(sampleRate) {
-            throw NSError(description: "Unable to set \(device.name) to \(sampleRate)")
-        }
-
-        Log.debug("🔈 ✓ Updated \(device.name) sample rate to", sampleRate)
     }
 }

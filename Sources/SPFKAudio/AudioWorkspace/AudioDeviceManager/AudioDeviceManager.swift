@@ -88,18 +88,6 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 
     public var allDevices: [AudioDevice] { hardware.allDevices }
 
-    public var bluetoothDevices: [AudioDevice] {
-        allDevices.filter {
-            $0.transportType == .bluetooth
-        }
-    }
-
-    public var aggregateDevices: [AudioDevice] {
-        allDevices.filter {
-            $0.transportType == .aggregate
-        }
-    }
-
     public var selectedInputDevice: AudioDevice? {
         guard deviceSettings.allowInput else { return nil }
 
@@ -107,18 +95,16 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
     }
 
     public var selectedOutputDevice: AudioDevice? {
-        allowInput ? defaultOutputDevice :
-            selectedEngineOutputDevice
+        allowInput ? defaultOutputDevice : selectedEngineOutputDevice
     }
 
     public var defaultInputDevice: AudioDevice? { hardware.defaultInputDevice }
     public var defaultOutputDevice: AudioDevice? { hardware.defaultOutputDevice }
+    public var engineOutputNode: AVAudioOutputNode? { delegate?.audioEngineOutputNode }
 
     public var deviceSettings = AudioDeviceSettings()
 
-    public var engineOutputNode: AVAudioOutputNode? { delegate?.audioEngineOutputNode }
-
-    public init(settings: AudioDeviceSettings = AudioDeviceSettings()) {
+    public init(settings: AudioDeviceSettings = .init()) {
         // default to the system selected devices if nothing is passed in
         deviceSettings = AudioDeviceSettings(
             inputUID: settings.inputUID ?? defaultInputDevice?.uid,
@@ -188,7 +174,7 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         deviceSettings.outputUID = device.uid
 
         guard deviceSettings.allowInput else {
-            try setNodeOutput(to: device)
+            try setEngineNodeOutput(to: device)
             // will call updatePreferredOutputChannels
             return
         }
@@ -204,44 +190,10 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
 
 extension AudioDeviceManager {
     public func reconnect() throws {
-        if allowInput {
-            try ExceptionTrap.withThrowing { [weak self] in
-                guard let self else { return }
-                verifyInputSampleRate()
-            }
-
-        } else {
+        if !allowInput {
             try reconnectNodeOutput()
         }
 
         try updatePreferredOutputChannels()
-    }
-
-    /// Make sure the current input device is set to a valid rate,
-    /// otherwise choose a different device
-    private func verifyInputSampleRate() {
-        // will lazily create input node
-        guard let inputFormat = delegate?.audioEngineInputNode?.outputFormat(forBus: 0) else {
-            Log.error("Failed to get input format")
-            return
-        }
-
-        let inputSampleRate = inputFormat.sampleRate
-
-        guard AudioDefaults.isSupported(sampleRate: inputSampleRate) else {
-            Log.error("invalid inputFormat", inputFormat)
-            return
-        }
-
-        guard let firstCompatibleInputDevice else { return }
-
-        setInput(device: firstCompatibleInputDevice)
-
-        do {
-            try setNominalSampleRate(to: systemSampleRate)
-
-        } catch {
-            Log.error(error)
-        }
     }
 }

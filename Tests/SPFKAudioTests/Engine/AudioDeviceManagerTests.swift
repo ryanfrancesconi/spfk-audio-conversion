@@ -21,7 +21,9 @@ final class AudioDeviceManagerTests: TestCaseModel {
     }
 
     func testSampleRates(for device: AudioDevice) async throws {
-        let supportedSampleRates = dm.supportedSampleRates(for: device)
+        guard let supportedSampleRates = device.nominalSampleRates else {
+            throw NSError(description: "failed to get sample rates from \(device.name)")
+        }
 
         Log.debug(device.name, supportedSampleRates)
 

@@ -32,7 +32,7 @@ private let dependencies: [PackageDescription.Package.Dependency] = [
 //    .package(url: "https://github.com/ryanfrancesconi/SPFKUtils", branch: "main"),
 //    .package(url: "https://github.com/ryanfrancesconi/SPFKMetadata", branch: "main"),
 //    .package(url: "https://github.com/ryanfrancesconi/SimplyCoreAudio", branch: "development"),
-    .package(name: "SimplyCoreAudio", path: "../../../../lib/SimplyCoreAudio"),
+    .package(name: "SimplyCoreAudio", path: "../SimplyCoreAudio"),
 ]
 
 private let targets: [PackageDescription.Target] = [

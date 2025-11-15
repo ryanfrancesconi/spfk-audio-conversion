@@ -16,7 +16,7 @@ struct FadeDescriptionTests {
 
         // should be a value that doesn't divide by stepResolution
         desc.inTime = 4.305577
-        desc.taper = .audio
+        desc.taper = .default
         desc.stepResolution = 0.2
 
         let curve = desc.fadeInCurve()
@@ -57,7 +57,7 @@ struct FadeDescriptionTests {
     @Test func fadeInTaperOneSecond() throws {
         var desc = RegionFadeDescription()
         desc.inTime = 1
-        desc.taper = .audio
+        desc.taper = .default
 
         let curve = desc.fadeInCurve()
         let events = try #require(curve?.events)
@@ -109,7 +109,7 @@ struct FadeDescriptionTests {
         desc.outTime = 1
         desc.segmentDuration = 1
         desc.stepResolution = 0.2
-        desc.taper = .audio
+        desc.taper = .default
 
         let curve = desc.fadeOutCurve()
         let events = try #require(curve?.events)
@@ -135,7 +135,7 @@ struct FadeDescriptionTests {
         var desc = RegionFadeDescription()
         desc.outTime = 1
         desc.segmentDuration = 0.8
-        desc.taper = .audio
+        desc.taper = .default
 
         let curve = desc.fadeOutCurve()
         let events = try #require(curve?.events)
@@ -162,7 +162,7 @@ struct FadeDescriptionTests {
         desc.inTime = 1
         desc.outTime = 1
         desc.segmentDuration = 2
-        desc.taper = .audio
+        desc.taper = .default
 
         let curveIn = desc.fadeInCurve()
         let curveOut = desc.fadeOutCurve()

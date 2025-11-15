@@ -1,0 +1,69 @@
+import AVFoundation
+import SimplyCoreAudio
+import SPFKUtils
+
+extension AudioDeviceManagerModel {
+    public func isSupported(device: AudioDevice) -> Bool {
+        guard let sampleRates = device.nominalSampleRates?.sorted(),
+              let highestRate = sampleRates.last else { return false }
+        return AudioDefaults.isSupported(sampleRate: highestRate)
+    }
+
+    public func isSupported(uid: String) -> Bool {
+        guard uid != AudioDeviceSettings.inputDeviceDisabledUID else { return true }
+
+        guard let device = lookupDevice(uid: uid) else { return false }
+        return isSupported(device: device)
+    }
+
+    public func setNominalSampleRate(to sampleRate: Double) throws {
+        try setOutputSampleRate(to: sampleRate)
+
+        do {
+            try setInputSampleRate(to: sampleRate)
+
+        } catch {
+            Log.error(error)
+        }
+    }
+
+    public func setOutputSampleRate(to newValue: Double) throws {
+        guard let selectedOutputDevice else { return }
+        try setSampleRate(device: selectedOutputDevice, to: newValue)
+    }
+
+    public func setInputSampleRate(to newValue: Double) throws {
+        guard let selectedInputDevice else { return }
+        try setSampleRate(device: selectedInputDevice, to: newValue)
+    }
+}
+
+extension AudioDeviceManagerModel {
+    internal func setSampleRate(device: AudioDevice, to newValue: Double) throws {
+        guard AudioDefaults.isSupported(sampleRate: newValue) else {
+            throw NSError(description: "This sample rate \(newValue) isn't supported.")
+        }
+
+        guard let currentValue = device.nominalSampleRate,
+              let supportedRates = device.nominalSampleRates else {
+            throw NSError(description: "Failed to get current rate for \(device.name)")
+        }
+
+        guard currentValue != newValue else {
+            Log.debug("🔈 \(device.name) is already set to \(newValue)")
+            return
+        }
+
+        guard supportedRates.contains(newValue) else {
+            let supportedRatesString = supportedRates.map({ $0.string }).joined(separator: ", ")
+
+            throw NSError(description: "\(device.name) doesn't support \(newValue) Hz. Available rate\(supportedRates.pluralString) \(supportedRatesString)")
+        }
+
+        if !device.setNominalSampleRate(newValue) {
+            throw NSError(description: "Unable to set \(device.name) to \(newValue)")
+        }
+
+        Log.debug("🔈 ✓ Updated \(device.name) sample rate to", newValue)
+    }
+}

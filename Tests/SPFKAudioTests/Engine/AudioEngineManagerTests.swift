@@ -29,6 +29,10 @@ final class AudioEngineManagerTests {
 }
 
 extension AudioEngineManagerTests: AudioEngineManagerDelegate {
+    func audioEngineManagerAllowInputDevice() -> Bool {
+        true
+    }
+    
     func audioEngineManager(event: SPFKAudio.AudioEngineManager.Event) {
         Log.debug(event)
     }

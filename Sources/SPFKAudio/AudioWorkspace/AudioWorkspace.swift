@@ -9,7 +9,7 @@ public class AudioWorkspace {
     }()
 
     public private(set) lazy var deviceManager: AudioDeviceManager = {
-        var deviceManager = AudioDeviceManager( /* settings: persistentState */ )
+        var deviceManager = AudioDeviceManager()
         deviceManager.delegate = self
         return deviceManager
     }()
@@ -23,7 +23,6 @@ public class AudioWorkspace {
     // All tracks will be connected to this master
     public private(set) var master: AudioTrack?
 
-    // settings: persistentState
     public init() {}
 
     /// Rebuild the engine graph. Neceessary on startup and sample rate changes

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Persistent struct to store device UIDs
-public struct AudioDeviceSettings: Codable, Equatable {
+public struct AudioDeviceSettings: Codable, Hashable {
     public static let inputDeviceDisabledUID = "inputDeviceDisabledUID"
 
     public internal(set) var inputUID: String?

@@ -5,7 +5,7 @@ import SPFKUtils
 extension AudioDeviceManagerModel {
     public func updatePreferredOutputChannels() throws {
         guard let engineOutputNode else {
-            throw NSError(description: "engineRef is nil")
+            throw NSError(description: "engineOutputNode is nil")
         }
 
         guard let selectedOutputDevice else {
@@ -122,7 +122,7 @@ extension AudioDeviceManagerModel {
     /// NOTE: this method of direct setting of the device with no input
     /// doesn't work with airpods -
     /// potentially other blue tooth headsets as well.
-    internal func setNodeOutput(to device: AudioDevice) throws {
+    internal func setEngineNodeOutput(to device: AudioDevice) throws {
         if let currentNodeOutputDevice, currentNodeOutputDevice == device {
             Log.debug(device, "is already set as the engine's output")
             return
@@ -157,8 +157,8 @@ extension AudioDeviceManagerModel {
         try updatePreferredOutputChannels()
     }
 
-    public func reconnectNodeOutput() throws {
-        guard !deviceSettings.allowInput else {
+    func reconnectNodeOutput() throws {
+        guard !allowInput else {
             Log.error("Input is enabled, using system settings not node output. Ignoring this call.")
             return
         }
@@ -173,7 +173,7 @@ extension AudioDeviceManagerModel {
             return
         }
 
-        // note this will create a configuration change event
-        try setNodeOutput(to: selectedEngineOutputDevice)
+        // note this will create an engine configuration change event
+        try setEngineNodeOutput(to: selectedEngineOutputDevice)
     }
 }

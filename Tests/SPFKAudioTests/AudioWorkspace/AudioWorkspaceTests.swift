@@ -17,9 +17,13 @@ final class AudioWorkspaceTests: AudioWorkspaceTestCase {
         try await setup()
 
         guard let device = dm.selectedOutputDevice else { return }
-        let supportedSampleRates = dm.supportedSampleRates(for: device)
 
+        guard let supportedSampleRates = device.nominalSampleRates else {
+            throw NSError(description: "failed to get sample rates from \(device.name)")
+        }
+        
         let currentSampleRate = try #require(dm.selectedOutputDevice?.nominalSampleRate)
+        
         let nextRate = try #require(
             supportedSampleRates.first { rate in
                 rate != currentSampleRate
