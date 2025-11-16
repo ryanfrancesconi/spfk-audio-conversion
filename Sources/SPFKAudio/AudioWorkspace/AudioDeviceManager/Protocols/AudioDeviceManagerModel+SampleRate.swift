@@ -1,5 +1,5 @@
 import AVFoundation
-import SimplyCoreAudio
+import SPFKAudioHardware
 import SPFKUtils
 
 extension AudioDeviceManagerModel {

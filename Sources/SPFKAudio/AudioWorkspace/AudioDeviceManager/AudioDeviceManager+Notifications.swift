@@ -1,5 +1,5 @@
 import Foundation
-import SimplyCoreAudio
+import SPFKAudioHardware
 import SPFKUtils
 
 extension AudioDeviceManager {

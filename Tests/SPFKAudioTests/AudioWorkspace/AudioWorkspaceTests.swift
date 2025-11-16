@@ -2,7 +2,7 @@
 
 import AVFoundation
 import Foundation
-import SimplyCoreAudio
+import SPFKAudioHardware
 @testable import SPFKAudio
 import SPFKTesting
 import SPFKUtils

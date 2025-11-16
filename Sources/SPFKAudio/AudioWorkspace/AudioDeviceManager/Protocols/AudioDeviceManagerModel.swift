@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import SimplyCoreAudio
+import SPFKAudioHardware
 
 /// Primary audio device access
 public protocol AudioDeviceManagerModel {

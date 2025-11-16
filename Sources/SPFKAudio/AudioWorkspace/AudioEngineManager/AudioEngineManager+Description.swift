@@ -1,6 +1,6 @@
 
 import AVFoundation
-import SimplyCoreAudio
+import SPFKAudioHardware
 import SPFKUtils
 
 // Mostly for debugging purposes

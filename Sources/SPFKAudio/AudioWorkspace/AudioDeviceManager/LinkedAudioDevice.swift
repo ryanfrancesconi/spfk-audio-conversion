@@ -1,5 +1,5 @@
 import Foundation
-import SimplyCoreAudio
+import SPFKAudioHardware
 
 /// Input and output devices that have matching `modelUID` values such
 /// as for bluetooth headphones that have an integrated mic.

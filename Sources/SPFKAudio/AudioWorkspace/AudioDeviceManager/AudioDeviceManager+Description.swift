@@ -1,5 +1,5 @@
 import Foundation
-import SimplyCoreAudio
+import SPFKAudioHardware
 
 extension AudioDeviceManager {
     public var description: String {

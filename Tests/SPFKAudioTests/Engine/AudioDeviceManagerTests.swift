@@ -6,7 +6,7 @@ import Foundation
 import SPFKTesting
 import SPFKUtils
 import Testing
-import SimplyCoreAudio
+import SPFKAudioHardware
 
 @Suite(.serialized, .tags(.realtime, .engine))
 final class AudioDeviceManagerTests: TestCaseModel {
