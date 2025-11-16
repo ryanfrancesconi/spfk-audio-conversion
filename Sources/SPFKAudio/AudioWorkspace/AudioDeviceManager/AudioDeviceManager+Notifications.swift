@@ -174,8 +174,8 @@ extension AudioDeviceManager {
 
 extension AudioDeviceManager {
     public func handleEngineConfigurationChanged() {
-        guard let selectedOutputDevice = selectedOutputDevice,
-              let outputDeviceSampleRate = outputDeviceSampleRate else {
+        guard let selectedOutputDevice,
+              let outputDeviceSampleRate else {
             return
         }
 
