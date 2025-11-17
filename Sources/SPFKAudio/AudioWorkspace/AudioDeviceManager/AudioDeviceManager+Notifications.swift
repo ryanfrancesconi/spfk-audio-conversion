@@ -16,22 +16,22 @@ extension AudioDeviceManager {
             ) { [weak self] notification in
                 guard let self else { return }
 
-                guard var addedDevices = notification.userInfo?["addedDevices"] as? [AudioDevice],
-                      var removedDevices = notification.userInfo?["removedDevices"] as? [AudioDevice]
-                else {
+                guard let hardwareNotification = notification.object as? AudioHardwareNotification else { return }
+
+                guard case let .deviceListChanged(addedDevices: addedDevices, removedDevices: removedDevices) = hardwareNotification else {
                     return
                 }
 
                 // ignore the AVAudioEngine aggregate
 
-                addedDevices = addedDevices.filter { !self.isEngineDefaultAggregate(device: $0) }
-                removedDevices = removedDevices.filter { !self.isEngineDefaultAggregate(device: $0) }
+                let added = addedDevices.filter { !self.isEngineDefaultAggregate(device: $0) }
+                let removed = removedDevices.filter { !self.isEngineDefaultAggregate(device: $0) }
 
-                guard addedDevices.isNotEmpty || removedDevices.isNotEmpty else { return }
+                guard added.isNotEmpty || removed.isNotEmpty else { return }
 
                 self.send(event: .deviceListChanged(
-                    addedDevices: addedDevices,
-                    removedDevices: removedDevices)
+                    addedDevices: added,
+                    removedDevices: removed)
                 )
             },
 
