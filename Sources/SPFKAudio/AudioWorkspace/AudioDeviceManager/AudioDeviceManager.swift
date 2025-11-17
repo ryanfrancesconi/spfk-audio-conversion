@@ -41,7 +41,7 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
     var inputDeviceObserver: NSObjectProtocol?
     var outputDeviceObserver: NSObjectProtocol?
 
-    public let hardware = SimplyCoreAudio()
+    public let hardware = AudioHardwareManager()
 
     // MARK: - Latency
 
