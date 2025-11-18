@@ -6,7 +6,7 @@ import SPFKUtils
 extension AudioDeviceManagerModel {
     public var allNonAggregateDevices: [AudioDevice] {
         get async {
-            await allDevices.async.filter { !$0.isAggregateDevice }.toArray()
+            await allDevices.async.filter { await !$0.isAggregateDevice }.toArray()
         }
     }
 

@@ -101,6 +101,12 @@ public class AudioUnitState: AudioUnitStateC {
 
     public static func loadPreset(for avAudioUnit: AVAudioUnit, fullState: [String: Any]) {
         avAudioUnit.auAudioUnit.fullState = fullState
-        notifyAudioUnitListener(avAudioUnit.audioUnit)
+
+        let status = notifyAudioUnitListener(avAudioUnit.audioUnit)
+
+        guard noErr == status else {
+            Log.error("notifyAudioUnitListener returned error:", status.fourCharCodeToString())
+            return
+        }
     }
 }
