@@ -1,6 +1,6 @@
 import AVFoundation
 import SPFKUtils
-import SPFKUtilsC
+import SPFKBaseC
 
 extension AudioEngineManager: AudioEngineManagerModel {
     public var systemFormat: AVAudioFormat? {
@@ -10,8 +10,10 @@ extension AudioEngineManager: AudioEngineManagerModel {
     /// Don't access the engine.inputNode if input is disabled as the node is lazily created.
     /// This is the only point in the codebase where AVAudioEngine's inputNode is referenced
     public var inputNode: AVAudioInputNode? {
-        guard allowInput else { return nil }
-        return engine.inputNode
+        get async {
+            guard await allowInput else { return nil }
+            return engine.inputNode
+        }
     }
 
     public var outputNode: AVAudioOutputNode { engine.outputNode }

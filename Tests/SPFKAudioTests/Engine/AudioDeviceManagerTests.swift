@@ -10,11 +10,15 @@ import SPFKAudioHardware
 
 @Suite(.serialized, .tags(.realtime, .engine))
 final class AudioDeviceManagerTests: TestCaseModel {
-    var dm: AudioDeviceManager = .init()
+    let dm: AudioDeviceManager
+    
+    public init() async {
+        dm = await AudioDeviceManager()
+    }
 
     @Test func changeSampleRate() async throws {
-        let inputDevice = try #require(dm.selectedInputDevice)
-        let outputDevice = try #require(dm.selectedOutputDevice)
+        let inputDevice = try #require(await dm.selectedInputDevice)
+        let outputDevice = try #require(await dm.selectedOutputDevice)
 
         try await testSampleRates(for: inputDevice)
         try await testSampleRates(for: outputDevice)

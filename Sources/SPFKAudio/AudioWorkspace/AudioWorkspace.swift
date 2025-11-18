@@ -8,6 +8,7 @@ public class AudioWorkspace {
         return engineManager
     }()
 
+    // Must call deviceManager.setup() to prepare hardware
     public private(set) lazy var deviceManager: AudioDeviceManager = {
         var deviceManager = AudioDeviceManager()
         deviceManager.delegate = self
@@ -23,13 +24,14 @@ public class AudioWorkspace {
     // All tracks will be connected to this master
     public private(set) var master: AudioTrack?
 
-    public init() {}
+    public init() {
+    }
 
     /// Rebuild the engine graph. Neceessary on startup and sample rate changes
     public func rebuild() async throws {
         try await shutdown()
 
-        engineManager.rebuildEngine()
+        await engineManager.rebuildEngine()
 
         self.outputMixer = MixerWrapper()
         self.master = try await AudioTrack(delegate: self)
@@ -41,16 +43,31 @@ public class AudioWorkspace {
         try engineManager.setEngineOutput(to: outputMixer.avAudioNode)
         try engineManager.connectAndAttach(master, to: outputMixer)
 
-        try deviceManager.reconnect()
+        try await deviceManager.reconnect()
     }
 
-    public func shutdown() async throws {
+    private func shutdown() async throws {
         try stop()
+        engineManager.removeEngineObserver()
 
         try master?.detachNodes()
         try await master?.audioUnitChain.dispose()
 
         try outputMixer?.detachNodes()
+    }
+
+    /// to be called at the app terminate
+    public func dispose() async {
+        do {
+            try await shutdown()
+        } catch {
+            Log.error(error)
+        }
+
+        master = nil
+        outputMixer = nil
+
+        await deviceManager.dispose()
     }
 
     public var isRunning: Bool { engineManager.engineIsRunning }
@@ -95,12 +112,11 @@ extension AudioWorkspace: AudioDeviceAccess {
 }
 
 extension AudioWorkspace: AudioEngineManagerDelegate {
-    public func audioEngineManagerAllowInputDevice() -> Bool {
-        deviceManager.allowInput
+    public func audioEngineManagerAllowInputDevice() async -> Bool {
+        await deviceManager.allowInput
     }
 
-    // TODO: handle events
-    public func audioEngineManager(event: AudioEngineManager.Event) {
+    public func audioEngineManager(event: AudioEngineManager.Event) async {
         Log.debug(event)
 
         switch event {
@@ -111,7 +127,7 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
             break
 
         case .configurationChanged:
-            deviceManager.handleEngineConfigurationChanged()
+            await deviceManager.handleEngineConfigurationChanged()
         }
     }
 }
@@ -122,10 +138,12 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
     }
 
     public var audioEngineInputNode: AVAudioInputNode? {
-        engineManager.inputNode
+        get async {
+            await engineManager.inputNode
+        }
     }
 
-    public func audioDeviceManager(event: AudioDeviceManager.Event) {
+    public func audioDeviceManager(event: AudioDeviceManager.Event) async {
         Log.debug("🔊", event)
 
         switch event {

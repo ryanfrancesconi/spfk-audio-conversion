@@ -5,6 +5,7 @@ extension AudioDeviceManager {
     public var description: String {
         var string = ""
 
+        /*
         string += "↑ Selected Output Device: \(selectedOutputDevice?.name ?? "No Output") @ \(selectedOutputDevice?.actualSampleRate ?? 0) Hz, \(numberOfOutputChannels) Channel\n"
 
         if let selectedInputDevice = selectedInputDevice {
@@ -26,11 +27,13 @@ extension AudioDeviceManager {
         let inputDevices = allInputDevices.map { $0.name }.sorted()
         string += "↓ Input Devices: " + inputDevices.joined(separator: ", ")
         string += "\n\n"
-
+        */
+        
         return string
     }
 
     public func deviceDescription(_ device: AudioDevice) -> String {
+        /*
         let isSelectedOutputDevice = device == selectedOutputDevice
         let isSelectedInputDevice = device == selectedInputDevice
 
@@ -40,11 +43,14 @@ extension AudioDeviceManager {
         let content = "\(selectedInputIcon)\(selectedOutputIcon)\n"
 
         return content + device.detailedDescription
+         */
+        ""
     }
 }
 
 extension AudioDevice {
     public var detailedDescription: String {
+        /*
         let aggregateIcon = isAggregateDevice ? " (Aggregate) " : ""
         var directionIcon = "I/O Device ↑↓"
 
@@ -100,9 +106,12 @@ extension AudioDevice {
         }).joined(separator: " ")
 
         return content + ioContent + aggregateItems.joined(separator: "\n")
+         */
+        ""
     }
 
     private func channelsDescription(scope: Scope) -> [Any?] {
+        /*
         guard channels(scope: scope) > 0 else { return [] }
 
         let names = namedChannels(scope: scope).map({ $0.description }).joined(separator: ", ")
@@ -116,5 +125,7 @@ extension AudioDevice {
             "\tpreferredChannelsForStereo:", preferredChannelsForStereo(scope: scope) as Any?, "\n",
             "\tpresentationLatency:", presentationLatency(scope: scope) as Any?, "\n",
         ]
+         */
+        return []
     }
 }

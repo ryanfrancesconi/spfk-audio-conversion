@@ -5,7 +5,7 @@ import SPFKUtils
 
 // Mostly for debugging purposes
 
-extension AudioEngineManager {
+extension AudioEngineManager: CustomStringConvertible {
     public var description: String {
         var string = ""
         string += "Engine isRunning: \(engineIsRunning)\n"
@@ -13,10 +13,10 @@ extension AudioEngineManager {
         string += "outputNode outputFormat → \(engine.outputNode.outputFormat(forBus: 0).readableDescription)\n"
         string += "outputNode inputFormat ← \(engine.outputNode.inputFormat(forBus: 0).readableDescription)\n\n"
 
-        if let inputNode {
-            string += "inputNode → \(inputNode.outputFormat(forBus: 0).readableDescription)\n"
-            string += "inputNode ← \(inputNode.inputFormat(forBus: 0).readableDescription)\n\n"
-        }
+//        if let inputNode {
+//            string += "inputNode → \(inputNode.outputFormat(forBus: 0).readableDescription)\n"
+//            string += "inputNode ← \(inputNode.inputFormat(forBus: 0).readableDescription)\n\n"
+//        }
 
         // 84 attached nodes:
         // AVAudioUnitEffect (36), AVAudioOutputNode (1), AVAudioPlayerNode (32)...

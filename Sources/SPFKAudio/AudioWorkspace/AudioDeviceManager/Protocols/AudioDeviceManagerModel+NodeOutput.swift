@@ -3,22 +3,22 @@ import SPFKAudioHardware
 import SPFKUtils
 
 extension AudioDeviceManagerModel {
-    public func updatePreferredOutputChannels() throws {
+    public func updatePreferredOutputChannels() async throws {
         guard let engineOutputNode else {
             throw NSError(description: "engineOutputNode is nil")
         }
 
-        guard let selectedOutputDevice else {
+        guard let selectedOutputDevice = await selectedOutputDevice else {
             throw NSError(description: "selectedOutputDevice is nil")
         }
 
-        guard let engineDevice else {
+        guard let engineDevice = await engineDevice else {
             throw NSError(description: "engineDevice is nil")
         }
 
         // If we're allowing input that means that we're using the engine's aggregate.
         // So, we must look at its preferredChannelsForStereo and set that on the channel map
-        let channelsDevice = allowInput ? engineDevice : selectedOutputDevice
+        let channelsDevice = await allowInput ? engineDevice : selectedOutputDevice
 
         guard let stereoPair = channelsDevice.preferredChannelsForStereo(scope: .output) else {
             throw NSError(description: "Failed to get preferredChannelsForStereo for \(selectedOutputDevice.name)")
@@ -94,36 +94,39 @@ extension AudioDeviceManagerModel {
 
 extension AudioDeviceManagerModel {
     private var currentNodeOutputDevice: AudioDevice? {
-        guard let audioUnit = engineOutputNode?.audioUnit else {
-            Log.error("Failed to get audioUnit reference from engine.outputNode")
-            return nil
+        get async {
+            guard let audioUnit = engineOutputNode?.audioUnit else {
+                Log.error("Failed to get audioUnit reference from engine.outputNode")
+                return nil
+            }
+
+            var id: AudioDeviceID = 0
+            var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+
+            let err = AudioUnitGetProperty(
+                audioUnit,
+                kAudioOutputUnitProperty_CurrentDevice,
+                kAudioUnitScope_Global,
+                0,
+                &id,
+                &size
+            )
+
+            guard err == noErr else {
+                Log.error("Failed to get engine output node device ID, error: \(err)")
+                return nil
+            }
+
+            return await AudioDevice.lookup(by: id)
         }
-
-        var id: AudioDeviceID = 0
-        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
-
-        let err = AudioUnitGetProperty(
-            audioUnit,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &id,
-            &size
-        )
-
-        guard err == noErr else {
-            Log.error("Failed to get engine output node device ID, error: \(err)")
-            return nil
-        }
-
-        return AudioDevice.lookup(by: id)
     }
 
     /// NOTE: this method of direct setting of the device with no input
     /// doesn't work with airpods -
     /// potentially other blue tooth headsets as well.
-    internal func setEngineNodeOutput(to device: AudioDevice) throws {
-        if let currentNodeOutputDevice, currentNodeOutputDevice == device {
+    internal func setEngineNodeOutput(to device: AudioDevice) async throws {
+        if let currentNodeOutputDevice = await currentNodeOutputDevice,
+           currentNodeOutputDevice == device {
             Log.debug(device, "is already set as the engine's output")
             return
         }
@@ -149,19 +152,22 @@ extension AudioDeviceManagerModel {
         )
 
         guard err == noErr else {
-            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(err)")
+            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(err.fourCharCodeToString() ?? "\(err)")")
         }
 
         Log.debug("Engine output set to", name)
 
-        try updatePreferredOutputChannels()
+        try await updatePreferredOutputChannels()
     }
 
-    func reconnectNodeOutput() throws {
-        guard !allowInput else {
+    func reconnectNodeOutput() async throws {
+        guard await !allowInput else {
             Log.error("Input is enabled, using system settings not node output. Ignoring this call.")
             return
         }
+
+        let selectedEngineOutputDevice = await selectedEngineOutputDevice
+        let currentNodeOutputDevice = await currentNodeOutputDevice
 
         guard let selectedEngineOutputDevice else {
             Log.debug("selectedEngineOutputDevice is nil")
@@ -174,6 +180,6 @@ extension AudioDeviceManagerModel {
         }
 
         // note this will create an engine configuration change event
-        try setEngineNodeOutput(to: selectedEngineOutputDevice)
+        try await setEngineNodeOutput(to: selectedEngineOutputDevice)
     }
 }

@@ -46,7 +46,7 @@ extension AudioEngineManager {
         Log.debug(notification)
 
         Task { @MainActor in
-            send(event: .configurationChanged)
+            await send(event: .configurationChanged)
         }
     }
 }

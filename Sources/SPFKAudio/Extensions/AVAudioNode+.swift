@@ -2,7 +2,7 @@
 
 import AVFoundation
 import SPFKUtils
-import SPFKUtilsC
+import SPFKBaseC
 
 extension AVAudioNode: @retroactive TypeDescribable {
     private func error(function: String, string: String) -> NSError {

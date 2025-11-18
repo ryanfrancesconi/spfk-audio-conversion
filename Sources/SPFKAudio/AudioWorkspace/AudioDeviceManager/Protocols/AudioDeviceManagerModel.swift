@@ -6,18 +6,18 @@ import SPFKAudioHardware
 public protocol AudioDeviceManagerModel {
     var systemFormat: AVAudioFormat { get set }
     var deviceSettings: AudioDeviceSettings { get set }
-    var bufferSize: UInt32 { get set }
-    var inputLatency: UInt32? { get }
-
+    var bufferSize: UInt32 { get }
+    var inputLatency: UInt32? { get async }
     var engineOutputNode: AVAudioOutputNode? { get }
 
-    var allDevices: [AudioDevice] { get }
-    var selectedInputDevice: AudioDevice? { get }
-    var selectedOutputDevice: AudioDevice? { get }
-    var defaultInputDevice: AudioDevice? { get }
-    var defaultOutputDevice: AudioDevice? { get }
+    var allDevices: [AudioDevice] { get async }
+    var selectedInputDevice: AudioDevice? { get async }
+    var selectedOutputDevice: AudioDevice? { get async }
+    var defaultInputDevice: AudioDevice? { get async }
+    var defaultOutputDevice: AudioDevice? { get async }
 
-    func setInput(device: AudioDevice)
-    func setOutput(device: AudioDevice) throws
-    func reconnect() throws
+    func updateBufferSize(newValue: UInt32) async
+    func setInput(device: AudioDevice) async throws
+    func setOutput(device: AudioDevice) async throws
+    func reconnect() async throws
 }

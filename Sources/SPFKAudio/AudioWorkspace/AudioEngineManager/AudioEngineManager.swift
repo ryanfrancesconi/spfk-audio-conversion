@@ -9,11 +9,11 @@ public class AudioEngineManager {
         case error(Error)
     }
 
-    public weak var delegate: AudioEngineManagerDelegate?
-
-    func send(event: Event) {
-        delegate?.audioEngineManager(event: event)
+    func send(event: Event) async {
+        await delegate?.audioEngineManager(event: event)
     }
+
+    public weak var delegate: AudioEngineManagerDelegate?
 
     // MARK: -
 
@@ -33,7 +33,11 @@ public class AudioEngineManager {
 
     public private(set) var renderer = EngineRenderer()
 
-    public var allowInput: Bool { delegate?.audioEngineManagerAllowInputDevice() == true }
+    public var allowInput: Bool {
+        get async {
+            await delegate?.audioEngineManagerAllowInputDevice() == true
+        }
+    }
 
     /// Note: must call rebuildEngine before using
     public init() {}

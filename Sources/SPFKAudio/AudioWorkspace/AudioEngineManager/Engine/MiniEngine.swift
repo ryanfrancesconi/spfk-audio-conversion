@@ -3,13 +3,14 @@ import SPFKUtils
 
 /// A small engine for playback tests
 public class MiniEngine {
-    public let workspace = AudioWorkspace()
+    public let workspace: AudioWorkspace
     
     public var mixer: MixerWrapper? {
         workspace.master?.mixer
     }
 
-    public init() {
+    public init() async {
+        workspace = await AudioWorkspace()
     }
 
     public func start() async throws {

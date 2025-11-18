@@ -9,13 +9,6 @@ extension AudioEngineManagerModel {
         if engineIsRunning { stopEngine() }
 
         try connectAndAttach(node, to: outputNode, format: systemFormat)
-
-        Log.debug(
-            "🔈 Output Node:", outputNode,
-            "outputFormat:", outputFormat,
-            "inputFormat:", inputFormat,
-            "systemFormat", systemFormat
-        )
     }
 }
 
@@ -38,13 +31,19 @@ extension AudioEngineManagerModel {
     }
 
     public var inputFormat: AVAudioFormat? {
-        guard let inputNode else { return nil }
+        get async {
+            guard let inputNode = await inputNode else { return nil }
 
-        // accessing this inputNode will lazy create it
-        return inputNode.outputFormat(forBus: 0)
+            // accessing this inputNode will lazy create it
+            return inputNode.outputFormat(forBus: 0)
+        }
     }
 
-    public var allowInput: Bool { inputFormat != nil }
+    public var allowInput: Bool {
+        get async {
+            await inputFormat != nil
+        }
+    }
 
     public var outputFormat: AVAudioFormat {
         outputNode.outputFormat(forBus: 0)

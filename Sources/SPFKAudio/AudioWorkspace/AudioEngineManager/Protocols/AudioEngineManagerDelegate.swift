@@ -1,9 +1,7 @@
 import Foundation
 
 public protocol AudioEngineManagerDelegate: AnyObject {
-    func audioEngineManager(event: AudioEngineManager.Event)
+    func audioEngineManager(event: AudioEngineManager.Event) async
     
-    // audioEngineManager( getDeviceProperty
-    
-    func audioEngineManagerAllowInputDevice() -> Bool // temp name
+    func audioEngineManagerAllowInputDevice() async -> Bool // temp name
 }

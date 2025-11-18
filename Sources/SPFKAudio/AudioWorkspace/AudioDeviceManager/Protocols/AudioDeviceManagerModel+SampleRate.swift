@@ -9,31 +9,32 @@ extension AudioDeviceManagerModel {
         return AudioDefaults.isSupported(sampleRate: highestRate)
     }
 
-    public func isSupported(uid: String) -> Bool {
+    public func isSupported(uid: String) async -> Bool {
         guard uid != AudioDeviceSettings.inputDeviceDisabledUID else { return true }
 
-        guard let device = lookupDevice(uid: uid) else { return false }
+        guard let device = await AudioDevice.lookup(by: uid) else { return false }
+        
         return isSupported(device: device)
     }
 
-    public func setNominalSampleRate(to sampleRate: Double) throws {
-        try setOutputSampleRate(to: sampleRate)
+    public func setNominalSampleRate(to sampleRate: Double) async throws {
+        try await setOutputSampleRate(to: sampleRate)
 
         do {
-            try setInputSampleRate(to: sampleRate)
+            try await setInputSampleRate(to: sampleRate)
 
         } catch {
             Log.error(error)
         }
     }
 
-    public func setOutputSampleRate(to newValue: Double) throws {
-        guard let selectedOutputDevice else { return }
+    public func setOutputSampleRate(to newValue: Double) async throws {
+        guard let selectedOutputDevice = await selectedOutputDevice else { return }
         try setSampleRate(device: selectedOutputDevice, to: newValue)
     }
 
-    public func setInputSampleRate(to newValue: Double) throws {
-        guard let selectedInputDevice else { return }
+    public func setInputSampleRate(to newValue: Double) async throws {
+        guard let selectedInputDevice = await selectedInputDevice else { return }
         try setSampleRate(device: selectedInputDevice, to: newValue)
     }
 }

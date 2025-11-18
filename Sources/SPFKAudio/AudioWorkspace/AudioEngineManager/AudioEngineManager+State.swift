@@ -1,6 +1,6 @@
 import AVFoundation
 import SPFKUtils
-import SPFKUtilsC
+import SPFKBaseC
 
 extension AudioEngineManager {
     public func prepareEngine() throws {
@@ -22,7 +22,7 @@ extension AudioEngineManager {
     public func startEngine() throws {
         guard !engineIsRunning else { return }
 
-        Log.debug("🔈 Attempting to start engine with outputFormat", outputFormat, "inputFormat", inputFormat)
+        Log.debug("🔈 Attempting to start engine with outputFormat", outputFormat)
 
         try ExceptionTrap.withThrowing { [weak self] in
             guard let self else { return }
@@ -48,7 +48,7 @@ extension AudioEngineManager {
         engine.reset()
     }
 
-    public func rebuildEngine() {
+    public func rebuildEngine() async {
         stopEngine()
         removeEngineObserver()
 
@@ -60,8 +60,7 @@ extension AudioEngineManager {
         // The engine creates a singleton on demand when this property is first accessed.
         _ = outputNode
 
-        delegate?.audioEngineManager(event: .rebuild)
-
+        await send(event: .rebuild)
         addEngineObserver()
     }
 }

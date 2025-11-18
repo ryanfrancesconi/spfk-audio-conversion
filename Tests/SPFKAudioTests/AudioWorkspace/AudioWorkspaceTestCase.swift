@@ -9,10 +9,16 @@ import SPFKUtils
 import Testing
 
 public class AudioWorkspaceTestCase: BinTestCase {
-    public let audioWorkspace = AudioWorkspace()
+    public let audioWorkspace: AudioWorkspace
 
     var audioUnitChain: AudioUnitChain? { audioWorkspace.master?.audioUnitChain }
 
+    override public init() async {
+        audioWorkspace = await AudioWorkspace()
+
+        await super.init()
+    }
+    
     public func setup() async throws {
         try await audioWorkspace.rebuild()
         try audioWorkspace.start()

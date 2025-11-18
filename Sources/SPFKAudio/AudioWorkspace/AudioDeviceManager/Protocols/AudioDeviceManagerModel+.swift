@@ -5,12 +5,19 @@ import SPFKUtils
 
 extension AudioDeviceManagerModel {
     public var matchesSystemSettings: Bool {
-        deviceSettings.inputUID == defaultInputDevice?.uid &&
-            deviceSettings.outputUID == defaultOutputDevice?.uid
+        get async {
+            let defaultInputUID = await defaultInputDevice?.uid
+            let defaultOutputUID = await defaultOutputDevice?.uid
+
+            return deviceSettings.inputUID == defaultInputUID &&
+                deviceSettings.outputUID == defaultOutputUID
+        }
     }
 
     public var sampleRateHasChanged: Bool {
-        outputDeviceSampleRate != systemSampleRate
+        get async {
+            await outputDeviceSampleRate != systemSampleRate
+        }
     }
 
     public var systemSampleRate: Double {
@@ -33,35 +40,66 @@ extension AudioDeviceManagerModel {
         }
     }
 
-    public var inputDeviceSampleRate: Double? { selectedInputDevice?.nominalSampleRate }
-    public var outputDeviceSampleRate: Double? { selectedOutputDevice?.nominalSampleRate }
+    public var inputDeviceSampleRate: Double? {
+        get async {
+            await selectedInputDevice?.nominalSampleRate
+        }
+    }
+
+    public var outputDeviceSampleRate: Double? {
+        get async {
+            await selectedOutputDevice?.nominalSampleRate
+        }
+    }
 
     public var selectedDeviceSetttings: AudioDeviceSettings {
-        AudioDeviceSettings(
-            inputUID: selectedInputDevice?.uid,
-            outputUID: selectedOutputDevice?.uid
-        )
+        get async {
+            await AudioDeviceSettings(
+                inputUID: selectedInputDevice?.uid,
+                outputUID: selectedOutputDevice?.uid
+            )
+        }
     }
 
     public var engineDevice: AudioDevice? {
-        allDevices.first { isEngineDefaultAggregate(device: $0) }
+        get async {
+            await allDevices.first { isEngineDefaultAggregate(device: $0) }
+        }
     }
 
     public var allowInput: Bool {
-        deviceSettings.allowInput && hasInputDevice
+        get async {
+            let hasInputDevice = await hasInputDevice
+
+            return deviceSettings.allowInput && hasInputDevice
+        }
     }
 
     public var hasInputDevice: Bool {
-        selectedInputDevice != nil
+        get async {
+            await selectedInputDevice != nil
+        }
     }
 
-    public var inputDeviceLatency: UInt32? { selectedInputDevice?.latency(scope: .input) }
-    public var outputDeviceLatency: UInt32? { selectedOutputDevice?.latency(scope: .output) }
+    public var inputDeviceLatency: UInt32? {
+        get async {
+            await selectedInputDevice?.latency(scope: .input)
+        }
+    }
+
+    public var outputDeviceLatency: UInt32? {
+        get async {
+            await selectedOutputDevice?.latency(scope: .output)
+        }
+    }
 
     public var inputLatencyInSeconds: TimeInterval? {
-        guard let inputLatency, let inputDeviceSampleRate else { return nil }
-        let seconds = TimeInterval(inputLatency) / inputDeviceSampleRate
-        return seconds
+        get async {
+            guard let inputLatency = await inputLatency,
+                  let inputDeviceSampleRate = await inputDeviceSampleRate else { return nil }
+            let seconds = TimeInterval(inputLatency) / inputDeviceSampleRate
+            return seconds
+        }
     }
 }
 
@@ -73,12 +111,8 @@ extension AudioDeviceManagerModel {
         device.name.hasPrefix("CADefaultDevice")
     }
 
-    public func lookupDevice(uid: String) -> AudioDevice? {
-        AudioDevice.lookup(by: uid)
-    }
-
     public func requestAudioInputAccess() async -> Bool? {
-        guard hasInputDevice && deviceSettings.allowInput else {
+        guard await hasInputDevice && deviceSettings.allowInput else {
             Log.error("🎤 Audio Disabled or no Input device.")
             return nil
         }
