@@ -13,7 +13,7 @@ extension AudioDeviceManagerModel {
         guard uid != AudioDeviceSettings.inputDeviceDisabledUID else { return true }
 
         guard let device = await AudioDevice.lookup(by: uid) else { return false }
-        
+
         return isSupported(device: device)
     }
 
@@ -30,17 +30,17 @@ extension AudioDeviceManagerModel {
 
     public func setOutputSampleRate(to newValue: Double) async throws {
         guard let selectedOutputDevice = await selectedOutputDevice else { return }
-        try setSampleRate(device: selectedOutputDevice, to: newValue)
+        try await setSampleRate(device: selectedOutputDevice, to: newValue)
     }
 
     public func setInputSampleRate(to newValue: Double) async throws {
         guard let selectedInputDevice = await selectedInputDevice else { return }
-        try setSampleRate(device: selectedInputDevice, to: newValue)
+        try await setSampleRate(device: selectedInputDevice, to: newValue)
     }
 }
 
 extension AudioDeviceManagerModel {
-    internal func setSampleRate(device: AudioDevice, to newValue: Double) throws {
+    internal func setSampleRate(device: AudioDevice, to newValue: Double) async throws {
         guard AudioDefaults.isSupported(sampleRate: newValue) else {
             throw NSError(description: "This sample rate \(newValue) isn't supported.")
         }
@@ -51,7 +51,7 @@ extension AudioDeviceManagerModel {
         }
 
         guard currentValue != newValue else {
-            Log.debug("🔈 \(device.name) is already set to \(newValue)")
+            Log.debug("\(device.name) is already set to \(newValue)")
             return
         }
 
@@ -61,10 +61,8 @@ extension AudioDeviceManagerModel {
             throw NSError(description: "\(device.name) doesn't support \(newValue) Hz. Available rate\(supportedRates.pluralString) \(supportedRatesString)")
         }
 
-        if !device.setNominalSampleRate(newValue) {
-            throw NSError(description: "Unable to set \(device.name) to \(newValue)")
-        }
+        try await device.update(sampleRate: newValue)
 
-        Log.debug("🔈 ✓ Updated \(device.name) sample rate to", newValue)
+        Log.debug("✓ Updated \(device.name) sample rate to", newValue)
     }
 }

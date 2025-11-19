@@ -3,17 +3,18 @@
 import AVFoundation
 import Foundation
 @testable import SPFKAudio
+import SPFKAudioHardware
 import SPFKTesting
 import SPFKUtils
 import Testing
-import SPFKAudioHardware
 
 @Suite(.serialized, .tags(.realtime, .engine))
 final class AudioDeviceManagerTests: TestCaseModel {
     let dm: AudioDeviceManager
-    
+
     public init() async {
-        dm = await AudioDeviceManager()
+        dm = AudioDeviceManager()
+        await dm.setup()
     }
 
     @Test func changeSampleRate() async throws {
@@ -33,23 +34,21 @@ final class AudioDeviceManagerTests: TestCaseModel {
 
         let sampleRate = try #require(device.nominalSampleRate)
 
-        #expect(throws: Error.self) {
-            try dm.setSampleRate(device: device, to: 8000)
+        await #expect(throws: Error.self) {
+            try await dm.setSampleRate(device: device, to: 8000)
         }
 
         for rate in supportedSampleRates {
-            try dm.setSampleRate(device: device, to: rate)
+            try await dm.setSampleRate(device: device, to: rate)
 
-            try await wait(sec: 1)
-
-            #expect(device.nominalSampleRate == rate)
+            #expect(device.nominalSampleRate == rate, "\(device.name)")
         }
 
-        try dm.setSampleRate(device: device, to: sampleRate)
+        try await dm.setSampleRate(device: device, to: sampleRate)
 
         try await wait(sec: 1)
 
         // will be ignored
-        try dm.setSampleRate(device: device, to: sampleRate)
+        try await dm.setSampleRate(device: device, to: sampleRate)
     }
 }

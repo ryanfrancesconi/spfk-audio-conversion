@@ -4,14 +4,14 @@ import SPFKUtils
 
 extension AudioDeviceManagerModel {
     /// - Returns: A collection of named channels for the selected input device
-    public var selectedInputDeviceChannels: [AudioDevice.NamedChannel] {
+    public var selectedInputDeviceChannels: [AudioDeviceNamedChannel] {
         get async {
             await selectedInputDevice?.namedChannels(scope: .input) ?? []
         }
     }
 
     /// - Returns: A collection of named channels for the selected output device
-    public var selectedOutputDeviceChannels: [AudioDevice.NamedChannel] {
+    public var selectedOutputDeviceChannels: [AudioDeviceNamedChannel] {
         get async {
             await selectedOutputDevice?.namedChannels(scope: .output) ?? []
         }
