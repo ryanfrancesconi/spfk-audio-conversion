@@ -117,7 +117,7 @@ extension AudioDeviceManagerModel {
                 return nil
             }
 
-            return await AudioDevice.lookup(by: id)
+            return await AudioObjectPool.shared.lookup(by: id)
         }
     }
 
