@@ -4,6 +4,8 @@ import SPFKUtils
 
 extension AudioDeviceManager {
     @MainActor func send(event: Event) async {
+        Log.debug("🔊 \(event)")
+
         await delegate?.audioDeviceManager(event: event)
     }
 
@@ -15,7 +17,6 @@ extension AudioDeviceManager {
         hardwareObservers.removeAll()
     }
 
-    /// Listen for notifications from SimplyCoreAudio
     func addHardwareObservers() {
         removeHardwareObservers()
 
@@ -24,175 +25,120 @@ extension AudioDeviceManager {
                 forName: .deviceListChanged,
                 object: nil,
                 queue: .main
-            ) { [weak self] notification in
-
-                guard let hardwareNotification = notification.object as? AudioHardwareNotification else { return }
-                guard let self else { return }
-
-                guard case let .deviceListChanged(event: event) = hardwareNotification else {
-                    return
-                }
-
-                // ignore the AVAudioEngine aggregate
-
-                let added = event.addedDevices.filter { !self.isEngineDefaultAggregate(device: $0) }
-                let removed = event.removedDevices.filter { !self.isEngineDefaultAggregate(device: $0) }
-
-                guard added.isNotEmpty || removed.isNotEmpty else { return }
-
-                Task {
-                    await self.send(event: .deviceListChanged(
-                        addedDevices: added,
-                        removedDevices: removed)
-                    )
-                }
-            },
+            ) { [weak self] in self?.parse(notification: $0) },
 
             NotificationCenter.default.addObserver(
                 forName: .defaultInputDeviceChanged,
                 object: nil,
                 queue: .main
-            ) { [weak self] notification in
-
-                guard let self else { return }
-
-                guard case .defaultInputDeviceChanged = notification.object as? AudioHardwareNotification else {
-                    return
-                }
-
-                Task {
-                    guard await self.allowInput else {
-                        Log.debug("Can ignore this event")
-                        return
-                    }
-
-                    guard let defaultInputDevice = await self.defaultInputDevice else { return }
-
-                    guard defaultInputDevice.uid != self.deviceSettings.inputUID else {
-                        Log.debug("Same device is already selected", defaultInputDevice)
-                        return
-                    }
-
-                    await self.send(event: .inputDeviceChanged(device: defaultInputDevice))
-                }
-
-            },
+            ) { [weak self] in self?.parse(notification: $0) },
 
             NotificationCenter.default.addObserver(
                 forName: .defaultOutputDeviceChanged,
                 object: nil,
                 queue: .main
-            ) { [weak self] notification in
-                guard let self else { return }
-                guard case .defaultOutputDeviceChanged = notification.object as? AudioHardwareNotification else {
-                    return
-                }
+            ) { [weak self] in self?.parse(notification: $0) },
 
-                Task {
-                    guard await self.allowInput else {
-                        Log.debug("Can ignore this defaultOutputDeviceChanged")
-                        return
-                    }
-
-                    guard let defaultOutputDevice = await self.defaultOutputDevice else {
-                        Log.error(notification.object)
-                        assertionFailure()
-                        return
-                    }
-
-                    guard defaultOutputDevice.uid != self.deviceSettings.outputUID else {
-                        Log.debug("Same device is already selected", defaultOutputDevice)
-                        return
-                    }
-
-                    await self.send(event: .outputDeviceChanged(device: defaultOutputDevice))
-                }
-
-            },
+            NotificationCenter.default.addObserver(
+                forName: .deviceNominalSampleRateDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] in self?.parse(notification: $0) },
 
             NotificationCenter.default.addObserver(
                 forName: .deviceProcessorOverload,
                 object: nil,
                 queue: .main
-            ) { [weak self] _ in
-                Task { await self?.send(event: .deviceProcessorOverload) }
-            },
+            ) { [weak self] in self?.parse(notification: $0) },
         ]
     }
-}
 
-extension AudioDeviceManager {
-    func removeInputDeviceObserver() {
-        if let inputDeviceObserver {
-            NotificationCenter.default.removeObserver(inputDeviceObserver)
-        }
+    @objc private func parse(notification: Notification) {
+        Task {
+            if let hardwareNotification = notification.object as? AudioHardwareNotification {
+                await parse(hardwareNotification: hardwareNotification)
 
-        inputDeviceObserver = nil
-    }
-
-    func removeOutputDeviceObserver() {
-        if let outputDeviceObserver {
-            NotificationCenter.default.removeObserver(outputDeviceObserver)
-        }
-
-        outputDeviceObserver = nil
-    }
-
-    /// Add an observer for the currently selected input device
-    /// - Parameter device: An input device to watch for sample rate changes
-    func addInputDeviceObserver(for device: AudioDevice) async {
-        removeInputDeviceObserver()
-
-        guard await allowInput else { return }
-        guard let sampleRate = device.nominalSampleRate else { return }
-
-        inputDeviceObserver = NotificationCenter.default.addObserver(
-            forName: .deviceNominalSampleRateDidChange,
-            object: device,
-            queue: .main
-        ) { [weak self] notification in
-            guard let self else { return }
-
-            Task {
-                let selectedInputDevice = await self.selectedInputDevice
-
-                guard let notificationDevice = notification.object as? AudioDevice,
-                      notificationDevice == selectedInputDevice else {
-                    return
-                }
-
-                Log.debug("🎤 deviceNominalSampleRateDidChange to", sampleRate)
-
-                await self.send(event: .sampleRateChanged(sampleRate))
+            } else if let deviceNotification = notification.object as? AudioDeviceNotification {
+                await parse(deviceNotification: deviceNotification)
             }
         }
     }
 
-    /// Add an observer for the currently selected output device
-    /// - Parameter device: An output device to watch for sample rate changes
-    func addOutputDeviceObserver(for device: AudioDevice) {
-        removeOutputDeviceObserver()
+    private func parse(hardwareNotification: AudioHardwareNotification) async {
+        switch hardwareNotification {
+        case .defaultSystemOutputDeviceChanged:
+            break
 
-        outputDeviceObserver = NotificationCenter.default.addObserver(
-            forName: .deviceNominalSampleRateDidChange,
-            object: device,
-            queue: .main
-        ) { [weak self] notification in
-            guard let self else { return }
-
-            Task {
-                let selectedOutputDevice = await self.selectedOutputDevice
-
-                guard let notificationDevice = notification.object as? AudioDevice,
-                      notificationDevice == selectedOutputDevice else {
-                    return
-                }
-
-                Log.debug("🎧 deviceNominalSampleRateDidChange", device.name, "to", device.nominalSampleRate)
-
-                guard let sampleRate = device.nominalSampleRate else { return }
-                await self.send(event: .sampleRateChanged(sampleRate))
+        case .defaultInputDeviceChanged:
+            guard await self.allowInput else {
+                Log.debug("Can ignore this event")
+                return
             }
+
+            guard let defaultInputDevice = await self.defaultInputDevice else { return }
+
+            guard defaultInputDevice.uid != self.deviceSettings.inputUID else {
+                Log.debug("Same device is already selected", defaultInputDevice)
+                return
+            }
+
+            await self.send(event: .inputDeviceChanged(device: defaultInputDevice))
+
+        case .defaultOutputDeviceChanged:
+            guard await self.allowInput else {
+                Log.debug("Can ignore this defaultOutputDeviceChanged")
+                return
+            }
+
+            guard let defaultOutputDevice = await self.defaultOutputDevice else {
+                assertionFailure()
+                return
+            }
+
+            guard defaultOutputDevice.uid != self.deviceSettings.outputUID else {
+                Log.debug("Same device is already selected", defaultOutputDevice)
+                return
+            }
+
+            await self.send(event: .outputDeviceChanged(device: defaultOutputDevice))
+
+        case let .deviceListChanged(event: event):
+            let added = event.addedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
+            let removed = event.removedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
+
+            guard added.isNotEmpty || removed.isNotEmpty else { return }
+
+            let filteredEvent = DeviceStatusEvent(
+                addedDevices: added,
+                removedDevices: removed
+            )
+
+            await self.send(event: .deviceListChanged(event: filteredEvent))
+        }
+    }
+
+    private func parse(deviceNotification: AudioDeviceNotification) async {
+        guard let notificationDevice = await deviceNotification.getAudioDevice() else { return }
+
+        let devices = [
+            await self.selectedInputDevice,
+            await self.selectedOutputDevice,
+        ]
+
+        guard devices.contains(notificationDevice) else { return }
+
+        switch deviceNotification {
+        case .deviceAvailableNominalSampleRatesDidChange:
+            guard let sampleRate = notificationDevice.nominalSampleRate else { return }
+            await self.send(event: .sampleRateChanged(sampleRate))
+
+        case .deviceProcessorOverload:
+            await send(event: .deviceProcessorOverload)
+
+            // more events available...
+
+        default:
+            break
         }
     }
 }
@@ -215,7 +161,6 @@ extension AudioDeviceManager {
 
         let outputDeviceChanged = selectedOutputDevice.uid != deviceSettings.outputUID
         let inputDeviceChanged = await selectedInputDevice?.uid != deviceSettings.inputUID
-
         let sampleRateChanged = outputDeviceSampleRate != systemSampleRate
 
         var options = Set<ConfigurationOption>()

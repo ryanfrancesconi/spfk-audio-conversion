@@ -2,7 +2,7 @@ import AVFoundation
 import SPFKAudioHardware
 import SPFKUtils
 
-public class AudioEngineManager {
+public final class AudioEngineManager {
     public enum Event {
         case rebuild
         case configurationChanged

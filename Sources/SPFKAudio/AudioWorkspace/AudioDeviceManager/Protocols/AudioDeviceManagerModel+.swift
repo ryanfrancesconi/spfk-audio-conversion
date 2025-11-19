@@ -63,7 +63,7 @@ extension AudioDeviceManagerModel {
 
     public var engineDevice: AudioDevice? {
         get async {
-            await allDevices.first { isEngineDefaultAggregate(device: $0) }
+            await allDevices.first { Self.isEngineDefaultAggregate(device: $0) }
         }
     }
 
@@ -107,8 +107,8 @@ extension AudioDeviceManagerModel {
 
 extension AudioDeviceManagerModel {
     /// CADefaultDeviceAggregate-49419-1
-    internal func isEngineDefaultAggregate(device: AudioDevice) -> Bool {
-        device.name.hasPrefix("CADefaultDevice")
+    static func isEngineDefaultAggregate(device: AudioDevice) -> Bool {
+        device.name.hasPrefix("CADefaultDevice") // this is unstable logic
     }
 
     public func requestAudioInputAccess() async -> Bool? {

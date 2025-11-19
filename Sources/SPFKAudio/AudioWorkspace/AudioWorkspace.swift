@@ -143,7 +143,7 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
         }
     }
 
-    public func audioDeviceManager(event: AudioDeviceManager.Event) async {
+    @MainActor public func audioDeviceManager(event: AudioDeviceManager.Event) async {
         Log.debug("🔊", event)
 
         switch event {
@@ -153,8 +153,8 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
             _ = device
         case let .outputDeviceChanged(device: device):
             _ = device
-        case let .deviceListChanged(addedDevices: addedDevices, removedDevices: removedDevices):
-            _ = addedDevices; _ = removedDevices
+        case let .deviceListChanged(event: event):
+            _ = event
         case .deviceProcessorOverload:
             break
         case let .error(error):

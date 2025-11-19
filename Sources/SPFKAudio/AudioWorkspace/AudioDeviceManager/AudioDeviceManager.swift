@@ -11,12 +11,12 @@ import SPFKUtils
 /// the engine audioUnit output directly to the output device selection.
 /// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
 /// potentially other bluetooth I/O headsets as well.
-public class AudioDeviceManager: AudioDeviceManagerModel {
+public final class AudioDeviceManager: AudioDeviceManagerModel {
     public enum Event {
         case sampleRateChanged(Double)
         case inputDeviceChanged(device: AudioDevice)
         case outputDeviceChanged(device: AudioDevice)
-        case deviceListChanged(addedDevices: [AudioDevice], removedDevices: [AudioDevice])
+        case deviceListChanged(event: DeviceStatusEvent)
         case deviceProcessorOverload
         case error(Error)
 
@@ -32,8 +32,9 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
     public weak var delegate: AudioDeviceManagerDelegate?
 
     var hardwareObservers: [NSObjectProtocol] = []
-    var inputDeviceObserver: NSObjectProtocol?
-    var outputDeviceObserver: NSObjectProtocol?
+
+//    var inputDeviceObserver: NSObjectProtocol?
+//    var outputDeviceObserver: NSObjectProtocol?
 
     public private(set) var hardware: AudioHardwareManager?
 
@@ -185,8 +186,6 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         // will set device
         try device.promote(to: .defaultInput)
 
-        await addInputDeviceObserver(for: device)
-
         _inputLatency = nil // uncache this
 
         try await setInputSampleRate(to: systemSampleRate)
@@ -208,8 +207,6 @@ public class AudioDeviceManager: AudioDeviceManagerModel {
         try device.promote(to: .defaultOutput)
 
         try await updatePreferredOutputChannels()
-
-        addOutputDeviceObserver(for: device)
 
         try await setOutputSampleRate(to: systemSampleRate)
     }
