@@ -117,7 +117,7 @@ extension AudioDeviceManagerModel {
                 return nil
             }
 
-            return await AudioObjectPool.shared.lookup(by: id)
+            return await AudioObjectPool.shared.lookup(id: id)
         }
     }
 
@@ -152,7 +152,7 @@ extension AudioDeviceManagerModel {
         )
 
         guard err == noErr else {
-            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(err.fourCharCodeToString() ?? "\(err)")")
+            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(err.fourCharCodeToString())")
         }
 
         Log.debug("Engine output set to", name)

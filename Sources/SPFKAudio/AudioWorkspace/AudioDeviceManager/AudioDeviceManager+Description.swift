@@ -2,6 +2,7 @@ import Foundation
 import SPFKAudioHardware
 
 extension AudioDeviceManager {
+    #warning("UPDATE")
     public var description: String {
         var string = ""
 

@@ -104,7 +104,7 @@ extension AudioFormatConverter {
         )
 
         if err != noErr {
-            let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(err.string) (\(err.fourCharCodeToString() ?? "?")"
+            let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(err.string) (\(err.fourCharCodeToString())"
 
             throw NSError(description: message)
         }

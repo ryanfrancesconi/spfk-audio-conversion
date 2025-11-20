@@ -12,7 +12,7 @@ extension AudioDeviceManagerModel {
     public func isSupported(uid: String) async -> Bool {
         guard uid != AudioDeviceSettings.inputDeviceDisabledUID else { return true }
 
-        guard let device = await AudioDevice.lookup(by: uid) else { return false }
+        guard let device = await AudioDevice.lookup(uid: uid) else { return false }
 
         return isSupported(device: device)
     }

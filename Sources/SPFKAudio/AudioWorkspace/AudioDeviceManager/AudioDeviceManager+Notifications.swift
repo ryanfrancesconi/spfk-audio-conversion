@@ -102,7 +102,7 @@ extension AudioDeviceManager {
 
             await self.send(event: .outputDeviceChanged(device: defaultOutputDevice))
 
-        case let .deviceListChanged(event: event):
+        case let .deviceListChanged(objectID: _, event: event):
             let added = event.addedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
             let removed = event.removedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
 
