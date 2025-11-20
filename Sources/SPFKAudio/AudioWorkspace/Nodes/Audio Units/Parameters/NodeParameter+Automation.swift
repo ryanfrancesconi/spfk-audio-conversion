@@ -123,7 +123,7 @@ extension NodeParameter {
         guard let avAudioNode else {
             throw NSError(description: "Underlying AVAudioNode is nil")
         }
-        
+
         if let token = renderObserverToken {
             avAudioNode.auAudioUnit.removeRenderObserver(token)
         }

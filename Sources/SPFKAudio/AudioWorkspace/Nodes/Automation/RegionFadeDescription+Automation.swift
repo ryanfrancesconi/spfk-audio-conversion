@@ -1,9 +1,8 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import Foundation
-import OTCore
 import SPFKAudioC
-import SPFKUtils
+import SPFKBase
 
 // NOTE: `AutomationEvent` is a SPFKAudioC C++ struct pulled from AudioKit
 

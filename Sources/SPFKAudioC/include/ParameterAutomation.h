@@ -23,6 +23,8 @@ struct AutomationEvent {
 
 #ifndef __cplusplus
 
+// visible to swift
+
 /// Returns a render observer block which will apply the automation to the selected parameter.
 AURenderObserver ParameterAutomationGetRenderObserver(AUParameterAddress           address,
                                                       AUScheduleParameterBlock     scheduleParameterBlock,

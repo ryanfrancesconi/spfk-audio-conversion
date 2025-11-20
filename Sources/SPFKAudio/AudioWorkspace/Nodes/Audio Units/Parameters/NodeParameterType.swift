@@ -16,7 +16,7 @@ extension Bool: NodeParameterType {
     /// Convert a Boolean to a floating point number
     /// - Returns: An AUValue
     public func toAUValue() -> AUValue {
-        self ? 1.0 : 0.0
+        self ? 1 : 0
     }
 
     /// Initialize with a value
@@ -29,7 +29,5 @@ extension Bool: NodeParameterType {
 extension AUValue: NodeParameterType {
     /// Convert to AUValue
     /// - Returns: Value of type AUValue
-    public func toAUValue() -> AUValue {
-        self
-    }
+    public func toAUValue() -> AUValue { self }
 }

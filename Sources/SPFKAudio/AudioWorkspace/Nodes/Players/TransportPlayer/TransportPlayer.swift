@@ -2,7 +2,7 @@ import AppKit
 import AVFoundation
 import Foundation
 import SPFKTime
-import SPFKUtils
+import SPFKBase
 
 extension TransportPlayer: EngineNode {
     public var inputNode: AVAudioNode? { mixer.inputNode }
@@ -19,6 +19,18 @@ extension TransportPlayer: TransportStateAccess {
             duration: duration,
             measure: measure
         )
+    }
+}
+
+extension TransportPlayer: Mixable {
+    public var volume: AUValue {
+        get { mixer.volume }
+        set { mixer.volume = newValue }
+    }
+
+    public var pan: AUValue {
+        get { mixer.pan }
+        set { mixer.pan = newValue }
     }
 }
 

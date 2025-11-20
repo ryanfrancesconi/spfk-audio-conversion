@@ -4,7 +4,6 @@
 import AVFoundation
 import Foundation
 import SPFKAudioC
-import SPFKUtils
 
 /// An automation curve (with curved segments) suitable for any time varying parameter.
 /// Includes functions for manipulating automation curves and conversion to linear automation ramps

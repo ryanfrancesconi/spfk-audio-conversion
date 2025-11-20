@@ -34,8 +34,7 @@ AURenderObserver ParameterAutomationGetRenderObserver(
     return ^void (AudioUnitRenderActionFlags actionFlags,
                   const AudioTimeStamp *timestamp,
                   AUAudioFrameCount frameCount,
-                  NSInteger outputBusNumber)
-           {
+                  NSInteger outputBusNumber) {
                if (actionFlags != kAudioUnitRenderAction_PreRender) {
                    return;
                }
@@ -90,5 +89,5 @@ AURenderObserver ParameterAutomationGetRenderObserver(
 
                    index++;
                }
-           };
+    };
 }

@@ -1,6 +1,5 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
-import SPFKUtils
 import SPFKAudioC
 
 /// An object representing a fade in and out automation curves on a region of audio in a timeline
@@ -33,14 +32,13 @@ public struct RegionFadeDescription {
             if newValue != outTime { fadeOutCache = nil }
         }
     }
-    
-    
+
     public var segmentDuration: TimeInterval = 0 {
         willSet {
             if newValue != segmentDuration { fadeOutCache = nil }
         }
     }
-    
+
     public var taper = AudioTaper.default {
         willSet {
             if newValue.value != taper.value {

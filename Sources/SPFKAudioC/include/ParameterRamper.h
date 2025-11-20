@@ -8,8 +8,6 @@
 
 #ifdef __cplusplus
 
-// N.B. This is C++.
-
 #import <AudioToolbox/AudioToolbox.h>
 #import <libkern/OSAtomic.h>
 
@@ -17,11 +15,14 @@
 
 class ParameterRamper {
     float clampLow, clampHigh;
+
     std::atomic<float> _uiValue {
         0
     };
+
     float _goal;
     float inverseSlope;
+
     AUAudioFrameCount samplesRemaining;
     std::atomic<int32_t> changeCounter;
     int32_t updateCounter = 0;
@@ -122,4 +123,4 @@ public:
     }
 };
 
-#endif /* ifdef __cplusplus */
+#endif // __cplusplus

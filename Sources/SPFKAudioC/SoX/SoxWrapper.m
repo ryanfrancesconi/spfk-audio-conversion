@@ -1,14 +1,15 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 #import "sndfile.h"
+#import "sox.h"
 #import "SoxWrapper.h"
 
 @implementation SoxWrapper
 
 char *_sox = "sox";
 
-- (void)createMultiChannelWave:(NSArray *)inputs
-                        output:(NSString *)output {
+- (int)createMultiChannelWave:(NSArray *)inputs
+                       output:(NSString *)output {
     int count = 2;
 
     // sox -M chan1.wav chan2.wav chan3.wav chan4.wav chan5.wav multi.wav
@@ -27,14 +28,13 @@ char *_sox = "sox";
     // then the file to create
     argv[count++] = (char *)output.UTF8String;
 
-    sox_main(count, argv);
+    return sox_main(count, argv);
 }
 
-// TODO: error handling
-- (void)convert:(NSString *)input
-         output:(NSString *)output
-           bits:(NSString *)bits
-     sampleRate:(NSString *)sampleRate
+- (int)convert:(NSString *)input
+        output:(NSString *)output
+          bits:(NSString *)bits
+    sampleRate:(NSString *)sampleRate
 {
     char *argv[7];
 
@@ -45,13 +45,12 @@ char *_sox = "sox";
     argv[4] = (char *)"-r";
     argv[5] = (char *)sampleRate.UTF8String;
     argv[6] = (char *)output.UTF8String;
-    sox_main(7, argv);
+    return sox_main(7, argv);
 }
 
-// TODO: error handling
-- (void)convert:(NSString *)input
-         output:(NSString *)output
-           bits:(NSString *)bits
+- (int)convert:(NSString *)input
+        output:(NSString *)output
+          bits:(NSString *)bits
 {
     char *argv[5];
 
@@ -60,13 +59,12 @@ char *_sox = "sox";
     argv[2] = (char *)"-b";
     argv[3] = (char *)bits.UTF8String;
     argv[4] = (char *)output.UTF8String;
-    sox_main(5, argv);
+    return sox_main(5, argv);
 }
 
-// TODO: error handling
-- (void)convert:(NSString *)input
-         output:(NSString *)output
-     sampleRate:(NSString *)sampleRate
+- (int)convert:(NSString *)input
+        output:(NSString *)output
+    sampleRate:(NSString *)sampleRate
 {
     char *argv[5];
 
@@ -75,26 +73,24 @@ char *_sox = "sox";
     argv[2] = (char *)"-r";
     argv[3] = (char *)sampleRate.UTF8String;
     argv[4] = (char *)output.UTF8String;
-    sox_main(5, argv);
+    return sox_main(5, argv);
 }
 
-// TODO: error handling
-- (void)convert:(NSString *)input
-         output:(NSString *)output
+- (int)convert:(NSString *)input
+        output:(NSString *)output
 {
     char *argv[3];
 
     argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)output.UTF8String;
-    sox_main(3, argv);
+    return sox_main(3, argv);
 }
 
-// TODO: error handling
-- (void)convert:(NSString *)input
-         output:(NSString *)output
-        bitRate:(NSString *)bitRate
-     sampleRate:(NSString *)sampleRate
+- (int)convert:(NSString *)input
+        output:(NSString *)output
+       bitRate:(NSString *)bitRate
+    sampleRate:(NSString *)sampleRate
 {
     char *argv[7];
 
@@ -105,12 +101,12 @@ char *_sox = "sox";
     argv[4] = (char *)"-r";
     argv[5] = (char *)sampleRate.UTF8String;
     argv[6] = (char *)output.UTF8String;
-    sox_main(7, argv);
+    return sox_main(7, argv);
 }
 
-- (void)convert:(NSString *)input
-         output:(NSString *)output
-        bitRate:(NSString *)bitRate
+- (int)convert:(NSString *)input
+        output:(NSString *)output
+       bitRate:(NSString *)bitRate
 {
     char *argv[5];
 
@@ -119,13 +115,12 @@ char *_sox = "sox";
     argv[2] = (char *)"-C";
     argv[3] = (char *)bitRate.UTF8String;
     argv[4] = (char *)output.UTF8String;
-    sox_main(5, argv);
+    return sox_main(5, argv);
 }
 
-// TODO: error handling
-- (void)remix:(NSString *)input
-       output:(NSString *)output
-      channel:(NSString *)channel
+- (int)remix:(NSString *)input
+      output:(NSString *)output
+     channel:(NSString *)channel
 {
     char *argv[5];
 
@@ -134,13 +129,12 @@ char *_sox = "sox";
     argv[2] = (char *)output.UTF8String;
     argv[3] = (char *)"remix";
     argv[4] = (char *)channel.UTF8String;
-    sox_main(5, argv);
+    return sox_main(5, argv);
 }
 
-// TODO: error handling
-- (void)remix2:(NSString *)input
-        output:(NSString *)output
-       channel:(NSString *)channel {
+- (int)remix2:(NSString *)input
+       output:(NSString *)output
+      channel:(NSString *)channel {
     /* All libSoX applications must start by initialising the SoX library */
     if (sox_init() != SOX_SUCCESS) {
         // error
@@ -213,8 +207,7 @@ char *_sox = "sox";
     sox_quit();
 }
 
-// TODO: better error handling
-- (void) trim:(NSString *)input
+- (int)  trim:(NSString *)input
        output:(NSString *)output
     startTime:(NSString *)startTime
       endTime:(NSString *)endTime {

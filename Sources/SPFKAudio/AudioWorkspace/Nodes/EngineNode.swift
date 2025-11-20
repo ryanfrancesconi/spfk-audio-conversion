@@ -13,7 +13,6 @@ public protocol NodeInputAccess: AnyObject {
 
 public protocol EngineNode: NodeInputAccess, NodeOutputAccess {
     var isBypassed: Bool { get set }
-
     func detachNodes() throws
 }
 

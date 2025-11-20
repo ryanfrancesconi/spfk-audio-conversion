@@ -1,6 +1,7 @@
 import AudioToolbox
 import Foundation
 import OTCore
+import SPFKAudioC
 import SPFKUtils
 
 /// An object to represent one automation point in an UI
@@ -38,7 +39,7 @@ public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConve
     public private(set) var dBValue: AUValue = 0
 
     /// Default is 0 ... +12dB, or 0 ... 4 linear gain
-    public private(set) var gainRange: ClosedRange<AUValue> = Fader.defaultGainRange
+    public private(set) var gainRange: ClosedRange<AUValue> = FaderParameter.defaultGainRange
 
     /// Default is 0 ... +12dB
     public private(set) var dBRange: ClosedRange<AUValue> = (dBMin ... 12) {

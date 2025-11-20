@@ -27,11 +27,6 @@ private let dependencies: [PackageDescription.Package.Dependency] = [
     .package(name: "SPFKUtils", path: "../SPFKUtils"),
     .package(name: "SPFKMetadata", path: "../SPFKMetadata"),
     .package(name: "SPFKTime", path: "../SPFKTime"),
-
-//    .package(url: "https://github.com/ryanfrancesconi/SPFKTesting", branch: "main"),
-//    .package(url: "https://github.com/ryanfrancesconi/SPFKUtils", branch: "main"),
-//    .package(url: "https://github.com/ryanfrancesconi/SPFKMetadata", branch: "main"),
-//    .package(url: "https://github.com/ryanfrancesconi/SimplyCoreAudio", branch: "development"),
     .package(name: "SPFKAudioHardware", path: "../SPFKAudioHardware"),
 ]
 
@@ -44,7 +39,6 @@ private let targets: [PackageDescription.Target] = [
             .byNameItem(name: "SPFKUtils", condition: nil),
             .byNameItem(name: "SPFKMetadata", condition: nil),
             .byNameItem(name: "SPFKTime", condition: nil),
-
             .byNameItem(name: "SPFKAudioHardware", condition: nil)
         ]
     ),

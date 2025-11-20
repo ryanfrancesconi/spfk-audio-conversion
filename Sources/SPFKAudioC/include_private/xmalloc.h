@@ -31,4 +31,4 @@
 #define lsx_valloc(v, n)   v = lsx_malloc((n) * sizeof(*(v)))
 #define lsx_revalloc(v, n) v = lsx_realloc(v, (n) * sizeof(*(v)))
 
-#endif
+#endif // !LSX_MALLOC_H

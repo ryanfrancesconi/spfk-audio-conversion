@@ -537,14 +537,14 @@ typedef enum sox_option_t {
    libSoX functions may return these codes or others that map from errno codes.
  */
 enum sox_error_t {
-    SOX_SUCCESS = 0,   /**< Function succeeded = 0 */
-    SOX_EOF     = -1,             /**< End Of File or other error = -1 */
+    SOX_SUCCESS = 0,    /**< Function succeeded = 0 */
+    SOX_EOF     = -1,   /**< End Of File or other error = -1 */
     SOX_EHDR    = 2000, /**< Invalid Audio Header = 2000 */
-    SOX_EFMT,                     /**< Unsupported data format = 2001 */
-    SOX_ENOMEM,                   /**< Can't alloc memory = 2002 */
-    SOX_EPERM,                    /**< Operation not permitted = 2003 */
-    SOX_ENOTSUP,                  /**< Operation not supported = 2004 */
-    SOX_EINVAL                    /**< Invalid argument = 2005 */
+    SOX_EFMT,           /**< Unsupported data format = 2001 */
+    SOX_ENOMEM,         /**< Can't alloc memory = 2002 */
+    SOX_EPERM,          /**< Operation not permitted = 2003 */
+    SOX_ENOTSUP,        /**< Operation not supported = 2004 */
+    SOX_EINVAL          /**< Invalid argument = 2005 */
 };
 
 /**

@@ -26,6 +26,19 @@ public class Fader: EngineNodeAU, TypeDescribable {
 
     // MARK: - Parameters
 
+    /// Left Channel Amplification Factor
+    @Parameter(FaderParameter.leftGain.parameterDef) public var leftGain: AUValue
+
+    /// Right Channel Amplification Factor
+    @Parameter(FaderParameter.rightGain.parameterDef) public var rightGain: AUValue
+
+    /// Flip left and right signal
+    @Parameter(FaderParameter.flipStereo.parameterDef) public var flipStereo: Bool
+
+    /// Specification for whether to mix the stereo signal down to mono
+    /// Make the output on left and right both be the same combination of incoming left and mixed equally
+    @Parameter(FaderParameter.mixToMono.parameterDef) public var mixToMono: Bool
+
     /// Amplification Factor, from 0 ... x
     open var gain: AUValue = 1 {
         willSet {
@@ -34,66 +47,11 @@ public class Fader: EngineNodeAU, TypeDescribable {
         }
     }
 
-    /// Gain can be any non-negative number -- however 0 - 4 is
-    /// a practical range: 0 ... +12dB
-    public static let defaultGainRange: ClosedRange<AUValue> = 0 ... 4
-
-    /// Specification details for left gain
-    public static let leftGainDef = NodeParameterDef(
-        identifier: "leftGain",
-        name: "Left Gain",
-        address: getParameterAddressDSP("FaderParameterLeftGain"),
-        defaultValue: 1,
-        range: Fader.defaultGainRange,
-        unit: .linearGain)
-
-    /// Left Channel Amplification Factor
-    @Parameter(leftGainDef) public var leftGain: AUValue
-
-    /// Specification details for right gain
-    public static let rightGainDef = NodeParameterDef(
-        identifier: "rightGain",
-        name: "Right Gain",
-        address: getParameterAddressDSP("FaderParameterRightGain"),
-        defaultValue: 1,
-        range: Fader.defaultGainRange,
-        unit: .linearGain
-    )
-
-    /// Right Channel Amplification Factor
-    @Parameter(rightGainDef) public var rightGain: AUValue
-
     /// Amplification Factor in db
     public var dB: AUValue {
         get { gain.dBValue }
         set { gain = newValue.linearValue }
     }
-
-    /// Whether or not to flip left and right channels
-    public static let flipStereoDef = NodeParameterDef(
-        identifier: "flipStereo",
-        name: "Flip Stereo",
-        address: getParameterAddressDSP("FaderParameterFlipStereo"),
-        defaultValue: 0,
-        range: AUValue.unitIntervalRange,
-        unit: .boolean
-    )
-
-    /// Flip left and right signal
-    @Parameter(flipStereoDef) public var flipStereo: Bool
-
-    /// Specification for whether to mix the stereo signal down to mono
-    public static let mixToMonoDef = NodeParameterDef(
-        identifier: "mixToMono",
-        name: "Mix To Mono",
-        address: getParameterAddressDSP("FaderParameterMixToMono"),
-        defaultValue: 0,
-        range: AUValue.unitIntervalRange,
-        unit: .boolean
-    )
-
-    /// Make the output on left and right both be the same combination of incoming left and mixed equally
-    @Parameter(mixToMonoDef) public var mixToMono: Bool
 
     // MARK: - Initialization
 
@@ -103,7 +61,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
     ///   - gain: Amplification factor (Default: 1, Minimum: 0)
     ///
     public init(gain: AUValue = 1) async throws {
-        let subType = try FourCharCode.from(string: "fder")
+        let subType = try FourCharCode.from(string: kAudioUnitFaderSubTypeString)
 
         audioComponentDescription = AudioComponentDescription(
             componentType: kAudioUnitType_MusicEffect,
@@ -150,7 +108,6 @@ extension Fader {
         $rightGain.ramp(from: start, to: target, duration: duration)
     }
 
-    /// Stop automation
     public func stopAutomation() throws {
         try $leftGain.stopAutomation()
         try $rightGain.stopAutomation()

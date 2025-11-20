@@ -1,14 +1,9 @@
-// Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Heavily based on the AudioKit version. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
 #include "DSPBase.h"
+#include "FaderDSP.h"
 #include "ParameterRamper.h"
-
-enum FaderParameter : AUParameterAddress {
-    FaderParameterLeftGain,
-    FaderParameterRightGain,
-    FaderParameterFlipStereo,
-    FaderParameterMixToMono
-};
 
 struct FaderDSP : DSPBase {
 private:
@@ -99,7 +94,7 @@ public:
     }
 };
 
-AK_REGISTER_DSP(FaderDSP, "fder") // should match what is in Fader.swift
+AK_REGISTER_DSP(FaderDSP, [kAudioUnitFaderSubTypeString cStringUsingEncoding:NSUTF8StringEncoding])
 AK_REGISTER_PARAMETER(FaderParameterLeftGain)
 AK_REGISTER_PARAMETER(FaderParameterRightGain)
 AK_REGISTER_PARAMETER(FaderParameterFlipStereo)

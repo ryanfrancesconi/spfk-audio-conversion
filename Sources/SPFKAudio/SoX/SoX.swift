@@ -45,7 +45,7 @@ public actor SoX {
             endTimeStr = "=" + String(endTime)
         }
 
-        sox.trim(input.path, output: output.path, startTime: String(startTime), endTime: endTimeStr)
+        let status = sox.trim(input.path, output: output.path, startTime: String(startTime), endTime: endTimeStr)
 
         return output.exists
     }
