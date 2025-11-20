@@ -42,7 +42,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
     public static let leftGainDef = NodeParameterDef(
         identifier: "leftGain",
         name: "Left Gain",
-        address: akGetParameterAddress("FaderParameterLeftGain"),
+        address: getParameterAddressDSP("FaderParameterLeftGain"),
         defaultValue: 1,
         range: Fader.defaultGainRange,
         unit: .linearGain)
@@ -54,7 +54,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
     public static let rightGainDef = NodeParameterDef(
         identifier: "rightGain",
         name: "Right Gain",
-        address: akGetParameterAddress("FaderParameterRightGain"),
+        address: getParameterAddressDSP("FaderParameterRightGain"),
         defaultValue: 1,
         range: Fader.defaultGainRange,
         unit: .linearGain
@@ -73,7 +73,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
     public static let flipStereoDef = NodeParameterDef(
         identifier: "flipStereo",
         name: "Flip Stereo",
-        address: akGetParameterAddress("FaderParameterFlipStereo"),
+        address: getParameterAddressDSP("FaderParameterFlipStereo"),
         defaultValue: 0,
         range: AUValue.unitIntervalRange,
         unit: .boolean
@@ -86,7 +86,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
     public static let mixToMonoDef = NodeParameterDef(
         identifier: "mixToMono",
         name: "Mix To Mono",
-        address: akGetParameterAddress("FaderParameterMixToMono"),
+        address: getParameterAddressDSP("FaderParameterMixToMono"),
         defaultValue: 0,
         range: AUValue.unitIntervalRange,
         unit: .boolean

@@ -19,15 +19,6 @@ extension AudioFormatConverter {
 }
 
 public extension AudioFormatConverter {
-    static func createError(message: String, code: Int = 1) -> NSError {
-        let userInfo = [NSLocalizedDescriptionKey: message]
-        return NSError(domain: "com.audiodesigndesk.FormatConverter.error",
-                       code: code,
-                       userInfo: userInfo)
-    }
-}
-
-public extension AudioFormatConverter {
     /// Is this file a PCM file?
     /// - Parameters:
     ///   - url: The URL to parse
@@ -117,5 +108,31 @@ public extension AudioFormatConverter {
             // basically all other format IDs are compressed
             return true
         }
+    }
+}
+
+extension AudioFormatConverter {
+    /// Convenience function for common conversion to wave
+    @discardableResult
+    public static func convertToWave(
+        inputURL: URL,
+        outputURL: URL,
+        sampleRate: Double?,
+        bitDepth: UInt32 = 16
+    ) async throws -> URL {
+        var options = AudioFormatConverterOptions()
+        options.bitsPerChannel = bitDepth
+        options.sampleRate = sampleRate
+        options.format = .wav
+
+        let converter = AudioFormatConverter(
+            inputURL: inputURL,
+            outputURL: outputURL,
+            options: options
+        )
+
+        try await converter.convertToPCM()
+
+        return outputURL
     }
 }

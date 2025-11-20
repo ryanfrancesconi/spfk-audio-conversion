@@ -151,10 +151,11 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
         if await hasInputDevice,
            let device = await selectedInputDevice {
-            if !device.setBufferFrameSize(bufferSize, scope: .input) {
+            if kAudioHardwareNoError != device.setBufferFrameSize(bufferSize, scope: .input) {
                 Log.error("Unable to set input buffer frame size for", device.name)
             }
-            if !device.setBufferFrameSize(bufferSize, scope: .output) {
+
+            if kAudioHardwareNoError != device.setBufferFrameSize(bufferSize, scope: .output) {
                 Log.error("Unable to set output buffer frame size for", device.name)
             }
 
@@ -162,10 +163,11 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         }
 
         if let device = await selectedOutputDevice {
-            if !device.setBufferFrameSize(bufferSize, scope: .input) {
+            if kAudioHardwareNoError != device.setBufferFrameSize(bufferSize, scope: .input) {
                 Log.error("Unable to set input buffer frame size for", device.name)
             }
-            if !device.setBufferFrameSize(bufferSize, scope: .output) {
+
+            if kAudioHardwareNoError != device.setBufferFrameSize(bufferSize, scope: .output) {
                 Log.error("Unable to set output buffer frame size for", device.name)
             }
 

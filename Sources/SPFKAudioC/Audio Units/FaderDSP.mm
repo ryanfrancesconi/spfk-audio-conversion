@@ -4,92 +4,99 @@
 #include "ParameterRamper.h"
 
 enum FaderParameter : AUParameterAddress {
-	FaderParameterLeftGain,
-	FaderParameterRightGain,
-	FaderParameterFlipStereo,
-	FaderParameterMixToMono
+    FaderParameterLeftGain,
+    FaderParameterRightGain,
+    FaderParameterFlipStereo,
+    FaderParameterMixToMono
 };
-
 
 struct FaderDSP : DSPBase {
 private:
-	ParameterRamper leftGainRamp {1.0};
-	ParameterRamper rightGainRamp {1.0};
-	bool flipStereo = false;
-	bool mixToMono = false;
+    ParameterRamper leftGainRamp {
+        1.0
+    };
+    ParameterRamper rightGainRamp {
+        1.0
+    };
+    bool flipStereo = false;
+    bool mixToMono = false;
 
 public:
-	FaderDSP() : DSPBase(1, true) {
-		parameters[FaderParameterLeftGain] = &leftGainRamp;
-		parameters[FaderParameterRightGain] = &rightGainRamp;
-	}
+    FaderDSP() : DSPBase(1, true) {
+        parameters[FaderParameterLeftGain] = &leftGainRamp;
+        parameters[FaderParameterRightGain] = &rightGainRamp;
+    }
 
-	// Uses the ParameterAddress as a key
-	void setParameter(AUParameterAddress address, AUValue value, bool immediate) override {
-		switch (address) {
-		case FaderParameterFlipStereo:
-			flipStereo = value > 0.5f;
-			break;
-		case FaderParameterMixToMono:
-			mixToMono = value > 0.5f;
-			break;
-		default:
-			DSPBase::setParameter(address, value, immediate);
-		}
-	}
+    // Uses the ParameterAddress as a key
+    void setParameter(AUParameterAddress address, AUValue value, bool immediate) override {
+        switch (address) {
+            case FaderParameterFlipStereo:
+                flipStereo = value > 0.5f;
+                break;
 
-	// Uses the ParameterAddress as a key
-	float getParameter(AUParameterAddress address) override {
-		switch (address) {
-		case FaderParameterFlipStereo:
-			return flipStereo ? 1.f : 0.f;
-		case FaderParameterMixToMono:
-			return mixToMono ? 1.f : 0.f;
-		default:
-			return DSPBase::getParameter(address);
-		}
-	}
+            case FaderParameterMixToMono:
+                mixToMono = value > 0.5f;
+                break;
 
-	void startRamp(const AUParameterEvent &event) override {
-		auto address = event.parameterAddress;
-		switch (address) {
-		case FaderParameterFlipStereo:
-			flipStereo = event.value > 0.5f;
-			break;
-		case FaderParameterMixToMono:
-			mixToMono = event.value > 0.5f;
-			break;
-		default:
-			DSPBase::startRamp(event);
-		}
-	}
+            default:
+                DSPBase::setParameter(address, value, immediate);
+        }
+    }
 
-	void process(FrameRange range) override {
-		for(auto i : range) {
+    // Uses the ParameterAddress as a key
+    float getParameter(AUParameterAddress address) override {
+        switch (address) {
+            case FaderParameterFlipStereo:
+                return flipStereo ? 1.f : 0.f;
 
-			float leftIn = inputSample(0, i);
-			float rightIn = inputSample(1, i);
+            case FaderParameterMixToMono:
+                return mixToMono ? 1.f : 0.f;
 
-			float& leftOut = outputSample(0, i);
-			float& rightOut = outputSample(1, i);
+            default:
+                return DSPBase::getParameter(address);
+        }
+    }
 
-			float leftGain = leftGainRamp.getAndStep();
-			float rightGain = rightGainRamp.getAndStep();
+    void startRamp(const AUParameterEvent &event) override {
+        auto address = event.parameterAddress;
 
-			if(mixToMono) {
-				leftOut = rightOut = 0.5 * (leftIn * leftGain + rightIn * rightGain);
-			} else {
+        switch (address) {
+            case FaderParameterFlipStereo:
+                flipStereo = event.value > 0.5f;
+                break;
 
-				if(flipStereo) {
-					std::swap(leftIn, rightIn);
-				}
+            case FaderParameterMixToMono:
+                mixToMono = event.value > 0.5f;
+                break;
 
-				leftOut = leftIn * leftGain;
-				rightOut = rightIn * rightGain;
+            default:
+                DSPBase::startRamp(event);
+        }
+    }
 
-			}
-		}
-	}
+    void process(FrameRange range) override {
+        for (auto i : range) {
+            float leftIn = inputSample(0, i);
+            float rightIn = inputSample(1, i);
+
+            float& leftOut = outputSample(0, i);
+            float& rightOut = outputSample(1, i);
+
+            float leftGain = leftGainRamp.getAndStep();
+            float rightGain = rightGainRamp.getAndStep();
+
+            if (mixToMono) {
+                leftOut = rightOut = 0.5 * (leftIn * leftGain + rightIn * rightGain);
+            } else {
+                if (flipStereo) {
+                    std::swap(leftIn, rightIn);
+                }
+
+                leftOut = leftIn * leftGain;
+                rightOut = rightIn * rightGain;
+            }
+        }
+    }
 };
 
 AK_REGISTER_DSP(FaderDSP, "fder") // should match what is in Fader.swift

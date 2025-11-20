@@ -24,11 +24,11 @@ struct AutomationEvent {
 #ifndef __cplusplus
 
 /// Returns a render observer block which will apply the automation to the selected parameter.
-AURenderObserver ParameterAutomationGetRenderObserver(AUParameterAddress address,
-                                                      AUScheduleParameterBlock scheduleParameterBlock,
-                                                      float sampleRate,
-                                                      float startSampleTime,
-                                                      const struct AutomationEvent* events,
-                                                      size_t count);
+AURenderObserver ParameterAutomationGetRenderObserver(AUParameterAddress           address,
+                                                      AUScheduleParameterBlock     scheduleParameterBlock,
+                                                      float                        sampleRate,
+                                                      float                        startSampleTime,
+                                                      const struct AutomationEvent *events,
+                                                      size_t                       count);
 
-#endif
+#endif // !__cplusplus

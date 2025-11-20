@@ -21,6 +21,7 @@ final class AudioDeviceManagerTests: TestCaseModel {
         Log.debug(await dm.detailedDescription)
     }
 
+    // This test will thrash all devices
     @Test func changeSampleRate() async throws {
         for device in await dm.allDevices {
             try await testSampleRates(for: device)
@@ -34,10 +35,10 @@ final class AudioDeviceManagerTests: TestCaseModel {
 
         Log.debug(device.name, supportedSampleRates)
 
-        let sampleRate = try #require(device.nominalSampleRate)
+        let currentRate = try #require(device.nominalSampleRate)
 
         await #expect(throws: Error.self) {
-            try await dm.setSampleRate(device: device, to: 8000)
+            try await dm.setSampleRate(device: device, to: 1024)
         }
 
         for rate in supportedSampleRates {
@@ -46,11 +47,6 @@ final class AudioDeviceManagerTests: TestCaseModel {
             #expect(device.nominalSampleRate == rate, "\(device.name)")
         }
 
-        try await dm.setSampleRate(device: device, to: sampleRate)
-
-        try await wait(sec: 1)
-
-        // will be ignored
-        try await dm.setSampleRate(device: device, to: sampleRate)
+        try await dm.setSampleRate(device: device, to: currentRate) // put it back
     }
 }

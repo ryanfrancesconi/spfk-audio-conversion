@@ -24,7 +24,7 @@ extension AudioFormatConverter {
         let list = await session.compatibleFileTypes
 
         guard let outputFileType: AVFileType = list.first else {
-            throw Self.createError(message: "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)")
+            throw NSError(description: "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)")
         }
 
         session.outputURL = source.output
@@ -39,36 +39,46 @@ extension AudioFormatConverter {
 // MARK: - internal helper functions
 
 extension AudioFormatConverter {
+    func createTempFile(inputURL: URL, in directory: URL) async throws -> URL {
+        var tempOptions = AudioFormatConverterOptions()
+        tempOptions.bitDepthRule = .lessThanOrEqual
+        tempOptions.bitsPerChannel = 24
+        tempOptions.sampleRate = source.options.sampleRate
+        tempOptions.channels = source.options.channels ?? 2
+        tempOptions.format = .wav
+
+        let tempName = inputURL.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
+        // let temp = source.output.deletingLastPathComponent().appendingPathComponent(tempName)
+        let output = directory.appendingPathComponent(tempName)
+
+        let tempConverter = AudioFormatConverter(
+            inputURL: inputURL,
+            outputURL: output,
+            options: tempOptions
+        )
+
+        try await tempConverter.convertToPCM()
+
+        return output
+    }
+
+    /// Using SoX for mp3 conversion
     func convertToMP3() async throws {
         var inputURL = source.input
 
         let inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
+
         let supportedInput = inputFormat == .wav ||
             inputFormat == .aiff ||
             inputFormat == .mp3
 
-        let supportedChannels = source.asset.audioFormat?.channelCount ?? 0 <= 2
+        let supportedChannels = (source.asset.audioFormat?.channelCount ?? 0) <= 2
 
         var tempFile: URL?
 
-        if !supportedInput || !supportedChannels { // GROSS
-            var tempOptions = AudioFormatConverterOptions()
-            tempOptions.bitDepthRule = .lessThanOrEqual
-            tempOptions.bitsPerChannel = 24
-            tempOptions.sampleRate = source.options.sampleRate
-            tempOptions.channels = source.options.channels ?? 2
-            tempOptions.format = .wav
-
-            let tempName = source.output.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
-            let temp = source.output.deletingLastPathComponent().appendingPathComponent(tempName)
-
-            let tempConverter = AudioFormatConverter(
-                inputURL: inputURL,
-                outputURL: temp,
-                options: tempOptions
-            )
-
-            try await tempConverter.convertToPCM()
+        // sox has limited input compatibility, so convert to wave if needed
+        if !supportedInput || !supportedChannels {
+            let temp = try await createTempFile(inputURL: inputURL, in: source.output.deletingLastPathComponent())
 
             if temp.exists {
                 inputURL = temp

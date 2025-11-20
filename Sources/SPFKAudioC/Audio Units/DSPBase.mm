@@ -108,7 +108,6 @@ AUInternalRenderBlock DSPBase::internalRenderBlock() {
                }
 
                outputBufferList = outputData;
-
                processWithEvents(timestamp, frameCount, realtimeEventListHead);
 
                return noErr;
@@ -265,8 +264,6 @@ void DSPBase::startRamp(const AUParameterEvent& event) {
     }
 }
 
-using DSPFactoryMap = std::map<std::string, DSPBase::CreateFunction>;
-
 void DSPBase::stepRampsBy(AUAudioFrameCount frames) {
     for (int index = 0; index < maxParameters; ++index) {
         if (parameters[index]) {
@@ -295,6 +292,9 @@ void DSPBase::cloneFirstChannel(FrameRange range) {
 //
 // Note that this is a pointer because we can't guarantee the
 // order of initialization code. So we lazily init.
+
+using DSPFactoryMap = std::map<std::string, DSPBase::CreateFunction>;
+
 static DSPFactoryMap *factoryMap = nullptr;
 
 void DSPBase::addCreateFunction(const char *name, CreateFunction func) {
@@ -320,29 +320,29 @@ DSPRef DSPBase::create(const char *name) {
     return iter->second();
 }
 
-DSPRef akCreateDSP(OSType code) {
+DSPRef createDSP(OSType code) {
     char name[5] = {
         0
     };
 
-    name[0] = (code >> 24) & 0xff;
+    name[0] = (code >> 24)  & 0xff;
     name[1] = (code >> 16)  & 0xff;
-    name[2] = (code >> 8) & 0xff;
-    name[3] = code & 0xff;
+    name[2] = (code >> 8)   & 0xff;
+    name[3] = code          & 0xff;
     return DSPBase::create(name);
 }
 
-using DSPParameterMap = std::map< std::string, AUParameterAddress >;
+using DSPParameterMap = std::map<std::string, AUParameterAddress>;
 
 static DSPParameterMap *paramMap = nullptr;
 
-AUParameterAddress akGetParameterAddress(const char *name) {
-    assert(paramMap && "akGetParameterAddress: Fatal error: parameter map not initialized.");
+AUParameterAddress getParameterAddressDSP(const char *name) {
+    assert(paramMap && "getParameterAddressDSP: Fatal error: parameter map not initialized.");
 
     auto iter = paramMap->find(name);
 
     if (iter == paramMap->end()) {
-        printf("akGetParameterAddress: Unknown parameter name: %s\n", name);
+        printf("getParameterAddressDSP: Unknown parameter name: %s\n", name);
         return 0;
     }
 
@@ -357,8 +357,4 @@ void DSPBase::addParameter(const char *name, AUParameterAddress address) {
     assert(paramMap->count(name) == 0 && "Parameter already registered.");
 
     (*paramMap)[name] = address;
-}
-
-void akSetSeed(unsigned int seed) {
-    srand(seed);
 }

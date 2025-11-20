@@ -70,30 +70,32 @@ private let targets: [PackageDescription.Target] = [
         ]
     ),
     
-        .binaryTarget(
-            name: "libsamplerate",
-            path: "Frameworks/libsamplerate.xcframework" // relative to the package root
-        ),
-        
-        .binaryTarget(
-            name: "libsox",
-            path: "Frameworks/libsox.xcframework"
-        ),
+    // path: relative to the package root
 
-        .binaryTarget(
-            name: "libmad",
-            path: "Frameworks/libmad.xcframework"
-        ),
+    .binaryTarget(
+        name: "libsamplerate",
+        path: "Frameworks/libsamplerate.xcframework"
+    ),
+    
+    .binaryTarget(
+        name: "libsox",
+        path: "Frameworks/libsox.xcframework"
+    ),
 
-        .binaryTarget(
-            name: "libmp3lame",
-            path: "Frameworks/libmp3lame.xcframework"
-        ),
+    .binaryTarget(
+        name: "libmad",
+        path: "Frameworks/libmad.xcframework"
+    ),
 
-        .binaryTarget(
-            name: "libmpg123",
-            path: "Frameworks/libmpg123.xcframework"
-        ),
+    .binaryTarget(
+        name: "libmp3lame",
+        path: "Frameworks/libmp3lame.xcframework"
+    ),
+
+    .binaryTarget(
+        name: "libmpg123",
+        path: "Frameworks/libmpg123.xcframework"
+    ),
 
 
     .testTarget(

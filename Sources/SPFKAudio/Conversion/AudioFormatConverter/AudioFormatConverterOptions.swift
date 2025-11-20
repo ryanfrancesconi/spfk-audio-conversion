@@ -56,7 +56,7 @@ public struct AudioFormatConverterOptions {
         }
     }
 
-    /// used only when outputting compressed audio
+    /// bytes per second: used only when outputting compressed audio
     public var bitRate: UInt32 = 256000 {
         didSet {
             if bitRate < Self.bitRange.lowerBound {

@@ -28,19 +28,23 @@ open class AudioKitAU: AUAudioUnit {
         try super.allocateRenderResources()
 
         if let inputFormat = inputBusArray.first?.format {
-            // we don't need to allocate a buffer if we can process in place
-            if !canProcessInPlace || inputBusArray.count > 1 {
-                for i in inputBusArray.indices {
-                    if let buffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: maximumFramesToRender) {
-                        setBufferDSP(dsp, buffer.mutableAudioBufferList, i)
-                        internalBuffers.append(buffer)
-                    }
-                }
-            }
+            update(inputFormat: inputFormat)
         }
 
         if let outputFormat = outputBusArray.first?.format {
             allocateRenderResourcesDSP(dsp, outputFormat.channelCount, outputFormat.sampleRate)
+        }
+    }
+
+    private func update(inputFormat: AVAudioFormat) {
+        // we don't need to allocate a buffer if we can process in place
+        guard !canProcessInPlace || inputBusArray.count > 1 else { return }
+
+        for i in inputBusArray.indices {
+            if let buffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: maximumFramesToRender) {
+                setBufferDSP(dsp, buffer.mutableAudioBufferList, i)
+                internalBuffers.append(buffer)
+            }
         }
     }
 
@@ -127,7 +131,7 @@ open class AudioKitAU: AUAudioUnit {
         options: AudioComponentInstantiationOptions = []
     ) throws {
         // Create pointer to C++ DSP code.
-        guard let dsp = akCreateDSP(componentDescription.componentSubType) else {
+        guard let dsp = createDSP(componentDescription.componentSubType) else {
             throw NSError(description: "Failed to create DSP for \(componentDescription)")
         }
 

@@ -6,20 +6,20 @@
 @implementation AudioUnitStateC
 
 + (OSStatus)loadFactoryPreset:(AudioUnit)audioUnit
-                        named:(NSString *)name
-{
+                        named:(NSString *)name {
     OSStatus status;
 
     // Retrieve the list of factory presets
     CFArrayRef array;
     UInt32 dataSize = sizeof(CFArrayRef);
 
-    status = AudioUnitGetProperty(audioUnit,
-                                  kAudioUnitProperty_FactoryPresets,
-                                  kAudioUnitScope_Global,
-                                  0,
-                                  &array,
-                                  &dataSize);
+    status = AudioUnitGetProperty(
+        audioUnit,
+        kAudioUnitProperty_FactoryPresets,
+        kAudioUnitScope_Global,
+        0,
+        &array,
+        &dataSize);
 
     if (status != noErr) {
         return status;
@@ -41,12 +41,13 @@
     if (index < count) {
         AUPreset *preset = (AUPreset *)CFArrayGetValueAtIndex(array, index);
 
-        status = AudioUnitSetProperty(audioUnit,
-                                      kAudioUnitProperty_PresentPreset,
-                                      kAudioUnitScope_Global,
-                                      0,
-                                      preset,
-                                      sizeof(AUPreset));
+        status = AudioUnitSetProperty(
+            audioUnit,
+            kAudioUnitProperty_PresentPreset,
+            kAudioUnitScope_Global,
+            0,
+            preset,
+            sizeof(AUPreset));
 
         if (status == noErr) {
             AudioUnitParameter aup;
@@ -65,8 +66,7 @@
 
 /// Must notify the host that a parameter has been changed, blast out all parameters with this function
 /// useful in the case of preset loading
-+ (OSStatus)notifyAudioUnitListener:(AudioUnit)audioUnit
-{
++ (OSStatus)notifyAudioUnitListener:(AudioUnit)audioUnit {
     //  Get number of parameters in this unit (size in bytes really):
     UInt32 parameterListSize = 0;
     OSStatus status;

@@ -6,7 +6,6 @@ import Foundation
 import SPFKAudioC
 import SPFKUtils
 
-// This subclass exists because these things are simpler to do in Swift, whereas the AudioUnitStateC things are easier in C.
 // TODO: review apis added after this class was written for preset management (if os available)
 
 public class AudioUnitState: AudioUnitStateC {

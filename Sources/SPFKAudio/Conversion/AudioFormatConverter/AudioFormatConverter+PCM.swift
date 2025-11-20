@@ -3,8 +3,6 @@
 import AVFoundation
 import SPFKUtils
 
-// MARK: - internal helper functions
-
 extension AudioFormatConverter {
     public func convertToPCM() async throws {
         guard let outputFormat = source.options.format else {
@@ -32,21 +30,22 @@ extension AudioFormatConverter {
 
         var inputFile: ExtAudioFileRef?
         var outputFile: ExtAudioFileRef?
-        var err: OSStatus = noErr
+        var status: OSStatus = noErr
 
         func closeFiles() {
-            if let strongFile = inputFile {
-                if noErr != ExtAudioFileDispose(strongFile) {
-                    Log.error("Error disposing input file, could have a memory leak")
+            if let inputFile {
+                if noErr != ExtAudioFileDispose(inputFile) {
+                    Log.error("Error disposing input file at \(inputURL)")
                 }
             }
-            inputFile = nil
 
-            if let strongFile = outputFile {
-                if noErr != ExtAudioFileDispose(strongFile) {
-                    Log.error("Error disposing output file, could have a memory leak")
+            if let outputFile {
+                if noErr != ExtAudioFileDispose(outputFile) {
+                    Log.error("Error disposing output file at \(outputURL)")
                 }
             }
+
+            inputFile = nil
             outputFile = nil
         }
 
@@ -94,7 +93,7 @@ extension AudioFormatConverter {
         }
 
         // Create destination file
-        err = ExtAudioFileCreateWithURL(
+        status = ExtAudioFileCreateWithURL(
             outputURL as CFURL,
             format,
             &outputDescription,
@@ -103,8 +102,8 @@ extension AudioFormatConverter {
             &outputFile
         )
 
-        if err != noErr {
-            let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(err.string) (\(err.fourCharCodeToString())"
+        if status != noErr {
+            let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(status.string) (\(status.fourCharCodeToString())"
 
             throw NSError(description: message)
         }
@@ -141,12 +140,12 @@ extension AudioFormatConverter {
 
         var error: Error?
 
-        srcBuffer.withUnsafeMutableBytes { body in
+        srcBuffer.withUnsafeMutableBytes { srcBufferPtr in
             while true {
                 let mBuffer = AudioBuffer(
                     mNumberChannels: inputDescription.mChannelsPerFrame,
                     mDataByteSize: bufferByteSize,
-                    mData: body.baseAddress
+                    mData: srcBufferPtr.baseAddress
                 )
 
                 var fillBufList = AudioBufferList(mNumberBuffers: 1,
@@ -157,11 +156,10 @@ extension AudioFormatConverter {
                     frameCount = bufferByteSize / outputDescription.mBytesPerFrame
                 }
 
-                let readError = ExtAudioFileRead(strongInputFile,
-                                                 &frameCount,
-                                                 &fillBufList)
+                let readError = ExtAudioFileRead(strongInputFile, &frameCount, &fillBufList)
+
                 if noErr != readError {
-                    error = Self.createError(message: "Error reading from the input file.", code: Int(readError))
+                    error = NSError(code: Int(readError), description: "Error reading from the input file.")
                     break
                 }
 
@@ -172,11 +170,10 @@ extension AudioFormatConverter {
 
                 sourceFrameOffset += frameCount
 
-                let writeError = ExtAudioFileWrite(strongOutputFile,
-                                                   frameCount,
-                                                   &fillBufList)
+                let writeError = ExtAudioFileWrite(strongOutputFile, frameCount, &fillBufList)
+
                 if noErr != writeError {
-                    error = Self.createError(message: "Error writing to the output file.", code: Int(writeError))
+                    error = NSError(code: Int(writeError), description: "Error writing to the output file.")
                     break
                 }
             }
@@ -235,28 +232,5 @@ extension AudioFormatConverter {
             mBitsPerChannel: mBitsPerChannel,
             mReserved: 0
         )
-    }
-
-    @discardableResult
-    public static func convertToWave(
-        inputURL: URL,
-        outputURL: URL,
-        sampleRate: Double?,
-        bitDepth: UInt32 = 16
-    ) async throws -> URL {
-        var options = AudioFormatConverterOptions()
-        options.bitsPerChannel = bitDepth
-        options.sampleRate = sampleRate
-        options.format = .wav
-
-        let converter = AudioFormatConverter(
-            inputURL: inputURL,
-            outputURL: outputURL,
-            options: options
-        )
-
-        try await converter.convertToPCM()
-
-        return outputURL
     }
 }
