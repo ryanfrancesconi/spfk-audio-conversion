@@ -17,12 +17,14 @@ final class AudioDeviceManagerTests: TestCaseModel {
         await dm.setup()
     }
 
-    @Test func changeSampleRate() async throws {
-        let inputDevice = try #require(await dm.selectedInputDevice)
-        let outputDevice = try #require(await dm.selectedOutputDevice)
+    @Test func printDescription() async throws {
+        Log.debug(await dm.detailedDescription)
+    }
 
-        try await testSampleRates(for: inputDevice)
-        try await testSampleRates(for: outputDevice)
+    @Test func changeSampleRate() async throws {
+        for device in await dm.allDevices {
+            try await testSampleRates(for: device)
+        }
     }
 
     func testSampleRates(for device: AudioDevice) async throws {
