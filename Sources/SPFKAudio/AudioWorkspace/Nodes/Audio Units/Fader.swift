@@ -61,7 +61,7 @@ public class Fader: EngineNodeAU, TypeDescribable {
     ///   - gain: Amplification factor (Default: 1, Minimum: 0)
     ///
     public init(gain: AUValue = 1) async throws {
-        let subType = try FourCharCode.from(string: kAudioUnitFaderSubTypeString)
+        let subType = kAudioUnitFaderSubTypeString.fourCC ?? 0
 
         audioComponentDescription = AudioComponentDescription(
             componentType: kAudioUnitType_MusicEffect,

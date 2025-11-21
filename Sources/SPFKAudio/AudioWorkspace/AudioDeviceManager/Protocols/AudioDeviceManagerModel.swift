@@ -11,6 +11,7 @@ public protocol AudioDeviceManagerModel {
     var engineOutputNode: AVAudioOutputNode? { get }
 
     var allDevices: [AudioDevice] { get async }
+    
     var selectedInputDevice: AudioDevice? { get async }
     var selectedOutputDevice: AudioDevice? { get async }
     var defaultInputDevice: AudioDevice? { get async }

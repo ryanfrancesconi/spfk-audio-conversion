@@ -33,9 +33,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
     var hardwareObservers: [NSObjectProtocol] = []
 
-//    var inputDeviceObserver: NSObjectProtocol?
-//    var outputDeviceObserver: NSObjectProtocol?
-
     public private(set) var hardware: AudioHardwareManager?
 
     // MARK: - Latency
@@ -114,6 +111,8 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     }
 
     public func setup(settings: AudioDeviceSettings = .init()) async {
+        Log.debug(settings)
+
         hardware = await AudioHardwareManager()
 
         let defaultInputUID = await hardware?.defaultInputDevice?.uid
@@ -125,7 +124,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
             outputUID: settings.outputUID ?? defaultOutputUID
         )
 
-        Log.debug(deviceSettings)
 
         addHardwareObservers()
     }

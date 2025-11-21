@@ -110,14 +110,14 @@ extension AudioFormatConverter {
             throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
         }
 
-        await SoX.shared.convertMP3(
+        let result = await SoX.shared.convertMP3(
             input: inputURL,
             output: outputURL,
             bitRate: options.bitRate / 1000, // sox bit rate is kbps
             sampleRate: options.sampleRate
         )
 
-        guard outputURL.exists else {
+        guard result, outputURL.exists else {
             throw NSError(description: "Failed to convert to MP3: \(inputURL.lastPathComponent)")
         }
     }

@@ -5,13 +5,13 @@ import SPFKTesting
 import SPFKUtils
 import Testing
 
-@Suite(.tags(.file))
+@Suite(.tags(.file), .serialized)
 class SoXTests: BinTestCase {
     @Test func convertMP3() async throws {
         let input = TestBundleResources.shared.tabla_wav
         let output = bin.appendingPathComponent("test.mp3")
 
-        await SoX.shared.convertMP3(input: input, output: output, bitRate: 256, sampleRate: 48000)
+        #expect(await SoX.shared.convertMP3(input: input, output: output, bitRate: 256, sampleRate: 48000))
 
         let avFile = try AVAudioFile(forReading: output)
         #expect(avFile.duration == 4.44)
@@ -26,7 +26,7 @@ class SoXTests: BinTestCase {
         for format in formats {
             let output = bin.appendingPathComponent("test.\(format.pathExtension)")
 
-            await SoX.shared.convertPCM(input: input, output: output, bitDepth: 24, sampleRate: 48000)
+            #expect(await SoX.shared.convertPCM(input: input, output: output, bitDepth: 24, sampleRate: 48000))
 
             let avFile = try AVAudioFile(forReading: output)
 
@@ -117,9 +117,7 @@ class SoXTests: BinTestCase {
     @Test func stereoToMono() async throws {
         let input = TestBundleResources.shared.tabla_wav
 
-        let result = try #require(
-            await SoX.shared.stereoToMono(source: input, destination: bin)
-        )
+        let result = try await SoX.shared.stereoToMono(source: input, destination: bin)
 
         let avFile = try AVAudioFile(forReading: result)
 

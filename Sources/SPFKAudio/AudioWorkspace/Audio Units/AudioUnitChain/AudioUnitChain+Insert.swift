@@ -80,7 +80,7 @@ extension AudioUnitChain {
             }
 
         default:
-            throw NSError(description: "Unsupported component type of \(ctype) \(ctype.fourCharCodeToString() ?? "????")")
+            throw NSError(description: "Unsupported component type of \(ctype) \(ctype.fourCC)")
         }
 
         guard let audioUnit else {

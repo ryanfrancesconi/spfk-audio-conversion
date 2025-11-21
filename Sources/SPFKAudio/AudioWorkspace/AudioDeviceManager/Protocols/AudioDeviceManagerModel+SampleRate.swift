@@ -61,7 +61,7 @@ extension AudioDeviceManagerModel {
             throw NSError(description: "\(device.name) doesn't support \(newValue) Hz. Available rate\(supportedRates.pluralString) \(supportedRatesString)")
         }
 
-        try await device.update(sampleRate: newValue)
+        try await device.updateAndWait(sampleRate: newValue)
 
         Log.debug("✓ Updated \(device.name) sample rate to", newValue)
     }

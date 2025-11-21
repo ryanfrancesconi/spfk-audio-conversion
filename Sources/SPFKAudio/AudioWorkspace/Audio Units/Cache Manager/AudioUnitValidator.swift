@@ -60,7 +60,7 @@ public class AudioUnitValidator {
         let err = AudioComponentValidate(component.audioComponent, validateParams, &result)
 
         guard err == noErr else {
-            Log.error("*AU AudioComponentValidate error", err.fourCharCodeToString())
+            Log.error("*AU AudioComponentValidate error", err.fourCC)
             return ValidationResult(result: .failed, output: nil)
         }
 
@@ -98,9 +98,9 @@ public class AudioUnitValidator {
 
         let args = [
             "-v",
-            desc.componentType.fourCharCodeToString(),
-            desc.componentSubType.fourCharCodeToString(),
-            desc.componentManufacturer.fourCharCodeToString(),
+            desc.componentType.fourCC,
+            desc.componentSubType.fourCC,
+            desc.componentManufacturer.fourCC,
         ].compactMap { $0 }
 
         Log.default("*AU validateExternal \(component.name):", cmd.lastPathComponent + " " + args.joined(separator: " "))

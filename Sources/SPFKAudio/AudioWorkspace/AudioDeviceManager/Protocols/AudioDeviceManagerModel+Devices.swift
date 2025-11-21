@@ -79,32 +79,6 @@ extension AudioDeviceManagerModel {
         }
     }
 
-    /// Search for input and output devices that have matching `modelUID` values such
-    /// as for bluetooth headphones that have an integrated mic.
-    public var deviceIOPairs: [LinkedAudioDevice] {
-        get async {
-            var out = [LinkedAudioDevice]()
-
-            let allDevices = await allDevices
-
-            let uids = allDevices.compactMap { $0.modelUID }.removingDuplicates()
-
-            for uid in uids {
-                let devices = allDevices.filter { $0.modelUID == uid }
-
-                let input = await devices.async.first { await $0.isInputOnlyDevice }
-                let output = await devices.async.first { await $0.isOutputOnlyDevice }
-
-                if let input, let output {
-                    out.append(
-                        LinkedAudioDevice(input: input, output: output)
-                    )
-                }
-            }
-            return out
-        }
-    }
-
     public func preferredChannelsDescription(device: AudioDevice, scope: Scope) async -> String? {
         guard let preferredChannelsForStereo = device.preferredChannelsForStereo(scope: scope) else { return nil }
 
@@ -122,5 +96,52 @@ extension AudioDeviceManagerModel {
         }
 
         return stringValues.joined(separator: " + ")
+    }
+}
+
+extension SplitAudioDevice {
+    public var description: String {
+        var out = ""
+
+        out += "input: \(input.description)"
+
+        if !inputIsSupported {
+            out += " (Unsupported Device) "
+        }
+
+        out += " output: \(output.description)"
+
+        if !outputIsSupported {
+            out += " (Unsupported Device) "
+        }
+
+        return out
+    }
+
+    /// Some bluetooth headphones like AirPods do not support clear disabling of input,
+    /// so in this case the only way to use them is by selecting a different input device
+    /// such as the internal mic. This is unintuitive.
+    public var supportsDisabledInput: Bool {
+        inputIsSupported
+    }
+
+    public var inputIsSupported: Bool {
+        guard let rates = input.getNominalSampleRates(scope: .input) else {
+            return false
+        }
+
+        return check(rates: rates)
+    }
+
+    public var outputIsSupported: Bool {
+        guard let rates = output.getNominalSampleRates(scope: .output) else {
+            return false
+        }
+
+        return check(rates: rates)
+    }
+
+    private func check(rates: [Double]) -> Bool {
+        rates.contains { AudioDefaults.isSupported(sampleRate: $0) }
     }
 }

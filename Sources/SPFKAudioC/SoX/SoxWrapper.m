@@ -45,6 +45,7 @@ char *_sox = "sox";
     argv[4] = (char *)"-r";
     argv[5] = (char *)sampleRate.UTF8String;
     argv[6] = (char *)output.UTF8String;
+    
     return sox_main(7, argv);
 }
 
@@ -59,6 +60,7 @@ char *_sox = "sox";
     argv[2] = (char *)"-b";
     argv[3] = (char *)bits.UTF8String;
     argv[4] = (char *)output.UTF8String;
+    
     return sox_main(5, argv);
 }
 
@@ -73,6 +75,7 @@ char *_sox = "sox";
     argv[2] = (char *)"-r";
     argv[3] = (char *)sampleRate.UTF8String;
     argv[4] = (char *)output.UTF8String;
+    
     return sox_main(5, argv);
 }
 
@@ -84,6 +87,7 @@ char *_sox = "sox";
     argv[0] = _sox;
     argv[1] = (char *)input.UTF8String;
     argv[2] = (char *)output.UTF8String;
+    
     return sox_main(3, argv);
 }
 
@@ -101,6 +105,7 @@ char *_sox = "sox";
     argv[4] = (char *)"-r";
     argv[5] = (char *)sampleRate.UTF8String;
     argv[6] = (char *)output.UTF8String;
+    
     return sox_main(7, argv);
 }
 
@@ -115,6 +120,7 @@ char *_sox = "sox";
     argv[2] = (char *)"-C";
     argv[3] = (char *)bitRate.UTF8String;
     argv[4] = (char *)output.UTF8String;
+    
     return sox_main(5, argv);
 }
 
@@ -129,6 +135,7 @@ char *_sox = "sox";
     argv[2] = (char *)output.UTF8String;
     argv[3] = (char *)"remix";
     argv[4] = (char *)channel.UTF8String;
+    
     return sox_main(5, argv);
 }
 
@@ -138,7 +145,7 @@ char *_sox = "sox";
     /* All libSoX applications must start by initialising the SoX library */
     if (sox_init() != SOX_SUCCESS) {
         // error
-        return;
+        return 1;
     }
 
     sox_format_t *soxInput, *soxOutput = NULL;
@@ -205,6 +212,8 @@ char *_sox = "sox";
     sox_close(soxOutput);
     sox_close(soxInput);
     sox_quit();
+    
+    return SOX_SUCCESS;
 }
 
 - (int)  trim:(NSString *)input
@@ -214,7 +223,7 @@ char *_sox = "sox";
     /* All libSoX applications must start by initialising the SoX library */
     if (sox_init() != SOX_SUCCESS) {
         sox_error(1);
-        return;
+        return 1;
     }
 
     sox_format_t *soxInput, *soxOutput = NULL;
@@ -227,7 +236,7 @@ char *_sox = "sox";
 
     if (soxInput == NULL) {
         sox_quit();
-        return;
+        return 1;
     }
 
     sox_signalinfo_t interm_signal = soxInput->signal; /* NB: deep copy */
@@ -289,6 +298,8 @@ char *_sox = "sox";
     sox_close(soxInput);
 
     sox_quit();
+    
+    return SOX_SUCCESS;
 }
 
 @end

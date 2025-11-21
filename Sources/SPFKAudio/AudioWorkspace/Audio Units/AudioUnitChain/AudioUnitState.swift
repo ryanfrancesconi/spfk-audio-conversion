@@ -35,11 +35,11 @@ public class AudioUnitState: AudioUnitStateC {
             var urls = [primaryURL]
 
             // FCP is saving presets under the fourcc rather than the manufacturer string. this is probably a bug
-            if let fourCC = audioUnit.auAudioUnit.componentDescription.componentManufacturer.fourCharCodeToString() {
-                urls.append(
-                    url.appendingPathComponent(fourCC).appendingPathComponent(audioUnitName)
-                )
-            }
+            let fourCC = audioUnit.auAudioUnit.componentDescription.componentManufacturer.fourCC
+
+            urls.append(
+                url.appendingPathComponent(fourCC).appendingPathComponent(audioUnitName)
+            )
 
             if !FileManager.default.fileExists(atPath: primaryURL.path) {
                 guard (try? FileManager.default.createDirectory(at: primaryURL, withIntermediateDirectories: true, attributes: nil)) != nil else {
@@ -104,7 +104,7 @@ public class AudioUnitState: AudioUnitStateC {
         let status = notifyAudioUnitListener(avAudioUnit.audioUnit)
 
         guard noErr == status else {
-            Log.error("notifyAudioUnitListener returned error:", status.fourCharCodeToString())
+            Log.error("notifyAudioUnitListener returned error:", status.fourCC)
             return
         }
     }

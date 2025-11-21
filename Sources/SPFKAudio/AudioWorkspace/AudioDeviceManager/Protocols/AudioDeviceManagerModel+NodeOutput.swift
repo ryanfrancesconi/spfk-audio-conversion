@@ -152,7 +152,7 @@ extension AudioDeviceManagerModel {
         )
 
         guard err == noErr else {
-            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(err.fourCharCodeToString())")
+            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(err.fourCC)")
         }
 
         Log.debug("Engine output set to", name)

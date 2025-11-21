@@ -38,5 +38,5 @@ public enum AudioDefaults {
     }
 }
 
-let kAudioUnitManufacturer_Spongefork = (try? FourCharCode.from(string: "spfk")) ?? 0
-let kAudioUnitManufacturer_AudioKit = (try? FourCharCode.from(string: "AuKt")) ?? 0
+let kAudioUnitManufacturer_Spongefork: FourCharCode = "spfk".fourCC ?? 0
+let kAudioUnitManufacturer_AudioKit: FourCharCode = "AuKt".fourCC ?? 0

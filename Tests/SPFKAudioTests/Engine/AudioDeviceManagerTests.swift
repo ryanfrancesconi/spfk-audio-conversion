@@ -22,20 +22,11 @@ final class AudioDeviceManagerTests: TestCaseModel {
     }
 
     @Test(arguments: [Scope.output, Scope.input])
-    func bluetoothDevices(scope: Scope) async throws {
-        let devices = await dm.bluetoothDevices
-
-        for device in devices {
-            #expect(try await testSampleRates(for: device, scope: scope), "\(device.name) failed")
-        }
-    }
-
-    @Test(arguments: [Scope.output, Scope.input])
     func deviceSampleRates(scope: Scope) async throws {
         let devices = await dm.allDevices.isOnly(scope: scope)
 
         for device in devices {
-            #expect(try await testSampleRates(for: device, scope: scope), "\(device.name) failed")
+            #expect(await testSampleRates(for: device, scope: scope), "\(device.name) failed")
         }
     }
 

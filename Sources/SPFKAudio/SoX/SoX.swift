@@ -47,27 +47,33 @@ public actor SoX {
 
         let status = sox.trim(input.path, output: output.path, startTime: String(startTime), endTime: endTimeStr)
 
+        guard SOX_SUCCESS.rawValue == status else { return false }
+
         return output.exists
     }
 
-    public func convertPCM(input: URL, output: URL, bitDepth: UInt32?, sampleRate: Double?) {
+    public func convertPCM(input: URL, output: URL, bitDepth: UInt32?, sampleRate: Double?) -> Bool {
         // Log.debug(input, "to:", output, bits, sampleRate)
 
         let inputPath = input.path
         let outputPath = output.path
 
+        var status: Int32
+
         if let bitDepth, let sampleRate {
-            sox.convert(inputPath, output: outputPath, bits: String(bitDepth), sampleRate: String(sampleRate))
+            status = sox.convert(inputPath, output: outputPath, bits: String(bitDepth), sampleRate: String(sampleRate))
 
         } else if let bitDepth {
-            sox.convert(inputPath, output: outputPath, bits: String(bitDepth))
+            status = sox.convert(inputPath, output: outputPath, bits: String(bitDepth))
 
         } else if let sampleRate {
-            sox.convert(inputPath, output: outputPath, sampleRate: String(sampleRate))
+            status = sox.convert(inputPath, output: outputPath, sampleRate: String(sampleRate))
 
         } else {
-            sox.convert(inputPath, output: outputPath)
+            status = sox.convert(inputPath, output: outputPath)
         }
+
+        return SOX_SUCCESS.rawValue == status
     }
 
     /**
@@ -94,24 +100,28 @@ public actor SoX {
         output: URL,
         bitRate: UInt32?,
         sampleRate: Double?
-    ) {
+    ) -> Bool {
         // Log.debug(input, "to:", output, bitRate, sampleRate)
 
         let inputPath = input.path
         let outputPath = output.path
 
+        var status: Int32
+
         if let bitRate, let sampleRate {
-            sox.convert(inputPath, output: outputPath, bitRate: String(bitRate) + ".2", sampleRate: String(sampleRate))
+            status = sox.convert(inputPath, output: outputPath, bitRate: String(bitRate) + ".2", sampleRate: String(sampleRate))
 
         } else if let bitRate {
-            sox.convert(inputPath, output: outputPath, bitRate: String(bitRate) + ".2")
+            status = sox.convert(inputPath, output: outputPath, bitRate: String(bitRate) + ".2")
 
         } else if let sampleRate {
-            sox.convert(inputPath, output: outputPath, sampleRate: String(sampleRate))
+            status = sox.convert(inputPath, output: outputPath, sampleRate: String(sampleRate))
 
         } else {
-            sox.convert(inputPath, output: outputPath)
+            status = sox.convert(inputPath, output: outputPath)
         }
+
+        return SOX_SUCCESS.rawValue == status
     }
 
     /// Split stereo files to dual mono
@@ -148,15 +158,19 @@ public actor SoX {
         let url2 = outputBin.appendingPathComponent(right)
 
         if overwrite || !url1.exists {
-            sox.remix(source.path, output: url1.path, channel: "1")
+            guard SOX_SUCCESS.rawValue == sox.remix(source.path, output: url1.path, channel: "1") else {
+                throw NSError(description: "Failed to export channel 1")
+            }
         }
 
         if overwrite || url1.exists {
-            sox.remix(source.path, output: url2.path, channel: "2")
+            guard SOX_SUCCESS.rawValue == sox.remix(source.path, output: url2.path, channel: "2") else {
+                throw NSError(description: "Failed to export channel 2")
+            }
         }
 
         guard url1.exists, url2.exists else {
-            throw NSError(description: "Failed to convert stereo pair")
+            throw NSError(description: "Failed to convert stereo pair, urls weren't writted")
         }
 
         return SplitStereoPair(left: url1, right: url2)
@@ -185,8 +199,9 @@ public actor SoX {
             let filename = baseName + ".\(channel)." + source.pathExtension
             let url = outputBin.appendingPathComponent(filename)
 
-            // TODO: needs error handling
-            sox.remix(source.path, output: url.path, channel: channel.string)
+            guard SOX_SUCCESS.rawValue == sox.remix(source.path, output: url.path, channel: channel.string) else {
+                throw NSError(description: "Failed to export channels of \(source.path)")
+            }
 
             urls.append(url)
         }
@@ -200,7 +215,7 @@ public actor SoX {
         destination: URL? = nil,
         newName: String? = nil,
         overwrite: Bool = true
-    ) -> URL? {
+    ) throws -> URL {
         var outputBin = source.deletingLastPathComponent()
 
         if let destination = destination, destination.isDirectory {
@@ -212,11 +227,8 @@ public actor SoX {
 
         let url1 = outputBin.appendingPathComponent(left)
 
-        sox.remix(source.path, output: url1.path, channel: "1")
-
-        guard url1.exists else {
-            // failed
-            return nil
+        guard SOX_SUCCESS.rawValue == sox.remix(source.path, output: url1.path, channel: "1"), url1.exists else {
+            throw NSError(description: "Failed to convert to mono: \(source.path)")
         }
 
         return url1
@@ -227,16 +239,14 @@ public actor SoX {
         input files: [URL],
         output: URL
     ) -> Bool {
-        let inputs = files.filter {
-            $0.exists
-        }
+        let inputs = files.filter { $0.exists }
 
         guard inputs.isNotEmpty else { return false }
 
         let paths = inputs.map { $0.path }
 
-        sox.createMultiChannelWave(paths, output: output.path)
+        let status = sox.createMultiChannelWave(paths, output: output.path)
 
-        return output.exists
+        return SOX_SUCCESS.rawValue == status && output.exists
     }
 }

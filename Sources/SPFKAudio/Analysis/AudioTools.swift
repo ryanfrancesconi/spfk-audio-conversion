@@ -47,7 +47,7 @@ public enum AudioTools {
 
         let duplicatedBuffer = try buffer.loop(numberOfDuplicates: numberOfDuplicates)
 
-        Log.debug("Duplicating data \(numberOfDuplicates) times to new file at ", output.path)
+        // Log.debug("Duplicating data \(numberOfDuplicates) times to new file at ", output.path)
 
         try duplicatedBuffer.write(to: output)
         tmpfile = output

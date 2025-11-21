@@ -45,8 +45,6 @@ public extension AudioComponentDescription {
     }
 
     var validationCommand: String {
-        "auval -v \(componentType.fourCharCodeToString() ?? "") " +
-            "\(componentSubType.fourCharCodeToString() ?? "") " +
-            "\(componentManufacturer.fourCharCodeToString() ?? "")"
+        "auval -v \(componentType.fourCC) \(componentSubType.fourCC) \(componentManufacturer.fourCC)"
     }
 }

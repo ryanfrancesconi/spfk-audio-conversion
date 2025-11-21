@@ -19,8 +19,6 @@ struct AutomationCurveTests {
         let curve = AutomationCurve(automationPoints: points)
         let events = curve.events
 
-        Log.debug(events)
-
         let expectedResult = [
             AutomationEvent(targetValue: 0.0, startTime: -0.0009248927, rampDuration: 0.02),
             AutomationEvent(targetValue: 0.005943559, startTime: 0.019075107, rampDuration: 0.2),
