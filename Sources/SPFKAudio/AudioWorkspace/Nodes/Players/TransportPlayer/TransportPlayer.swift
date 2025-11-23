@@ -1,8 +1,8 @@
 import AppKit
 import AVFoundation
 import Foundation
-import SPFKTime
 import SPFKBase
+import SPFKTime
 
 extension TransportPlayer: EngineNode {
     public var inputNode: AVAudioNode? { mixer.inputNode }
@@ -98,7 +98,7 @@ public class TransportPlayer {
 
     /// Will attempt to use a NSScreen display link
     /// - Parameter delegate: needed to connect to the engine
-    public init(delegate: TransportPlayerDelegate? = nil) throws {
+    @MainActor public init(delegate: TransportPlayerDelegate? = nil) throws {
         transportTimer = try TransportTimer()
         mixer = MixerWrapper()
         self.delegate = delegate
@@ -121,7 +121,7 @@ public class TransportPlayer {
         initialize()
     }
 
-    private func initialize() {
+    @MainActor private func initialize() {
         transportTimer.eventHandler = { [weak self] in self?.update(timerEvent: $0) }
         scheduler.eventHandler = { [weak self] in self?.handle(loopEvent: $0) }
     }
