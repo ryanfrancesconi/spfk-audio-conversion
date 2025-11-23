@@ -6,7 +6,7 @@ import Numerics
 @testable import SPFKAudio
 import SPFKMetadata
 import SPFKTesting
-import SPFKUtils
+import SPFKBase
 import Testing
 
 @Suite(.tags(.file))

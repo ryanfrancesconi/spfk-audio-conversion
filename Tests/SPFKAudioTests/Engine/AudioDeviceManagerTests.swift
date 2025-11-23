@@ -5,7 +5,7 @@ import Foundation
 @testable import SPFKAudio
 import SPFKAudioHardware
 import SPFKTesting
-import SPFKUtils
+import SPFKBase
 import Testing
 
 @Suite(.serialized, .tags(.realtime, .engine))

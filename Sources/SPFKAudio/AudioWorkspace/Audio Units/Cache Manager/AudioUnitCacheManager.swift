@@ -3,7 +3,7 @@ import AEXML
 import AppKit
 import AVFoundation
 import OTCore
-import SPFKUtils
+import SPFKBase
 
 public class AudioUnitCacheManager {
     public var eventHandler: ((AudioUnitCacheEvent) -> Void)?

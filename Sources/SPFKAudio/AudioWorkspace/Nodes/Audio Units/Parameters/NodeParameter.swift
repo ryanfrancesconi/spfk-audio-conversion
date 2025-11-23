@@ -3,7 +3,7 @@
 
 import AVFoundation
 import SPFKAudioBase
-import SPFKUtils
+import SPFKBase
 
 /// NodeParameter wraps AUParameter in a user-friendly interface and adds some AudioKit-specific functionality.
 public class NodeParameter {

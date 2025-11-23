@@ -2,7 +2,7 @@
 
 import AVFoundation
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 public protocol AudioUnitAvailability {
     var availableAudioUnitComponents: [AVAudioUnitComponent]? { get }

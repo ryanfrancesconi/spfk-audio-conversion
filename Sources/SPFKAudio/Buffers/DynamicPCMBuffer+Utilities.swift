@@ -2,7 +2,7 @@
 
 import AVFoundation
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 extension DynamicPCMBuffer {
     public static func detectTransients(

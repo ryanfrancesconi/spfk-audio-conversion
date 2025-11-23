@@ -1,7 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
-import SPFKUtils
+import SPFKBase
 
 /// An audio player which is associated with a single file
 open class FilePlayer: EngineNodeAU, Mixable {

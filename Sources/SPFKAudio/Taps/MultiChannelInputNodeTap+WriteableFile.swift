@@ -3,7 +3,7 @@
 import AVFoundation
 import OTAtomics
 import OTCore
-import SPFKUtils
+import SPFKBase
 
 extension MultiChannelInputNodeTap {
     /// An inner class to represent one channel of data to record to file

@@ -3,7 +3,7 @@ import AudioToolbox
 import AVFoundation
 import OTCore
 import SPFKAudioBase
-import SPFKUtils
+import SPFKBase
 
 extension AudioUnitCacheManager {
     public static var audioComponentCount: Int {

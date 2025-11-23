@@ -6,7 +6,7 @@ import AVFoundation
 import CoreMIDI
 import SPFKAudioBase
 import SPFKAudioC
-import SPFKUtils
+import SPFKBase
 
 /// AudioUnit which instantiates a DSP kernel based on the componentSubType.
 open class AudioKitAU: AUAudioUnit {

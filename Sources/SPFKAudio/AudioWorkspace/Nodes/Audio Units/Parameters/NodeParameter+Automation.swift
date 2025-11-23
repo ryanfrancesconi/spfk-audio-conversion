@@ -3,7 +3,7 @@
 
 import AVFoundation
 import SPFKAudioC
-import SPFKUtils
+import SPFKBase
 
 extension NodeParameter {
     /// the `lastRenderTime` of the avAudioNode or a zero sampleTime AVAudioTime

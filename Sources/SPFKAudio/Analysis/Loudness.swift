@@ -3,7 +3,7 @@
 import Foundation
 import SPFKAudioC
 import SPFKMetadata
-import SPFKUtils
+import SPFKBase
 
 public enum Loudness {
     public static func analyze(url: URL) async throws -> LoudnessDescription {

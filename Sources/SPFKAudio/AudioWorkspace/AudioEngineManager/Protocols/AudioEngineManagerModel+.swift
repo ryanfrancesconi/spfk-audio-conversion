@@ -1,7 +1,7 @@
 import AVFoundation
 import Foundation
 import SPFKAudioHardware
-import SPFKUtils
+import SPFKBase
 
 extension AudioEngineManagerModel {
     /// The engine's singleton output node.

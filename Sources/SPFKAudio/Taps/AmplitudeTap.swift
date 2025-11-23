@@ -3,7 +3,7 @@
 import Accelerate
 import AVFoundation
 import OTCore
-import SPFKUtils
+import SPFKBase
 
 /// Tap to do amplitude analysis on any node. Limited to 2 channels.
 /// start() will add the tap, and stop() will remove it.

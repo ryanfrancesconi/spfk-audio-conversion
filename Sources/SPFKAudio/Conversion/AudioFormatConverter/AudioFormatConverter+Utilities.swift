@@ -3,7 +3,7 @@
 import AVFoundation
 import SPFKAudioBase
 import SPFKMetadata
-import SPFKUtils
+import SPFKBase
 
 // MARK: - Definitions
 

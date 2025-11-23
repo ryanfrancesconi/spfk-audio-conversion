@@ -1,7 +1,7 @@
 import AVFoundation
 import Foundation
 @testable import SPFKAudio
-import SPFKUtils
+import SPFKBase
 import Testing
 
 @Suite(.serialized)

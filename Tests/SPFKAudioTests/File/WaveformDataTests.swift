@@ -2,7 +2,7 @@
 import AVFoundation
 @testable import SPFKAudio
 import SPFKTesting
-import SPFKUtils
+import SPFKBase
 import Testing
 
 @Suite(.tags(.file))

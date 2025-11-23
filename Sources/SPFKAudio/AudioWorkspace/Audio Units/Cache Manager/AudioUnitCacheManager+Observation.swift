@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 extension AudioUnitCacheManager {
     internal func send(event: AudioUnitCacheEvent) {

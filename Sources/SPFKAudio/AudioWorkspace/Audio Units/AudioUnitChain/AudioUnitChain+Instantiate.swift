@@ -2,7 +2,7 @@
 
 import AudioToolbox
 import AVFoundation
-import SPFKUtils
+import SPFKBase
 
 extension AudioUnitChain {
     public static func isAvailable(componentDescription: AudioComponentDescription) -> Bool {

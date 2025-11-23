@@ -1,6 +1,6 @@
 import AVFoundation
 import SPFKAudioHardware
-import SPFKUtils
+import SPFKBase
 
 extension AudioDeviceManagerModel {
     public func updatePreferredOutputChannels() async throws {

@@ -4,7 +4,7 @@
 import AVFoundation
 import SPFKAudioBase
 import SPFKAudioC
-import SPFKUtils
+import SPFKBase
 
 extension Fader: EngineNode {
     public var inputNode: AVAudioNode? { avAudioNode }

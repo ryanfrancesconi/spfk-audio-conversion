@@ -1,6 +1,6 @@
 import AVFoundation
 import SPFKAudioHardware
-import SPFKUtils
+import SPFKBase
 
 extension AudioDeviceManagerModel {
     /// - Returns: A collection of named channels for the selected input device

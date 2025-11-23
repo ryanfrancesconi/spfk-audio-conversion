@@ -1,5 +1,5 @@
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 public enum WaveformDataLoadEvent {
     case loading(url: URL, progress: UnitInterval)

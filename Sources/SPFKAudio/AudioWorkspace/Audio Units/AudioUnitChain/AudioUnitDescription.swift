@@ -4,7 +4,7 @@ import AEXML
 import AppKit
 import AudioToolbox
 import AVFoundation
-import SPFKUtils
+import SPFKBase
 
 /// A wrapper for the `AVAudioUnit` to allow an independent bypass property
 /// which doesn't rely on the `AUAudioUnit` one

@@ -5,7 +5,7 @@ import Foundation
 @testable import SPFKAudio
 import SPFKTesting
 import SPFKTime
-import SPFKUtils
+import SPFKBase
 import Testing
 
 public class AudioWorkspaceTestCase: BinTestCase {

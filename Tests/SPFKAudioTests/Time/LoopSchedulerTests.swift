@@ -1,7 +1,7 @@
 import AVFoundation
 @testable import SPFKAudio
 @testable import SPFKTesting
-import SPFKUtils
+import SPFKBase
 import Testing
 
 class LoopSchedulerTests {

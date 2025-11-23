@@ -2,7 +2,7 @@ import AEXML
 import AppKit
 import AVFoundation
 import OTCore
-import SPFKUtils
+import SPFKBase
 
 extension AudioUnitCacheManager {
     public var validationIsNeeded: Bool {

@@ -1,6 +1,6 @@
 import AVFoundation
 import SPFKAudioHardware
-import SPFKUtils
+import SPFKBase
 
 public final class AudioEngineManager {
     public enum Event {

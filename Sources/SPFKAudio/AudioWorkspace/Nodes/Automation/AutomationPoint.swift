@@ -2,7 +2,7 @@ import AudioToolbox
 import Foundation
 import OTCore
 import SPFKAudioC
-import SPFKUtils
+import SPFKBase
 
 /// An object to represent one automation point in an UI
 public struct AutomationPoint: Equatable, Comparable, Codable, CustomStringConvertible, TypeDescribable {

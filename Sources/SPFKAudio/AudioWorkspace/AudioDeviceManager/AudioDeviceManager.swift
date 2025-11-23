@@ -4,7 +4,7 @@ import AVFoundation
 import SPFKAudioBase
 import SPFKAudioHardware
 import SPFKBaseC
-import SPFKUtils
+import SPFKBase
 
 /// In general, no longer keeping different device preferences from the system audio due
 /// to incompatibilities with AVAudioEngine and its inputNode inflexibility.

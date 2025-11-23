@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 public struct Peak: Equatable {
     internal static let min: Float = -10000.0

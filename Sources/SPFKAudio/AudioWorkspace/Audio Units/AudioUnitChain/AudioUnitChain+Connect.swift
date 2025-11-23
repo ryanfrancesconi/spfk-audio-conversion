@@ -2,7 +2,7 @@
 
 import AudioToolbox
 import AVFoundation
-import SPFKUtils
+import SPFKBase
 
 extension AudioUnitChain {
     /// Removes all effects from the effectsChain and detach Audio Units from the engine

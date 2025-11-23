@@ -3,7 +3,7 @@ import AudioToolbox
 import Foundation
 @testable import SPFKAudio
 import SPFKAudioC
-import SPFKUtils
+import SPFKBase
 import Testing
 
 @Suite(.tags(.automation))

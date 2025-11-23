@@ -2,7 +2,7 @@
 
 import AVFoundation
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 /// A collection of real-time `AVAudioTime` objects with a hostTime reference for use with player scheduling
 public struct LoopScheduler {

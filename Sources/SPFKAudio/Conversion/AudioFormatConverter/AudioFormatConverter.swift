@@ -4,7 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKAudioBase
 import SPFKMetadata
-import SPFKUtils
+import SPFKBase
 
 /// AudioFormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
 public class AudioFormatConverter {

@@ -2,7 +2,7 @@ import AsyncAlgorithms
 import AVFoundation
 import SPFKAudioBase
 import SPFKAudioHardware
-import SPFKUtils
+import SPFKBase
 
 extension AudioDeviceManagerModel {
     public var allNonAggregateDevices: [AudioDevice] {

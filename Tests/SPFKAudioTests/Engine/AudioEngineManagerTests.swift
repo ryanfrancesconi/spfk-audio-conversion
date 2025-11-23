@@ -4,7 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKAudio
 import SPFKTesting
-import SPFKUtils
+import SPFKBase
 import Testing
 
 @Suite(.serialized, .tags(.engine))

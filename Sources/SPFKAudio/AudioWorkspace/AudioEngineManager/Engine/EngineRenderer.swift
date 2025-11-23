@@ -4,7 +4,7 @@ import Accelerate
 import AVFoundation
 import OTAtomics
 import OTCore
-import SPFKUtils
+import SPFKBase
 
 // TODO: make async, remove OTAtomicsThreadSafe
 

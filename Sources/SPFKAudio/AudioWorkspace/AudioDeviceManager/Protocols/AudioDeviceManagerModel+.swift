@@ -2,7 +2,7 @@ import AVFoundation
 import Foundation
 import SPFKAudioBase
 import SPFKAudioHardware
-import SPFKUtils
+import SPFKBase
 
 extension AudioDeviceManagerModel {
     public var matchesSystemSettings: Bool {

@@ -3,7 +3,7 @@
 import Accelerate
 import AVFAudio
 import AVFoundation
-import SPFKUtils
+import SPFKBase
 
 /// Get audio data from a file suitable for waveform visualization
 public class WaveformDataParser {

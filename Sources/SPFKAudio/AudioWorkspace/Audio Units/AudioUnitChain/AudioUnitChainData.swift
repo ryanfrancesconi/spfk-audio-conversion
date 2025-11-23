@@ -2,7 +2,7 @@
 
 import AVFoundation
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 public actor AudioUnitChainData {
     public private(set) var effectsChain: [AudioUnitDescription?]

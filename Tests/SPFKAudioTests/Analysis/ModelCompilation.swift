@@ -1,7 +1,7 @@
 import SoundAnalysis
 @testable import SPFKAudio
 import SPFKTesting
-import SPFKUtils
+import SPFKBase
 import Testing
 
 // MARK: - example of how to compile a MLModel

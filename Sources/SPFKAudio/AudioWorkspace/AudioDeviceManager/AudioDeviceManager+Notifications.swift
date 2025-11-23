@@ -1,7 +1,7 @@
 import Foundation
 import SPFKAudioBase
 import SPFKAudioHardware
-import SPFKUtils
+import SPFKBase
 
 extension AudioDeviceManager {
     @MainActor func send(event: Event) async {

@@ -1,7 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import Foundation
-import SPFKUtils
+import SPFKBase
 
 public enum BatchAudioFormatConverterResult {
     case success(source: AudioFormatConverterSource)
