@@ -3,8 +3,6 @@
 
 import PackageDescription
 
-// This package will assume C / Objective-C interoperabilityimport SPFKTime
-
 // Swift target
 private let name: String = "SPFKAudio"
 
@@ -28,6 +26,8 @@ private let dependencies: [PackageDescription.Package.Dependency] = [
     .package(name: "SPFKMetadata", path: "../SPFKMetadata"),
     .package(name: "SPFKTime", path: "../SPFKTime"),
     .package(name: "SPFKAudioHardware", path: "../SPFKAudioHardware"),
+    .package(name: "SPFKSoX", path: "../SPFKSoX"),
+
 ]
 
 private let targets: [PackageDescription.Target] = [
@@ -39,7 +39,8 @@ private let targets: [PackageDescription.Target] = [
             .byNameItem(name: "SPFKUtils", condition: nil),
             .byNameItem(name: "SPFKMetadata", condition: nil),
             .byNameItem(name: "SPFKTime", condition: nil),
-            .byNameItem(name: "SPFKAudioHardware", condition: nil)
+            .byNameItem(name: "SPFKAudioHardware", condition: nil),
+            .byNameItem(name: "SPFKSoX", condition: nil),
         ]
     ),
     
@@ -48,12 +49,7 @@ private let targets: [PackageDescription.Target] = [
         name: nameC,
         dependencies: [
             .byNameItem(name: "SPFKMetadata", condition: nil),
-
-            .target(name: "libsamplerate"),
-            .target(name: "libsox"),
-            .target(name: "libmad"),
-            .target(name: "libmp3lame"),
-            .target(name: "libmpg123"),
+            .byNameItem(name: "SPFKSoX", condition: nil),
         ],
         publicHeadersPath: "include",
         cSettings: [
@@ -62,33 +58,6 @@ private let targets: [PackageDescription.Target] = [
         cxxSettings: [
             .headerSearchPath("include_private")
         ]
-    ),
-    
-    // path: relative to the package root
-
-    .binaryTarget(
-        name: "libsamplerate",
-        path: "Frameworks/libsamplerate.xcframework"
-    ),
-    
-    .binaryTarget(
-        name: "libsox",
-        path: "Frameworks/libsox.xcframework"
-    ),
-
-    .binaryTarget(
-        name: "libmad",
-        path: "Frameworks/libmad.xcframework"
-    ),
-
-    .binaryTarget(
-        name: "libmp3lame",
-        path: "Frameworks/libmp3lame.xcframework"
-    ),
-
-    .binaryTarget(
-        name: "libmpg123",
-        path: "Frameworks/libmpg123.xcframework"
     ),
 
 

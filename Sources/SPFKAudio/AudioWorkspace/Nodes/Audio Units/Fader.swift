@@ -2,6 +2,7 @@
 // Heavily based on the AudioKit version. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AVFoundation
+import SPFKAudioBase
 import SPFKAudioC
 import SPFKUtils
 

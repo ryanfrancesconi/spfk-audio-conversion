@@ -1,5 +1,6 @@
 import AsyncAlgorithms
 import AVFoundation
+import SPFKAudioBase
 import SPFKAudioHardware
 import SPFKUtils
 

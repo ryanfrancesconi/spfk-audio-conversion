@@ -4,6 +4,7 @@
 import AudioToolbox
 import AVFoundation
 import CoreMIDI
+import SPFKAudioBase
 import SPFKAudioC
 import SPFKUtils
 

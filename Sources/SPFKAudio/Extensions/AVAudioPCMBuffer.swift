@@ -3,27 +3,7 @@
 import Accelerate
 import AVFoundation
 import Foundation
-import SPFKUtils
-
-extension AVAudioPCMBuffer {
-    /// Read the contents of the url into this buffer
-    public convenience init?(url: URL) throws {
-        let file = try AVAudioFile(forReading: url)
-        try self.init(audioFile: file)
-    }
-
-    /// Read entire file and return a new AVAudioPCMBuffer with its contents
-    public convenience init?(audioFile: AVAudioFile) throws {
-        audioFile.framePosition = 0
-
-        self.init(
-            pcmFormat: audioFile.processingFormat,
-            frameCapacity: AVAudioFrameCount(audioFile.length)
-        )
-
-        try audioFile.read(into: self)
-    }
-}
+import SPFKBase
 
 extension AVAudioPCMBuffer {
     /// Find peak in the buffer

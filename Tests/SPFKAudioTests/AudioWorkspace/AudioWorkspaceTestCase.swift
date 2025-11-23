@@ -56,7 +56,7 @@ class TransportPlayerTestCase: AudioWorkspaceTestCase {
 
         let masterMixer = try #require(audioWorkspace.master?.mixer)
 
-        let player = try TransportPlayer(delegate: self)
+        let player = try await TransportPlayer(delegate: self)
         self.player = player
 
         try audioWorkspace.engineManager.connectAndAttach(player, to: masterMixer)
@@ -72,7 +72,7 @@ extension TransportPlayerTestCase: TransportPlayerDelegate {
     }
 
     func transportPlayer(timerEvent event: TransportTimerEvent) {
-        // Log.debug(event)
+//        Log.debug(event)
     }
 
     func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) throws {

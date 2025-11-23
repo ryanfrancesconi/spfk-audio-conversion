@@ -1,8 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 #import <Foundation/Foundation.h>
-
-#import "sndfile.h"
+#import <sndfile/sndfile.h>
 #import "SndfileUtil.h"
 
 @implementation SndfileUtil

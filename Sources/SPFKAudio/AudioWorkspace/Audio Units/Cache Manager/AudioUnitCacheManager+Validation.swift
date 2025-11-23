@@ -2,6 +2,7 @@ import AEXML
 import AudioToolbox
 import AVFoundation
 import OTCore
+import SPFKAudioBase
 import SPFKUtils
 
 extension AudioUnitCacheManager {

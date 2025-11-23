@@ -1,4 +1,5 @@
 import Foundation
+import SPFKAudioBase
 import SPFKAudioHardware
 import SPFKUtils
 

@@ -2,6 +2,7 @@
 
 import AVFoundation
 import Foundation
+import SPFKAudioBase
 import SPFKMetadata
 import SPFKUtils
 
@@ -42,7 +43,6 @@ public class AudioFormatConverter {
 
         if source.input.pathExtension == "",
            let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
-            
             inputFormat = AudioFileType(pathExtension: ext)
 
         } else {

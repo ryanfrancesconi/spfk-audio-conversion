@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
+import SPFKAudioBase
 import SPFKMetadata
 import SPFKUtils
 

@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
+import SPFKAudioBase
 import SPFKAudioHardware
 import SPFKBaseC
 import SPFKUtils
@@ -123,7 +124,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
             inputUID: settings.inputUID ?? defaultInputUID,
             outputUID: settings.outputUID ?? defaultOutputUID
         )
-
 
         addHardwareObservers()
     }

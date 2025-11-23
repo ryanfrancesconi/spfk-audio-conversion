@@ -3,6 +3,7 @@
 import AVFoundation
 import Foundation
 import OTAtomics
+import SPFKAudioBase
 import SPFKMetadata
 import SPFKUtils
 
