@@ -8,20 +8,23 @@ import SPFKBase
 extension NodeParameter {
     /// the `lastRenderTime` of the avAudioNode or a zero sampleTime AVAudioTime
     private var lastRenderTime: AVAudioTime {
-        var value = avAudioNode?.lastRenderTime ?? AVAudioTime(sampleTime: 0, atRate: sampleRate)
+        get async {
+            let sampleRate = await sampleRate
 
-        if !value.isSampleTimeValid {
-            // if we're rendering, take the sample time from the engine
-            if let engine = avAudioNode?.engine, engine.isInManualRenderingMode {
-                value = AVAudioTime(sampleTime: engine.manualRenderingSampleTime,
-                                    atRate: sampleRate)
-            } else {
-                // otherwise, a zero sampleTime
-                value = AVAudioTime(sampleTime: 0, atRate: sampleRate)
+            var value = avAudioNode?.lastRenderTime ?? AVAudioTime(sampleTime: 0, atRate: sampleRate)
+
+            if !value.isSampleTimeValid {
+                // if we're rendering, take the sample time from the engine
+                if let engine = avAudioNode?.engine, engine.isInManualRenderingMode {
+                    value = AVAudioTime(sampleTime: engine.manualRenderingSampleTime, atRate: sampleRate)
+                } else {
+                    // otherwise, a zero sampleTime
+                    value = AVAudioTime(sampleTime: 0, atRate: sampleRate)
+                }
             }
-        }
 
-        return value
+            return value
+        }
     }
 
     /// Send an automation list to the parameter with an optional offset into the list's timeline.
@@ -31,7 +34,7 @@ extension NodeParameter {
     /// - Parameters:
     ///   - events: An array of events
     ///   - offset: A time offset into the events
-    public func automate(events: [AutomationEvent], offset: TimeInterval) throws {
+    public func automate(events: [AutomationEvent], offset: TimeInterval) async throws {
         guard let avAudioNode else {
             throw NSError(description: "Underlying AVAudioNode is nil")
         }
@@ -43,6 +46,8 @@ extension NodeParameter {
         guard var lastTime = avAudioNode.lastRenderTime else {
             throw NSError(description: "\(avAudioNode.debugDescription) lastRenderTime is nil")
         }
+
+        let sampleRate = await sampleRate
 
         // In manual rendering, we may not have a valid lastRenderTime, so
         // assume no rendering has yet occurred and start at 0
@@ -61,7 +66,7 @@ extension NodeParameter {
             lastTime = lastTime.offset(seconds: -offset)
         }
 
-        try automate(events: events, startTime: lastTime)
+        try await automate(events: events, startTime: lastTime)
     }
 
     /// Begin automation of the parameter.
@@ -70,7 +75,7 @@ extension NodeParameter {
     ///
     /// - Parameter events: automation curve
     /// - Parameter startTime: optional time to start automation
-    public func automate(events: [AutomationEvent], startTime: AVAudioTime? = nil) throws {
+    public func automate(events: [AutomationEvent], startTime: AVAudioTime? = nil) async throws {
         guard let avAudioNode else {
             throw NSError(description: "Underlying AVAudioNode is nil")
         }
@@ -78,6 +83,9 @@ extension NodeParameter {
         guard let engine = avAudioNode.engine else {
             throw NSError(description: "\(avAudioNode.debugDescription) engine is nil")
         }
+
+        let sampleRate = await sampleRate
+        let lastRenderTime = await lastRenderTime
 
         var startTime = startTime ?? lastRenderTime
 
@@ -135,8 +143,10 @@ extension NodeParameter {
     ///   - start: initial value
     ///   - target: destination value
     ///   - duration: duration to ramp to the target value in seconds
-    public func ramp(from start: AUValue, to target: AUValue, duration: Float) {
-        ramp(to: start, duration: 0.02, delay: 0)
-        ramp(to: target, duration: duration, delay: 0.02)
+    public func ramp(from start: AUValue, to target: AUValue, duration: Float) async {
+        let sampleRate = await self.sampleRate
+
+        ramp(to: start, duration: 0.02, delay: 0, sampleRate: sampleRate.float)
+        ramp(to: target, duration: duration, delay: 0.02, sampleRate: sampleRate.float)
     }
 }

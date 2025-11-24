@@ -35,8 +35,8 @@ public class AudioTrack {
 }
 
 extension AudioTrack: AudioUnitChainDelegate {
-    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) throws {
-        try delegate?.connectAndAttach(node1, to: node2, format: format)
+    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) async throws {
+        try await delegate?.connectAndAttach(node1, to: node2, format: format)
     }
 
     public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
@@ -48,5 +48,4 @@ extension AudioTrack: AudioUnitChainDelegate {
     }
 }
 
-public protocol AudioTrackDelegate: AnyObject, AudioEngineConnection, AudioUnitAvailability {
-}
+public protocol AudioTrackDelegate: AnyObject, AudioEngineConnection, AudioUnitAvailability {}

@@ -35,9 +35,13 @@ extension AudioDeviceManagerModel {
 
     public var allCompatibleInputDevices: [AudioDevice] {
         get async {
-            await allInputDevices.filter {
-                $0.nominalSampleRates?.contains { AudioDefaults.isSupported(sampleRate: $0) } == true
-            }
+            await allInputDevices.async.filter {
+                guard let nominalSampleRates = $0.nominalSampleRates else { return false }
+
+                return await nominalSampleRates.async.contains { sampleRate in
+                    await AudioDefaults.shared.isSupported(sampleRate: sampleRate)
+                }
+            }.toArray()
         }
     }
 
@@ -108,47 +112,59 @@ extension AudioDeviceManagerModel {
 
 extension SplitAudioDevice {
     public var description: String {
-        var out = ""
+        get async {
+            var out = ""
 
-        out += "input: \(input.description)"
+            out += "input: \(input.description)"
 
-        if !inputIsSupported {
-            out += " (Unsupported Device) "
+            if await !inputIsSupported {
+                out += " (Unsupported Device) "
+            }
+
+            out += " output: \(output.description)"
+
+            if await !outputIsSupported {
+                out += " (Unsupported Device) "
+            }
+
+            return out
         }
-
-        out += " output: \(output.description)"
-
-        if !outputIsSupported {
-            out += " (Unsupported Device) "
-        }
-
-        return out
     }
 
     /// Some bluetooth headphones like AirPods do not support clear disabling of input,
     /// so in this case the only way to use them is by selecting a different input device
     /// such as the internal mic. This is unintuitive.
     public var supportsDisabledInput: Bool {
-        inputIsSupported
+        get async {
+            await inputIsSupported
+        }
     }
 
     public var inputIsSupported: Bool {
-        guard let rates = input.getNominalSampleRates(scope: .input) else {
-            return false
-        }
+        get async {
+            guard let rates = input.getNominalSampleRates(scope: .input) else {
+                return false
+            }
 
-        return check(rates: rates)
+            return await check(rates: rates)
+        }
     }
 
     public var outputIsSupported: Bool {
-        guard let rates = output.getNominalSampleRates(scope: .output) else {
-            return false
-        }
+        get async {
+            guard let rates = output.getNominalSampleRates(scope: .output) else {
+                return false
+            }
 
-        return check(rates: rates)
+            return await check(rates: rates)
+        }
     }
 
-    private func check(rates: [Double]) -> Bool {
-        rates.contains { AudioDefaults.isSupported(sampleRate: $0) }
+    private func check(rates: [Double]) async -> Bool {
+        // rates.contains { AudioDefaults.shared.isSupported(sampleRate: $0) }
+
+        return await rates.async.contains { sampleRate in
+            await AudioDefaults.shared.isSupported(sampleRate: sampleRate)
+        }
     }
 }

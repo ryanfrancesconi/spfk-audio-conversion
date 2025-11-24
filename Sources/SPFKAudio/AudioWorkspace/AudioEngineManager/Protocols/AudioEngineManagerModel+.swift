@@ -5,10 +5,14 @@ import SPFKBase
 
 extension AudioEngineManagerModel {
     /// The engine's singleton output node.
-    public func setEngineOutput(to node: AVAudioNode) throws {
+    public func setEngineOutput(to node: AVAudioNode) async throws {
+        guard let systemFormat = await systemFormat else {
+            throw NSError(description: "Unable to determine System format")
+        }
+
         if engineIsRunning { stopEngine() }
 
-        try connectAndAttach(node, to: outputNode, format: systemFormat)
+        try await connectAndAttach(node, to: outputNode, format: systemFormat)
     }
 }
 
@@ -17,17 +21,19 @@ extension AudioEngineManagerModel {
 extension AudioEngineManagerModel {
     /// Files will render at 32bit PCM then convert after
     public var renderFormat: AVAudioFormat? {
-        guard let systemFormat else {
-            Log.error("Unable to determine System format")
-            return nil
-        }
+        get async {
+            guard let systemFormat = await systemFormat else {
+                Log.error("Unable to determine System format")
+                return nil
+            }
 
-        return AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: systemFormat.sampleRate,
-            channels: systemFormat.channelCount,
-            interleaved: true
-        )
+            return AVAudioFormat(
+                commonFormat: .pcmFormatFloat32,
+                sampleRate: systemFormat.sampleRate,
+                channels: systemFormat.channelCount,
+                interleaved: true
+            )
+        }
     }
 
     public var inputFormat: AVAudioFormat? {

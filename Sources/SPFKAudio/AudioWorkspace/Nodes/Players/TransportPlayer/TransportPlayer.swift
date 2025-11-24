@@ -44,6 +44,10 @@ public class TransportPlayer {
 
     public weak var delegate: TransportPlayerDelegate?
 
+    public var outputFormat: AVAudioFormat {
+        mixer.mixerNode.outputFormat(forBus: 0)
+    }
+
     /// cache a player for each new audio format loaded into the mixer
     private(set) var players: [AVAudioFormat: FilePlayer] = .init()
 
@@ -170,11 +174,11 @@ public class TransportPlayer {
 }
 
 extension TransportPlayer {
-    public func load(url: URL) throws {
-        try load(audioFile: try AVAudioFile(forReading: url))
+    @MainActor public func load(url: URL) async throws {
+        try await load(audioFile: try AVAudioFile(forReading: url))
     }
 
-    public func load(audioFile: AVAudioFile) throws {
+    @MainActor public func load(audioFile: AVAudioFile) async throws {
         guard let delegate else {
             throw NSError(description: "delegate is nil")
         }
@@ -195,12 +199,12 @@ extension TransportPlayer {
         if formatPlayer == nil {
             // this format hasn't been added yet so do it now
             let newPlayer = FilePlayer()
-            try delegate.connectAndAttach(newPlayer, to: mixer)
+            try await delegate.connectAndAttach(newPlayer, to: mixer)
 
             players[audioFile.processingFormat] = newPlayer
             formatPlayer = newPlayer
 
-            Log.debug("Created new player of format", audioFile.processingFormat)
+            Log.debug("(\(outputFormat) Created new player of the file's processingFormat of ", audioFile.processingFormat)
         }
 
         try formatPlayer?.load(audioFile: audioFile)

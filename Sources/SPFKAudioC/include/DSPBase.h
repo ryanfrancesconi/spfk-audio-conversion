@@ -26,17 +26,14 @@ bool canProcessInPlaceDSP(DSPRef pDSP);
 void setBufferDSP(DSPRef pDSP, AudioBufferList *buffer, size_t busIndex);
 
 void allocateRenderResourcesDSP(DSPRef pDSP, uint32_t channelCount, double sampleRate);
-
 void deallocateRenderResourcesDSP(DSPRef pDSP);
 
 void resetDSP(DSPRef pDSP);
 
 void setParameterValueDSP(DSPRef pDSP, AUParameterAddress address, AUValue value);
-
 AUValue getParameterValueDSP(DSPRef pDSP, AUParameterAddress address);
 
 void setBypassDSP(DSPRef pDSP, bool bypassed);
-
 bool getBypassDSP(DSPRef pDSP);
 
 void initializeConstantDSP(DSPRef pDSP, AUValue value);
@@ -49,7 +46,7 @@ CF_EXTERN_C_END
 
 #ifdef __cplusplus
 
-// not visible to swift
+// invisible to swift
 
 #include "DSPBase.hpp"
 

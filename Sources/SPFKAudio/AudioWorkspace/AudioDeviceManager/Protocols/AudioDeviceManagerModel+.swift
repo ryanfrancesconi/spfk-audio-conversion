@@ -20,25 +20,37 @@ extension AudioDeviceManagerModel {
             await outputDeviceSampleRate != systemSampleRate
         }
     }
+}
 
+extension AudioDeviceManagerModel {
     public var systemSampleRate: Double {
-        get { systemFormat.sampleRate }
-
-        set {
-            guard AudioDefaults.isSupported(sampleRate: newValue) else {
-                Log.error(newValue, "isn't a supported sample rate so ignoring this event")
-                return
-            }
-
-            guard let audioFormat = AVAudioFormat(
-                standardFormatWithSampleRate: newValue,
-                channels: systemFormat.channelCount
-            ) else {
-                return
-            }
-
-            systemFormat = audioFormat
+        get async {
+            await systemFormat.sampleRate
         }
+    }
+
+    public func update(systemSampleRate: Double) async throws {
+        guard await AudioDefaults.shared.isSupported(sampleRate: systemSampleRate) else {
+            Log.error(systemSampleRate, "isn't a supported sample rate so ignoring this event")
+            return
+        }
+
+        guard let audioFormat = await AVAudioFormat(
+            standardFormatWithSampleRate: systemSampleRate,
+            channels: systemFormat.channelCount
+        ) else {
+            throw NSError(description: "Failed to create format")
+        }
+
+        try await update(systemFormat: audioFormat)
+    }
+
+    public func update(systemFormat: AVAudioFormat) async throws {
+        await AudioDefaults.shared.update(systemFormat: systemFormat)
+
+        try await setNominalSampleRate(to: systemFormat.sampleRate)
+
+        Log.debug("🔊 Updated system format to", systemFormat)
     }
 
     public var inputDeviceSampleRate: Double? {
@@ -52,7 +64,9 @@ extension AudioDeviceManagerModel {
             await selectedOutputDevice?.nominalSampleRate
         }
     }
+}
 
+extension AudioDeviceManagerModel {
     public var selectedDeviceSetttings: AudioDeviceSettings {
         get async {
             await AudioDeviceSettings(

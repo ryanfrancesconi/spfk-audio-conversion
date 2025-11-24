@@ -4,19 +4,19 @@ import AVFoundation
 import SPFKBase
 
 public protocol AudioEngineConnection: AnyObject {
-    func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) throws
+    func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) async throws
 }
 
 extension AudioEngineConnection {
-    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode) throws {
-        try connectAndAttach(node1, to: node2, format: nil) // use systemFormat
+    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode) async throws {
+        try await connectAndAttach(node1, to: node2, format: nil) // use systemFormat
     }
 
     public func connectAndAttach(
         _ engineNode: any EngineNode,
         to otherEngineNode: any EngineNode,
         format: AVAudioFormat? = nil
-    ) throws {
+    ) async throws {
         guard let sourceNode = engineNode.outputNode else {
             throw NSError(description: "engineNode.outputNode must be valid")
         }
@@ -25,6 +25,6 @@ extension AudioEngineConnection {
             throw NSError(description: "otherEngineNode.inputNode must be valid")
         }
 
-        try connectAndAttach(sourceNode, to: destinationNode, format: format)
+        try await connectAndAttach(sourceNode, to: destinationNode, format: format)
     }
 }

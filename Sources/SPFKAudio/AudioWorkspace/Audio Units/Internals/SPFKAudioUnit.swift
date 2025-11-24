@@ -3,13 +3,12 @@
 
 import AudioToolbox
 import AVFoundation
-import CoreMIDI
 import SPFKAudioBase
 import SPFKAudioC
 import SPFKBase
 
-/// AudioUnit which instantiates a DSP kernel based on the componentSubType.
-open class AudioKitAU: AUAudioUnit {
+/// Interally defined AudioUnit which instantiates a DSP kernel based on the componentSubType.
+open class SPFKAudioUnit: AUAudioUnit {
     private var inputBusArray: [AUAudioUnitBus] = []
     private var outputBusArray: [AUAudioUnitBus] = []
     private var internalBuffers: [AVAudioPCMBuffer] = []
@@ -61,19 +60,11 @@ open class AudioKitAU: AUAudioUnit {
         resetDSP(dsp)
     }
 
-    private lazy var auInputBusArray: AUAudioUnitBusArray = {
-        AUAudioUnitBusArray(audioUnit: self, busType: .input, busses: inputBusArray)
-    }()
+    private lazy var _inputBusses: AUAudioUnitBusArray = .init(audioUnit: self, busType: .input, busses: inputBusArray)
+    private lazy var _outputBusses: AUAudioUnitBusArray = .init(audioUnit: self, busType: .output, busses: outputBusArray)
 
-    /// Input busses
-    override public var inputBusses: AUAudioUnitBusArray { auInputBusArray }
-
-    private lazy var auOutputBusArray: AUAudioUnitBusArray = {
-        AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: outputBusArray)
-    }()
-
-    /// Output buses
-    override public var outputBusses: AUAudioUnitBusArray { auOutputBusArray }
+    override public var inputBusses: AUAudioUnitBusArray { _inputBusses }
+    override public var outputBusses: AUAudioUnitBusArray { _outputBusses }
 
     /// Internal render block
     override public var internalRenderBlock: AUInternalRenderBlock {
@@ -96,12 +87,10 @@ open class AudioKitAU: AUAudioUnit {
                 getParameterValueDSP(self.dsp, parameter.address)
             }
 
-            _parameterTree?.implementorStringFromValueCallback = { _, value in
-                if let value = value {
-                    return String(format: "%.2f", value.pointee)
-                } else {
-                    return "Invalid"
-                }
+            _parameterTree?.implementorStringFromValueCallback = { _, valuePtr in
+                guard let valuePtr else { return "Invalid " }
+
+                return String(format: "%.2f", valuePtr.pointee)
             }
         }
     }
@@ -140,8 +129,19 @@ open class AudioKitAU: AUAudioUnit {
 
         try super.init(componentDescription: componentDescription, options: options)
 
-        // create audio bus connection points
-        let format = AudioDefaults.systemFormat
+        parameterTree = AUParameterTree.createTree(withChildren: [])
+
+        try createBusses(format: nil)
+    }
+
+    /// create audio bus connection points
+    private func createBusses(format: AVAudioFormat?) throws {
+        let format = format ?? AudioDefaults.shared.unsafeSystemFormat
+
+        Log.debug(format)
+
+        inputBusArray.removeAll()
+        outputBusArray.removeAll()
 
         for _ in 0 ..< inputBusCountDSP(dsp) {
             inputBusArray.append(
@@ -153,8 +153,13 @@ open class AudioKitAU: AUAudioUnit {
         outputBusArray.append(
             try AUAudioUnitBus(format: format)
         )
+    }
 
-        parameterTree = AUParameterTree.createTree(withChildren: [])
+    public func update(format: AVAudioFormat) throws {
+        try createBusses(format: format)
+
+        _inputBusses = .init(audioUnit: self, busType: .input, busses: inputBusArray)
+        _outputBusses = .init(audioUnit: self, busType: .output, busses: outputBusArray)
     }
 
     deinit {

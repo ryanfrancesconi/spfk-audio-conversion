@@ -4,10 +4,10 @@ import SPFKAudioHardware
 import SPFKBase
 
 extension AudioDeviceManagerModel {
-    public func isSupported(device: AudioDevice) -> Bool {
+    public func isSupported(device: AudioDevice) async -> Bool {
         guard let sampleRates = device.nominalSampleRates?.sorted(),
               let highestRate = sampleRates.last else { return false }
-        return AudioDefaults.isSupported(sampleRate: highestRate)
+        return await AudioDefaults.shared.isSupported(sampleRate: highestRate)
     }
 
     public func isSupported(uid: String) async -> Bool {
@@ -15,7 +15,7 @@ extension AudioDeviceManagerModel {
 
         guard let device = await AudioDevice.lookup(uid: uid) else { return false }
 
-        return isSupported(device: device)
+        return await isSupported(device: device)
     }
 
     public func setNominalSampleRate(to sampleRate: Double) async throws {
@@ -42,7 +42,7 @@ extension AudioDeviceManagerModel {
 
 extension AudioDeviceManagerModel {
     internal func setSampleRate(device: AudioDevice, to newValue: Double) async throws {
-        guard AudioDefaults.isSupported(sampleRate: newValue) else {
+        guard await AudioDefaults.shared.isSupported(sampleRate: newValue) else {
             throw NSError(description: "This sample rate \(newValue) isn't supported.")
         }
 

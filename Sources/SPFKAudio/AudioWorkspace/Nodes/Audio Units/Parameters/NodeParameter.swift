@@ -53,8 +53,11 @@ public class NodeParameter {
     }
 
     public var sampleRate: Double {
-        avAudioNode?.outputFormat(forBus: 0).sampleRate ??
-            AudioDefaults.sampleRate
+        get async {
+            let systemSampleRate = await AudioDefaults.shared.sampleRate
+
+            return avAudioNode?.outputFormat(forBus: 0).sampleRate ?? systemSampleRate
+        }
     }
 
     public var def: NodeParameterDef
@@ -98,8 +101,8 @@ public class NodeParameter {
     public var renderObserverToken: Int?
 
     /// Automate to a new value using a ramp.
-    public func ramp(to value: AUValue, duration: Float, delay: Float = 0) {
-        var delaySamples = AUAudioFrameCount(delay * Float(sampleRate))
+    public func ramp(to value: AUValue, duration: Float, delay: Float = 0, sampleRate: Float) {
+        var delaySamples = AUAudioFrameCount(delay * sampleRate)
 
         if delaySamples > 4096 {
             Log.error("Warning: delay longer than 4096, setting to to 4096")
@@ -115,7 +118,7 @@ public class NodeParameter {
 
         paramBlock?(
             AUEventSampleTimeImmediate + Int64(delaySamples),
-            AUAudioFrameCount(duration * Float(sampleRate)),
+            AUAudioFrameCount(duration * sampleRate),
             parameter.address,
             value.clamped(to: range)
         )

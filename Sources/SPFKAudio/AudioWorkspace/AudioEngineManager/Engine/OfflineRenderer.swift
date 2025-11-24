@@ -52,7 +52,11 @@ public class OfflineRenderer {
     public let renderFileType: AudioFileType = .caf
 
     /// render at 32bit then convert after
-    public var renderFormat: AVAudioFormat? { engineManager?.renderFormat }
+    public var renderFormat: AVAudioFormat? {
+        get async {
+            await engineManager?.renderFormat
+        }
+    }
 
     public init() {}
 
@@ -82,7 +86,7 @@ public class OfflineRenderer {
         let timelineURL = URL(fileURLWithPath: mixPath)
 
         Task(priority: .high) {
-            self.processBounceAsync(timelineURL: timelineURL,
+            await self.processBounceAsync(timelineURL: timelineURL,
                                     duration: duration,
                                     renderUntilSilent: renderUntilSilent,
                                     prerender: prerender,
@@ -97,13 +101,13 @@ public class OfflineRenderer {
         renderUntilSilent: Bool,
         prerender: @escaping () -> Void,
         postrender: (() -> Void)? = nil
-    ) {
+    ) async {
         guard let engineManager else {
             assertionFailure("engineManager is nil")
             return
         }
 
-        guard let renderFormat = renderFormat?.settings else {
+        guard let renderFormat = await renderFormat?.settings else {
             send(event: .renderError(NSError(description: "Error: couldn't read internal output format.")))
             return
         }

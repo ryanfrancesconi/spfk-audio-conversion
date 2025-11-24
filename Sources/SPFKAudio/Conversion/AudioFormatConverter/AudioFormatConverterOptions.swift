@@ -138,13 +138,15 @@ extension AudioFormatConverterOptions: Serializable {
 }
 
 extension AudioFormatConverterOptions {
-    public static let waveStereo48k16bit: AudioFormatConverterOptions = {
-        var o = AudioFormatConverterOptions()
-        o.format = .wav
-        o.sampleRate = AudioDefaults.sampleRate
-        o.bitsPerChannel = 16
-        o.channels = 2
-        o.bitDepthRule = .any
-        return o
-    }()
+    public static var waveStereo48k16bit: AudioFormatConverterOptions {
+        get async {
+            var o = AudioFormatConverterOptions()
+            o.format = .wav
+            o.sampleRate = await AudioDefaults.shared.sampleRate
+            o.bitsPerChannel = 16
+            o.channels = 2
+            o.bitDepthRule = .any
+            return o
+        }
+    }
 }

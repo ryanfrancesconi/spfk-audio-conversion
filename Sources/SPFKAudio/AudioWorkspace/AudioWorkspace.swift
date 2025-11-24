@@ -40,8 +40,8 @@ public class AudioWorkspace {
             throw NSError(description: "Failed to create mixers on rebuild")
         }
 
-        try engineManager.setEngineOutput(to: outputMixer.avAudioNode)
-        try engineManager.connectAndAttach(master, to: outputMixer)
+        try await engineManager.setEngineOutput(to: outputMixer.avAudioNode)
+        try await engineManager.connectAndAttach(master, to: outputMixer)
 
         try await deviceManager.reconnect()
     }
@@ -88,8 +88,8 @@ public class AudioWorkspace {
 extension AudioWorkspace: AudioTrackDelegate {}
 
 extension AudioWorkspace: AudioEngineConnection {
-    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) throws {
-        try engineManager.connectAndAttach(node1, to: node2, format: format)
+    public func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) async throws {
+        try await engineManager.connectAndAttach(node1, to: node2, format: format)
     }
 }
 
@@ -160,7 +160,6 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
         case let .error(error):
             _ = error
         case let .configurationChanged(options):
-            _ = options
 
             do {
                 try handleConfigurationChanged(options: options)

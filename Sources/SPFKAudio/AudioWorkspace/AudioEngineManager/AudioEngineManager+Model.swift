@@ -1,11 +1,13 @@
 import AVFoundation
 import SPFKAudioBase
-import SPFKBaseC
 import SPFKBase
+import SPFKBaseC
 
 extension AudioEngineManager: AudioEngineManagerModel {
     public var systemFormat: AVAudioFormat? {
-        AudioDefaults.systemFormat
+        get async {
+            await AudioDefaults.shared.systemFormat
+        }
     }
 
     /// Don't access the engine.inputNode if input is disabled as the node is lazily created.
@@ -25,8 +27,9 @@ extension AudioEngineManager: AudioEngineConnection {
         _ node1: AVAudioNode,
         to node2: AVAudioNode,
         format: AVAudioFormat? = nil
-    ) throws {
-        //
+    ) async throws {
+        let systemFormat = await systemFormat
+
         guard let format = format ?? systemFormat else {
             throw NSError(description: "Unable to determine systemFormat from deviceManager")
         }

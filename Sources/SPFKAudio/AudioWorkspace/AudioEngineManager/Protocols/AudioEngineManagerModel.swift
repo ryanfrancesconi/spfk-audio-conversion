@@ -9,7 +9,7 @@ public protocol AudioEngineManagerModel: AnyObject,
     CustomDebugStringConvertible {
     // MARK: - Properties
 
-    var systemFormat: AVAudioFormat? { get }
+    var systemFormat: AVAudioFormat? { get async }
     var engine: AVAudioEngine { get }
     var allowInput: Bool { get async }
     var inputNode: AVAudioInputNode? { get async }

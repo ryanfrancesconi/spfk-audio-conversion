@@ -79,7 +79,7 @@ extension AudioUnitChain {
 
         // if there are no fx or the chain is bypassed connect input to output directly
         if isChainBypassed || unbypassedEffects.isEmpty {
-            try connect(input, to: output)
+            try await connect(input, to: output)
             return
         }
 
@@ -96,7 +96,7 @@ extension AudioUnitChain {
         Log.debug("🔌 Connecting \(unbypassedEffects.count) unbypassed, \(await data.linkedEffects.count) total.")
 
         // connect the input to the first effect
-        try connect(input, to: firstEffect.avAudioUnit)
+        try await connect(input, to: firstEffect.avAudioUnit)
 
         // if there are more effects, loop and connect them
         if unbypassedEffects.count > 1 {
@@ -106,12 +106,12 @@ extension AudioUnitChain {
 
                 Log.debug("Connecting", auInput.name, "to", auOutput.name)
 
-                try connect(auInput, to: auOutput)
+                try await connect(auInput, to: auOutput)
             }
         }
 
         // connect the last effect (which could also be the first) to the output
-        try connect(lastEffect.avAudioUnit, to: output)
+        try await connect(lastEffect.avAudioUnit, to: output)
 
         await data.allocateRenderResourcesIfNeeded()
 
@@ -121,12 +121,12 @@ extension AudioUnitChain {
         effectsLatency = await data.totalLatency
     }
 
-    private func connect(_ firstNode: AVAudioNode, to secondNode: AVAudioNode) throws {
+    private func connect(_ firstNode: AVAudioNode, to secondNode: AVAudioNode) async throws {
         guard let delegate else {
             throw NSError(description: "delegate is nil")
         }
 
-        try delegate.connectAndAttach(
+        try await delegate.connectAndAttach(
             firstNode,
             to: secondNode,
             format: nil

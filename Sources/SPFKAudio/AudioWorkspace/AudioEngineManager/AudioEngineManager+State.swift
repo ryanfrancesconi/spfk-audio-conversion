@@ -24,6 +24,8 @@ extension AudioEngineManager {
 
         Log.debug("🔈 Attempting to start engine with outputFormat", outputFormat)
 
+        Log.debug("🔈", engine.debugDescription)
+        
         try ExceptionTrap.withThrowing { [weak self] in
             guard let self else { return }
 

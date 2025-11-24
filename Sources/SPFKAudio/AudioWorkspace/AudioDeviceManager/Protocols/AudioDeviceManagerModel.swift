@@ -4,7 +4,8 @@ import SPFKAudioHardware
 
 /// Primary audio device access
 public protocol AudioDeviceManagerModel {
-    var systemFormat: AVAudioFormat { get set }
+    var systemFormat: AVAudioFormat { get async }
+    
     var deviceSettings: AudioDeviceSettings { get set }
     var bufferSize: UInt32 { get }
     var inputLatency: UInt32? { get async }

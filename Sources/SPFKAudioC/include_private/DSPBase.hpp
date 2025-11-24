@@ -1,6 +1,7 @@
 // Copyright AudioKit. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
-#include <atomic>
+#import <atomic>
+#import <CoreAudio/CoreAudioTypes.h>
 #import <vector>
 
 #define MIDI_NOTE_ON  0x90
@@ -101,6 +102,7 @@ public:
     };
 
     void setBuffer(AudioBufferList *buffer, size_t busIndex);
+
     size_t getInputBusCount() const {
         return inputBufferLists.size();
     }

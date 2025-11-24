@@ -151,7 +151,7 @@ extension AudioDeviceManager {
             return
         }
 
-        guard AudioDefaults.isSupported(sampleRate: outputDeviceSampleRate) else {
+        guard await AudioDefaults.shared.isSupported(sampleRate: outputDeviceSampleRate) else {
             let errorEvent: Event = .error(
                 NSError(description: "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)")
             )
@@ -162,7 +162,7 @@ extension AudioDeviceManager {
 
         let outputDeviceChanged = selectedOutputDevice.uid != deviceSettings.outputUID
         let inputDeviceChanged = await selectedInputDevice?.uid != deviceSettings.inputUID
-        let sampleRateChanged = outputDeviceSampleRate != systemSampleRate
+        let sampleRateChanged = await outputDeviceSampleRate != systemSampleRate
 
         var options = Set<ConfigurationOption>()
 
@@ -175,7 +175,13 @@ extension AudioDeviceManager {
         }
 
         if sampleRateChanged {
-            options.insert(.sampleRateChanged)
+            do {
+                try await update(systemSampleRate: outputDeviceSampleRate)
+                options.insert(.sampleRateChanged)
+
+            } catch {
+                Log.error(error)
+            }
         }
 
         await send(event: .configurationChanged(options))

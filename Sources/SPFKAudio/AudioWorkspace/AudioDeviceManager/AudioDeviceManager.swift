@@ -3,8 +3,8 @@
 import AVFoundation
 import SPFKAudioBase
 import SPFKAudioHardware
-import SPFKBaseC
 import SPFKBase
+import SPFKBaseC
 
 /// In general, no longer keeping different device preferences from the system audio due
 /// to incompatibilities with AVAudioEngine and its inputNode inflexibility.
@@ -20,7 +20,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         case deviceListChanged(event: DeviceStatusEvent)
         case deviceProcessorOverload
         case error(Error)
-
         case configurationChanged(Set<ConfigurationOption>)
     }
 
@@ -54,17 +53,8 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     }
 
     public var systemFormat: AVAudioFormat {
-        get { AudioDefaults.systemFormat }
-        set {
-            AudioDefaults.systemFormat = newValue
-
-            Task {
-                do {
-                    try await setNominalSampleRate(to: newValue.sampleRate)
-                } catch {
-                    Log.error(error)
-                }
-            }
+        get async {
+            await AudioDefaults.shared.systemFormat
         }
     }
 
@@ -111,7 +101,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     public init() {
     }
 
-    public func setup(settings: AudioDeviceSettings = .init()) async {
+    public func setup(settings: AudioDeviceSettings = .init()) async throws {
         Log.debug(settings)
 
         hardware = await AudioHardwareManager()
@@ -126,6 +116,12 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         )
 
         addHardwareObservers()
+
+        guard let deviceSampleRate = await selectedOutputDevice?.nominalSampleRate else {
+            throw NSError(description: "Failed to get device sample rate")
+        }
+
+        try await update(systemSampleRate: deviceSampleRate)
     }
 
     public func dispose() async {
