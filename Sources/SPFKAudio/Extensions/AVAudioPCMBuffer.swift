@@ -253,20 +253,4 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Unknown status returned")
         }
     }
-
-    /// Write this buffer with it's current format to file
-    /// - Parameter url: URL to write to
-    public func write(to url: URL) throws {
-        var settings = format.settings
-        settings[AVLinearPCMIsNonInterleaved] = false
-
-        let output = try AVAudioFile(
-            forWriting: url,
-            settings: settings,
-            commonFormat: format.commonFormat,
-            interleaved: format.isInterleaved
-        )
-
-        try output.write(from: self)
-    }
 }
