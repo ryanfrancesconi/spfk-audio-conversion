@@ -2,13 +2,14 @@
 
 #import <Foundation/Foundation.h>
 #import <sndfile/sndfile.h>
+
 #import "SndfileUtil.h"
 
 @implementation SndfileUtil
 
 /// libsndfile based channel extraction
 /// http://disis.music.vt.edu/eric/LyonSoftware/demux/
-- (int)demux:(NSString *)input
++ (int)demux:(NSString *)input
       output:(NSString *)output
      channel:(NSString *)channel
 {

@@ -27,6 +27,7 @@ private let dependencies: [PackageDescription.Package.Dependency] = [
     .package(name: "SPFKTime", path: "../SPFKTime"),
     .package(name: "SPFKAudioHardware", path: "../SPFKAudioHardware"),
     .package(name: "SPFKSoX", path: "../SPFKSoX"),
+    .package(name: "SPFKLoudness", path: "../SPFKLoudness"),
 
 ]
 
@@ -41,6 +42,8 @@ private let targets: [PackageDescription.Target] = [
             .byNameItem(name: "SPFKTime", condition: nil),
             .byNameItem(name: "SPFKAudioHardware", condition: nil),
             .byNameItem(name: "SPFKSoX", condition: nil),
+            .byNameItem(name: "SPFKLoudness", condition: nil),
+
         ]
     ),
     
@@ -50,6 +53,7 @@ private let targets: [PackageDescription.Target] = [
         dependencies: [
             .byNameItem(name: "SPFKMetadata", condition: nil),
             .byNameItem(name: "SPFKSoX", condition: nil),
+            .byNameItem(name: "SPFKLoudness", condition: nil),
         ],
         publicHeadersPath: "include",
         cSettings: [

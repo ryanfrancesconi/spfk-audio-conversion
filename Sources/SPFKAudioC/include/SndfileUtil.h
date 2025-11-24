@@ -6,7 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SndfileUtil : NSObject
 
-- (int)demux:(NSString *)input
++ (int)demux:(NSString *)input
       output:(NSString *)output
      channel:(NSString *)channel;
 
