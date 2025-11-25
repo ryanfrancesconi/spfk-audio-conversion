@@ -3,79 +3,96 @@
 
 import PackageDescription
 
-// Swift target
-private let name: String = "SPFKAudio"
-
-// C/C++ target
-private let nameC: String = "\(name)C"
-
+private let name: String = "SPFKAudio" // Swift target
+private let dependencyNames: [String] = ["SPFKAudioHardware", "SPFKLoudness", "SPFKMetadata", "SPFKSoX" ,"SPFKTesting" , "SPFKTime", "SPFKUtils"]
+private let dependencyNamesC: [String] = ["SPFKLoudness", "SPFKMetadata", "SPFKSoX"]
+private let dependencyBranch = "main"
+private let useLocalDependencies: Bool = false
 private let platforms: [PackageDescription.SupportedPlatform]? = [
     .macOS(.v12)
 ]
 
+// MARK: - Reusable Code for a Swift + C package
+
+private let nameC: String = "\(name)C" // C/C++ target
+private let nameTests: String = "\(name)Tests" // Test target
+private let githubBase = "https://github.com/ryanfrancesconi"
+
 private let products: [PackageDescription.Product] = [
-    .library(
-        name: name,
-        targets: [name, nameC]
-    )
+    .library(name: name, targets: [name, nameC])
 ]
 
-private let dependencies: [PackageDescription.Package.Dependency] = [
-    .package(name: "SPFKTesting", path: "../SPFKTesting"),
-    .package(name: "SPFKUtils", path: "../SPFKUtils"),
-    .package(name: "SPFKMetadata", path: "../SPFKMetadata"),
-    .package(name: "SPFKTime", path: "../SPFKTime"),
-    .package(name: "SPFKAudioHardware", path: "../SPFKAudioHardware"),
-    .package(name: "SPFKSoX", path: "../SPFKSoX"),
-    .package(name: "SPFKLoudness", path: "../SPFKLoudness"),
+private var packageDependencies: [PackageDescription.Package.Dependency] {
+     let local: [PackageDescription.Package.Dependency] =
+        dependencyNames.map {
+            .package(name: "\($0)", path: "../\($0)") // assumes the package garden is in one folder
+        }
 
-]
+        
+     let remote: [PackageDescription.Package.Dependency] =
+        dependencyNames.map {
+            .package(url: "\(githubBase)/\($0)", branch: dependencyBranch)
+        }
+    
+    return useLocalDependencies ? local : remote
+}
+
+private var swiftTargetDependencies: [PackageDescription.Target.Dependency] {
+    let names = dependencyNames.filter { $0 != "SPFKTesting" }
+    
+    var value: [PackageDescription.Target.Dependency] = names.map {
+        .byNameItem(name: "\($0)", condition: nil)
+    }
+    
+    value.append(.target(name: nameC))
+    
+    return value
+}
+
+private let swiftTarget: PackageDescription.Target = .target(
+    name: name,
+    dependencies: swiftTargetDependencies
+)
+
+private var testTargetDependencies: [PackageDescription.Target.Dependency] {
+    var array: [PackageDescription.Target.Dependency] = [
+        .byNameItem(name: name, condition: nil),
+        .byNameItem(name: nameC, condition: nil),
+    ]
+
+    if dependencyNames.contains("SPFKTesting") {
+        array.append(.byNameItem(name: "SPFKTesting", condition: nil))
+    }
+    
+    return array
+}
+
+private let testTarget: PackageDescription.Target = .testTarget(
+    name: nameTests,
+    dependencies: testTargetDependencies
+)
+
+private var cTargetDependencies: [PackageDescription.Target.Dependency] {
+    dependencyNamesC.map {
+        .byNameItem(name: "\($0)", condition: nil)
+    }
+}
+
+private let cTarget: PackageDescription.Target = .target(
+    name: nameC,
+    dependencies: cTargetDependencies,
+    publicHeadersPath: "include",
+    cSettings: [
+        .headerSearchPath("include_private")
+    ],
+    cxxSettings: [
+        .headerSearchPath("include_private")
+    ]
+)
+
 
 private let targets: [PackageDescription.Target] = [
-    // Swift
-    .target(
-        name: name,
-        dependencies: [
-            .target(name: nameC),
-            .byNameItem(name: "SPFKUtils", condition: nil),
-            .byNameItem(name: "SPFKMetadata", condition: nil),
-            .byNameItem(name: "SPFKTime", condition: nil),
-            .byNameItem(name: "SPFKAudioHardware", condition: nil),
-            .byNameItem(name: "SPFKSoX", condition: nil),
-            .byNameItem(name: "SPFKLoudness", condition: nil),
-
-        ]
-    ),
-    
-    // C
-    .target(
-        name: nameC,
-        dependencies: [
-            .byNameItem(name: "SPFKMetadata", condition: nil),
-            .byNameItem(name: "SPFKSoX", condition: nil),
-            .byNameItem(name: "SPFKLoudness", condition: nil),
-        ],
-        publicHeadersPath: "include",
-        cSettings: [
-            .headerSearchPath("include_private")
-        ],
-        cxxSettings: [
-            .headerSearchPath("include_private")
-        ]
-    ),
-
-
-    .testTarget(
-        name: "\(name)Tests",
-        dependencies: [
-            .byNameItem(name: name, condition: nil),
-            .byNameItem(name: nameC, condition: nil),
-            .byNameItem(name: "SPFKTesting", condition: nil)
-        ],
-        resources: [
-            .process("Resources")
-        ]
-    )
+    swiftTarget, cTarget, testTarget
 ]
 
 let package = Package(
@@ -83,7 +100,7 @@ let package = Package(
     defaultLocalization: "en",
     platforms: platforms,
     products: products,
-    dependencies: dependencies,
+    dependencies: packageDependencies,
     targets: targets,
     cxxLanguageStandard: .cxx20
 )

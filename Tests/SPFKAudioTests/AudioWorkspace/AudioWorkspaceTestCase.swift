@@ -14,8 +14,11 @@ public class AudioWorkspaceTestCase: BinTestCase {
     var audioUnitChain: AudioUnitChain? { audioWorkspace.master?.audioUnitChain }
 
     override public init() async {
-        await audioWorkspace.deviceManager.setup() // load device prefs here
-
+        do {
+            try await audioWorkspace.deviceManager.setup() // load device prefs here
+        } catch {
+            assertionFailure(error.localizedDescription)
+        }
         await super.init()
     }
 
@@ -44,7 +47,7 @@ class AudioPlayerTestCase: AudioWorkspaceTestCase {
         let player = FilePlayer()
         self.player = player
 
-        try audioWorkspace.engineManager.connectAndAttach(player, to: masterMixer)
+        try await audioWorkspace.engineManager.connectAndAttach(player, to: masterMixer)
     }
 }
 
@@ -59,7 +62,7 @@ class TransportPlayerTestCase: AudioWorkspaceTestCase {
         let player = try await TransportPlayer(delegate: self)
         self.player = player
 
-        try audioWorkspace.engineManager.connectAndAttach(player, to: masterMixer)
+        try await audioWorkspace.engineManager.connectAndAttach(player, to: masterMixer)
     }
 }
 
@@ -75,7 +78,7 @@ extension TransportPlayerTestCase: TransportPlayerDelegate {
 //        Log.debug(event)
     }
 
-    func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) throws {
-        try audioWorkspace.connectAndAttach(node1, to: node2, format: format)
+    func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) async throws {
+        try await audioWorkspace.connectAndAttach(node1, to: node2, format: format)
     }
 }

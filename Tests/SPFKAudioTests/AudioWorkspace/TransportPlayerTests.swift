@@ -14,7 +14,7 @@ final class TransportPlayerTests: TransportPlayerTestCase {
         let player = try #require(player)
 
         for url in TestBundleResources.shared.audioCases {
-            try player.load(url: url)
+            try await player.load(url: url)
         }
 
         #expect(player.formats.count == 3) // dependence on the files in audioCases
@@ -26,7 +26,7 @@ final class TransportPlayerTests: TransportPlayerTestCase {
         player.mixer.volume = 0.5
         player.mixer.pan = -1
 
-        try player.load(url: TestBundleResources.shared.tabla_wav)
+        try await player.load(url: TestBundleResources.shared.tabla_wav)
         try player.play(time: 0)
 
         try await wait(sec: 1)

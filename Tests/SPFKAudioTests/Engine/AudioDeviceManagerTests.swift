@@ -14,7 +14,11 @@ final class AudioDeviceManagerTests: TestCaseModel {
 
     public init() async {
         dm = AudioDeviceManager()
-        await dm.setup()
+        do {
+            try await dm.setup()
+        } catch {
+            assertionFailure(error.localizedDescription)
+        }
     }
 
     @Test func printDescription() async throws {
