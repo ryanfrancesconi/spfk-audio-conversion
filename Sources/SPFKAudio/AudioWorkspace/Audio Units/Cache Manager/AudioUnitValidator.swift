@@ -76,7 +76,6 @@ public class AudioUnitValidator {
         var out = ValidationResult(result: .unknown)
 
         AudioComponentValidateWithResults(component.audioComponent, validateParams) { result, _ in
-
             out = ValidationResult(result: result)
             semaphore.signal()
         }
@@ -145,7 +144,7 @@ public class AudioUnitValidator {
     }
 }
 
-public extension AudioComponentValidationResult {
+extension AudioComponentValidationResult {
     /**
      case unknown = 0
      case passed = 1
@@ -154,7 +153,7 @@ public extension AudioComponentValidationResult {
      case unauthorizedError_Open = 4
      case unauthorizedError_Init = 5
      */
-    var description: String {
+    public var description: String {
         switch self {
         case .unknown:
             return "Unknown"
@@ -173,7 +172,7 @@ public extension AudioComponentValidationResult {
         }
     }
 
-    init?(description: String) {
+    public init?(description: String) {
         switch description {
         case "Unknown":
             self = .unknown

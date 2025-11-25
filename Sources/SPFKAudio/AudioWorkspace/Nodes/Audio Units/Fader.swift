@@ -87,29 +87,29 @@ public class Fader: EngineNodeAU, TypeDescribable {
     }
 }
 
-public extension Fader {
+extension Fader {
     // MARK: - Automation
 
     /// Gain automation helper
     /// - Parameters:
     ///   - events: List of events
     ///   - startTime: start time
-    func automate(events: [AutomationEvent], startTime: AVAudioTime) throws {
+    public func automate(events: [AutomationEvent], startTime: AVAudioTime) throws {
         try $leftGain.automate(events: events, startTime: startTime)
         try $rightGain.automate(events: events, startTime: startTime)
     }
 
-    func automate(events: [AutomationEvent], offset: TimeInterval = 0) throws {
+    public func automate(events: [AutomationEvent], offset: TimeInterval = 0) throws {
         try $leftGain.automate(events: events, offset: offset)
         try $rightGain.automate(events: events, offset: offset)
     }
 
-    func ramp(from start: AUValue, to target: AUValue, duration: Float) {
+    public func ramp(from start: AUValue, to target: AUValue, duration: Float) {
         $leftGain.ramp(from: start, to: target, duration: duration)
         $rightGain.ramp(from: start, to: target, duration: duration)
     }
 
-    func stopAutomation() throws {
+    public func stopAutomation() throws {
         try $leftGain.stopAutomation()
         try $rightGain.stopAutomation()
     }

@@ -2,8 +2,8 @@
 
 import AVFoundation
 import SPFKAudioBase
-import SPFKMetadata
 import SPFKBase
+import SPFKMetadata
 
 // MARK: - Definitions
 
@@ -19,20 +19,20 @@ extension AudioFormatConverter {
     public static let inputFormats: [AudioFileType] = AudioFileType.allCases
 }
 
-public extension AudioFormatConverter {
+extension AudioFormatConverter {
     /// Is this file a PCM file?
     /// - Parameters:
     ///   - url: The URL to parse
     ///   - ignorePathExtension: Do a deep parse rather than rely on the path extension
     /// - Returns: Bool or nil if it couldn't be determined
-    static func isPCM(url: URL, ignorePathExtension: Bool = false) -> Bool? {
+    public static func isPCM(url: URL, ignorePathExtension: Bool = false) -> Bool? {
         guard let value = isCompressed(url: url, ignorePathExtension: ignorePathExtension) else { return nil }
 
         return !value
     }
 
     /// Compressed format or not
-    static func isCompressed(url: URL, ignorePathExtension: Bool) -> Bool? {
+    public static func isCompressed(url: URL, ignorePathExtension: Bool) -> Bool? {
         guard !ignorePathExtension else {
             return isCompressedExt(url: url)
         }
@@ -40,7 +40,7 @@ public extension AudioFormatConverter {
         return isCompressed(url: url)
     }
 
-    static func isCompressed(url: URL) -> Bool {
+    public static func isCompressed(url: URL) -> Bool {
         let pathExtension = url.pathExtension.lowercased()
 
         switch pathExtension {

@@ -4,19 +4,19 @@
 import AudioToolbox
 
 @inline(__always)
-internal func AudioUnitGetParameter(_ unit: AudioUnit, param: AudioUnitParameterID) -> AUValue {
+func AudioUnitGetParameter(_ unit: AudioUnit, param: AudioUnitParameterID) -> AUValue {
     var val: AudioUnitParameterValue = 0
     AudioUnitGetParameter(unit, param, kAudioUnitScope_Global, 0, &val)
     return val
 }
 
 @inline(__always)
-internal func AudioUnitSetParameter(_ unit: AudioUnit, param: AudioUnitParameterID, to value: AUValue) {
+func AudioUnitSetParameter(_ unit: AudioUnit, param: AudioUnitParameterID, to value: AUValue) {
     AudioUnitSetParameter(unit, param, kAudioUnitScope_Global, 0, AudioUnitParameterValue(value), 0)
 }
 
-public extension AUParameterTree {
-    static func createParameter(
+extension AUParameterTree {
+    public static func createParameter(
         identifier: String,
         name: String,
         address: AUParameterAddress,

@@ -5,7 +5,7 @@ import AVFoundation
 import SPFKAudioC
 import SPFKBase
 
-public extension NodeParameter {
+extension NodeParameter {
     /// the `lastRenderTime` of the avAudioNode or a zero sampleTime AVAudioTime
     private var lastRenderTime: AVAudioTime {
         var value = avAudioNode?.lastRenderTime ?? AVAudioTime(sampleTime: 0, atRate: sampleRate)
@@ -30,7 +30,7 @@ public extension NodeParameter {
     /// - Parameters:
     ///   - events: An array of events
     ///   - offset: A time offset into the events
-    func automate(events: [AutomationEvent], offset: TimeInterval) throws {
+    public func automate(events: [AutomationEvent], offset: TimeInterval) throws {
         guard let avAudioNode else {
             throw NSError(description: "Underlying AVAudioNode is nil")
         }
@@ -69,7 +69,7 @@ public extension NodeParameter {
     ///
     /// - Parameter events: automation curve
     /// - Parameter startTime: optional time to start automation
-    func automate(events: [AutomationEvent], startTime: AVAudioTime? = nil) throws {
+    public func automate(events: [AutomationEvent], startTime: AVAudioTime? = nil) throws {
         guard let avAudioNode else {
             throw NSError(description: "Underlying AVAudioNode is nil")
         }
@@ -121,7 +121,7 @@ public extension NodeParameter {
     }
 
     /// Stop automation
-    func stopAutomation() throws {
+    public func stopAutomation() throws {
         guard let avAudioNode else {
             throw NSError(description: "Underlying AVAudioNode is nil")
         }
@@ -137,7 +137,7 @@ public extension NodeParameter {
     ///   - start: initial value
     ///   - target: destination value
     ///   - duration: duration to ramp to the target value in seconds
-    func ramp(from start: AUValue, to target: AUValue, duration: Float) {
+    public func ramp(from start: AUValue, to target: AUValue, duration: Float) {
         let sampleRate = self.sampleRate
         ramp(to: start, duration: 0.02, delay: 0, sampleRate: sampleRate.float)
         ramp(to: target, duration: duration, delay: 0.02, sampleRate: sampleRate.float)

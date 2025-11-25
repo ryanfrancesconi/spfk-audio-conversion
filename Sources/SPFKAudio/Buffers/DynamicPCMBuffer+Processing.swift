@@ -3,18 +3,18 @@
 import AVFoundation
 import SPFKBase
 
-public extension DynamicPCMBuffer {
+extension DynamicPCMBuffer {
     /// - Returns: A normalized buffer
-    func normalize() throws -> AVAudioPCMBuffer {
+    public func normalize() throws -> AVAudioPCMBuffer {
         try internalBuffer.normalize()
     }
 
     /// - Returns: A reversed buffer
-    func reverse() -> AVAudioPCMBuffer? {
+    public func reverse() -> AVAudioPCMBuffer? {
         let reversedBuffer = AVAudioPCMBuffer(pcmFormat: internalBuffer.format,
                                               frameCapacity: internalBuffer.frameCapacity)
 
-        var j: Int = 0
+        var j = 0
         let length: AVAudioFrameCount = internalBuffer.frameLength
         let channelCount = Int(internalBuffer.format.channelCount)
 
@@ -33,9 +33,10 @@ public extension DynamicPCMBuffer {
 
     /// - Returns: A new buffer from this one that has fades applied to it. Pass 0 for either parameter
     /// if you only want one of them. The ramp is exponential by default.
-    func fade(inTime: Double,
-              outTime: Double,
-              linearRamp: Bool = false) -> AVAudioPCMBuffer? {
+    public func fade(inTime: Double,
+                     outTime: Double,
+                     linearRamp: Bool = false) -> AVAudioPCMBuffer?
+    {
         guard let floatData = internalBuffer.floatChannelData, inTime > 0 || outTime > 0 else {
             Log.error("Error fading buffer")
             return nil
@@ -51,7 +52,7 @@ public extension DynamicPCMBuffer {
         // initial starting point for the gain, if there is a fade in, start it at .01 otherwise at 1
         var gain: Double = inTime > 0 ? 0.01 : 1
 
-        let sampleTime: Double = 1.0 / sampleRate
+        let sampleTime = 1.0 / sampleRate
 
         var fadeInPower: Double = 1
         var fadeOutPower: Double = 1
