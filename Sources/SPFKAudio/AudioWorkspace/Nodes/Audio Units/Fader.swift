@@ -87,29 +87,29 @@ public class Fader: EngineNodeAU, TypeDescribable {
     }
 }
 
-extension Fader {
+public extension Fader {
     // MARK: - Automation
 
     /// Gain automation helper
     /// - Parameters:
     ///   - events: List of events
     ///   - startTime: start time
-    public func automate(events: [AutomationEvent], startTime: AVAudioTime) async throws {
-        try await $leftGain.automate(events: events, startTime: startTime)
-        try await $rightGain.automate(events: events, startTime: startTime)
+    func automate(events: [AutomationEvent], startTime: AVAudioTime) throws {
+        try $leftGain.automate(events: events, startTime: startTime)
+        try $rightGain.automate(events: events, startTime: startTime)
     }
 
-    public func automate(events: [AutomationEvent], offset: TimeInterval = 0) async throws {
-        try await $leftGain.automate(events: events, offset: offset)
-        try await $rightGain.automate(events: events, offset: offset)
+    func automate(events: [AutomationEvent], offset: TimeInterval = 0) throws {
+        try $leftGain.automate(events: events, offset: offset)
+        try $rightGain.automate(events: events, offset: offset)
     }
 
-    public func ramp(from start: AUValue, to target: AUValue, duration: Float) async {
-        await $leftGain.ramp(from: start, to: target, duration: duration)
-        await $rightGain.ramp(from: start, to: target, duration: duration)
+    func ramp(from start: AUValue, to target: AUValue, duration: Float) {
+        $leftGain.ramp(from: start, to: target, duration: duration)
+        $rightGain.ramp(from: start, to: target, duration: duration)
     }
 
-    public func stopAutomation() throws {
+    func stopAutomation() throws {
         try $leftGain.stopAutomation()
         try $rightGain.stopAutomation()
     }
