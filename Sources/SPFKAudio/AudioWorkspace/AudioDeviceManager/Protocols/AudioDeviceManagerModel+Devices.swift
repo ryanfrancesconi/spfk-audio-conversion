@@ -76,7 +76,8 @@ extension AudioDeviceManagerModel {
         get async {
             guard await !allowInput,
                   let uid = deviceSettings.outputUID,
-                  let device = await AudioDevice.lookup(uid: uid) else {
+                  let device = await AudioDevice.lookup(uid: uid)
+            else {
                 return nil
             }
 
@@ -88,25 +89,6 @@ extension AudioDeviceManagerModel {
         get async {
             await selectedOutputDevice?.name ?? "(Unnamed Output Device)"
         }
-    }
-
-    public func preferredChannelsDescription(device: AudioDevice, scope: Scope) async -> String? {
-        guard let preferredChannelsForStereo = device.preferredChannelsForStereo(scope: scope) else { return nil }
-
-        var namedChannels = await device.namedChannels(scope: scope).filter {
-            $0.channel == preferredChannelsForStereo.left ||
-                $0.channel == preferredChannelsForStereo.right
-        }
-
-        namedChannels = namedChannels.sorted(by: { lhs, rhs -> Bool in
-            lhs.channel < rhs.channel
-        })
-
-        let stringValues = namedChannels.map {
-            $0.description
-        }
-
-        return stringValues.joined(separator: " + ")
     }
 }
 

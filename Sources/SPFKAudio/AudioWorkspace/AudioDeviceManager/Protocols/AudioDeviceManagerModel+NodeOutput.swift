@@ -4,10 +4,6 @@ import SPFKBase
 
 extension AudioDeviceManagerModel {
     public func updatePreferredOutputChannels() async throws {
-        guard let engineOutputNode else {
-            throw NSError(description: "engineOutputNode is nil")
-        }
-
         guard let selectedOutputDevice = await selectedOutputDevice else {
             throw NSError(description: "selectedOutputDevice is nil")
         }
@@ -28,12 +24,8 @@ extension AudioDeviceManagerModel {
 
         Log.debug(selectedOutputDevice.name, "returned", stereoPair)
 
-//        let stereoPair: StereoPair = (left: 1, right: 2)
-
-        try updateChannelMap(
-            device: selectedOutputDevice,
-            stereoPair: stereoPair,
-            channelCount: engineOutputNode.outputFormat(forBus: 0).channelCount
+        try updateOutputChannelMap(
+            stereoPair: stereoPair
         )
     }
 
@@ -52,10 +44,16 @@ extension AudioDeviceManagerModel {
                                             L  R  HDMI1 HDMI2
      ```
      */
-    private func updateChannelMap(device: AudioDevice, stereoPair: StereoPair, channelCount: AVAudioChannelCount) throws {
-        guard let audioUnit = engineOutputNode?.audioUnit else {
-            throw NSError(description: "Failed to get audioUnit reference from engine.outputNode")
+    public func updateOutputChannelMap(stereoPair: StereoPair) throws {
+        guard let engineOutputNode else {
+            throw NSError(description: "engineOutputNode is nil")
         }
+
+        guard let audioUnit = engineOutputNode.audioUnit else {
+            throw NSError(description: "Failed to get audioUnit reference from engineOutputNode")
+        }
+
+        let channelCount = engineOutputNode.outputFormat(forBus: 0).channelCount
 
         // sanity check
         guard channelCount > 1, channelCount <= 1024 else {
@@ -71,7 +69,7 @@ extension AudioDeviceManagerModel {
         guard channelMap.indices.contains(leftIndex),
               channelMap.indices.contains(rightIndex)
         else {
-            throw NSError(description: "Invalid indices are passed in for \(device.name): \(leftIndex)-\(rightIndex)")
+            throw NSError(description: "Invalid indices are passed in: \(leftIndex)-\(rightIndex)")
         }
 
         channelMap[leftIndex] = 0
@@ -82,7 +80,7 @@ extension AudioDeviceManagerModel {
         // 1 is the 'input' element, 0 is output
         let outputElement: AudioUnitElement = 0
 
-        let err = AudioUnitSetProperty(
+        let status = AudioUnitSetProperty(
             audioUnit,
             kAudioOutputUnitProperty_ChannelMap,
             kAudioUnitScope_Global,
@@ -91,8 +89,8 @@ extension AudioDeviceManagerModel {
             channelMapSize
         )
 
-        guard err == noErr else {
-            throw NSError(description: "Failed setting kAudioOutputUnitProperty_ChannelMap \(device.name), error: \(err)")
+        guard status == noErr else {
+            throw NSError(description: "Failed setting kAudioOutputUnitProperty_ChannelMap, error: \(status.fourCC)")
         }
 
         Log.debug("set to", stereoPair, "channelMap", channelMap, "total channels", channelCount)

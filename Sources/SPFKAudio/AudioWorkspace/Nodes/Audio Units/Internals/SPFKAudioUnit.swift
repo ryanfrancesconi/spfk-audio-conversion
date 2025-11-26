@@ -138,20 +138,20 @@ open class SPFKAudioUnit: AUAudioUnit {
     private func createBusses(format: AVAudioFormat?) throws {
         let format = format ?? AudioDefaults.shared.unsafeSystemFormat
 
-        Log.debug(format)
+        // Log.debug(format)
 
         inputBusArray.removeAll()
         outputBusArray.removeAll()
 
         for _ in 0 ..< inputBusCountDSP(dsp) {
-            inputBusArray.append(
-                try AUAudioUnitBus(format: format)
+            try inputBusArray.append(
+                AUAudioUnitBus(format: format)
             )
         }
 
-        // All AudioKit nodes have one output bus.
-        outputBusArray.append(
-            try AUAudioUnitBus(format: format)
+        // All  nodes have one output bus.
+        try outputBusArray.append(
+            AUAudioUnitBus(format: format)
         )
     }
 
