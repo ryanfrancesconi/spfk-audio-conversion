@@ -77,7 +77,8 @@ extension AudioUnitCacheManager {
 
     func parse(cache doc: AEXMLDocument) -> SystemComponentsResponse {
         guard let aus = doc.root["au"].all,
-              aus.isNotEmpty else {
+              aus.isNotEmpty
+        else {
             Log.error("*AU No entries in cache file")
             return SystemComponentsResponse()
         }
@@ -103,7 +104,8 @@ extension AudioUnitCacheManager {
     private func parse(cacheItem item: AEXMLElement) -> ComponentValidationResult? {
         guard let componentType = item.attributes["componentType"]?.uInt32,
               let componentSubType = item.attributes["componentSubType"]?.uInt32,
-              let componentManufacturer = item.attributes["componentManufacturer"]?.uInt32 else {
+              let componentManufacturer = item.attributes["componentManufacturer"]?.uInt32
+        else {
             Log.error("Failed to create required data from \(item.xmlCompact)")
 
             return nil
@@ -130,29 +132,32 @@ extension AudioUnitCacheManager {
 
         if isEnabled, let avComponent = AVAudioUnitComponentManager.shared()
             .components(matching: audioComponentDescription)
-            .first {
+            .first
+        {
             component = avComponent
         }
 
         var validationResult: AudioComponentValidationResult?
 
         if let desc = item.attributes["validation"],
-           let value = AudioComponentValidationResult(description: desc) {
+           let value = AudioComponentValidationResult(description: desc)
+        {
             validationResult = value
         }
 
-        var result = ComponentValidationResult(
-            audioComponentDescription: audioComponentDescription,
-            component: component,
-            validation: AudioUnitValidator.ValidationResult(result: validationResult ?? .passed),
-            isEnabled: isEnabled
-        )
+        let validation = AudioUnitValidator.ValidationResult(result: validationResult ?? .passed)
 
-        if component == nil {
-            result.name = item.attributes["name"] ?? ""
-            result.versionString = item.attributes["version"] ?? ""
-            result.typeName = item.attributes["typeName"] ?? ""
-            result.manufacturerName = item.attributes["manufacturerName"] ?? ""
+        var result: ComponentValidationResult
+
+        if let component {
+            result = ComponentValidationResult(
+                audioComponentDescription: audioComponentDescription,
+                component: component,
+                validation: validation,
+                isEnabled: isEnabled
+            )
+        } else {
+            result = ComponentValidationResult(audioComponentDescription: audioComponentDescription, validation: validation, isEnabled: isEnabled, name: item.attributes["name"] ?? "", typeName: item.attributes["typeName"] ?? "", manufacturerName: item.attributes["manufacturerName"] ?? "", versionString: item.attributes["version"] ?? "", icon: nil)
         }
 
         return result

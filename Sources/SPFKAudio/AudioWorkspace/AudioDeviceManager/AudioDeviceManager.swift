@@ -103,8 +103,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     public func setup(settings: AudioDeviceSettings = .init()) async throws {
         Log.debug(settings)
 
-        try await hardware.start()
-        
         let defaultInputUID = await hardware.defaultInputDevice?.uid
         let defaultOutputUID = await hardware.defaultOutputDevice?.uid
 
@@ -114,6 +112,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
             outputUID: settings.outputUID ?? defaultOutputUID
         )
 
+        try await hardware.start()
         addHardwareObservers()
 
         guard let deviceSampleRate = await selectedOutputDevice?.nominalSampleRate else {

@@ -1,17 +1,20 @@
 
-import SPFKBase
 import AppKit
-import AVFoundation
+@preconcurrency import AVFoundation
+import SPFKBase
 
-public struct ComponentValidationResult {
-    public var audioComponentDescription: AudioComponentDescription
-
-    public var component: AVAudioUnitComponent?
+public struct ComponentValidationResult: Sendable {
+    public let audioComponentDescription: AudioComponentDescription
+    public let component: AVAudioUnitComponent?
+    public let name: String
+    public let typeName: String
+    public let manufacturerName: String
+    public let versionString: String
+    public let icon: NSImage?
 
     public var validation: AudioUnitValidator.ValidationResult
-
-    public var isEnabled: Bool = true
-
+    public var isEnabled: Bool
+    
     public var isFormatCompatible: Bool {
         (audioComponentDescription.isEffect || audioComponentDescription.isMusicDevice) && component?.supportsStereo == true
     }
@@ -24,18 +27,8 @@ public struct ComponentValidationResult {
         component?.supportsStereo == true
     }
 
-    public var name: String = ""
-
-    public var typeName: String = ""
-
-    public var manufacturerName: String = ""
-
-    public var versionString: String = ""
-
-    public var icon: NSImage?
-
     public var description: String {
-        if let component = component {
+        if let component {
             return "\(component.manufacturerName): \(component.name) (\(component.typeName)), " +
                 "More info: \(component.audioComponentDescription.validationCommand)"
         } else {
@@ -43,21 +36,42 @@ public struct ComponentValidationResult {
         }
     }
 
-    public init(audioComponentDescription: AudioComponentDescription,
-                component: AVAudioUnitComponent?,
-                validation: AudioUnitValidator.ValidationResult,
-                isEnabled: Bool = true) {
+    public init(
+        audioComponentDescription: AudioComponentDescription,
+        component: AVAudioUnitComponent,
+        validation: AudioUnitValidator.ValidationResult,
+        isEnabled: Bool = true
+    ) {
         self.audioComponentDescription = audioComponentDescription
         self.component = component
         self.validation = validation
         self.isEnabled = isEnabled
 
-        if let component {
-            name = component.name
-            typeName = component.localizedTypeName
-            manufacturerName = component.manufacturerName
-            versionString = component.versionString
-            icon = component.icon
-        }
+        name = component.name
+        typeName = component.localizedTypeName
+        manufacturerName = component.manufacturerName
+        versionString = component.versionString
+        icon = component.icon
+    }
+
+    public init(
+        audioComponentDescription: AudioComponentDescription,
+        validation: AudioUnitValidator.ValidationResult,
+        isEnabled: Bool = true,
+        name: String,
+        typeName: String,
+        manufacturerName: String,
+        versionString: String,
+        icon: NSImage?
+    ) {
+        component = nil
+        self.audioComponentDescription = audioComponentDescription
+        self.validation = validation
+        self.isEnabled = isEnabled
+        self.name = name
+        self.typeName = typeName
+        self.manufacturerName = manufacturerName
+        self.versionString = versionString
+        self.icon = icon
     }
 }

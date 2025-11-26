@@ -16,13 +16,19 @@ extension AudioDeviceManagerModel {
             throw NSError(description: "engineDevice is nil")
         }
 
+        let allowInput = await self.allowInput
+
         // If we're allowing input that means that we're using the engine's aggregate.
         // So, we must look at its preferredChannelsForStereo and set that on the channel map
-        let channelsDevice = await allowInput ? engineDevice : selectedOutputDevice
+        let currentDevice = allowInput ? engineDevice : selectedOutputDevice
 
-        guard let stereoPair = channelsDevice.preferredChannelsForStereo(scope: .output) else {
+        guard let stereoPair = currentDevice.preferredChannelsForStereo(scope: .output) else {
             throw NSError(description: "Failed to get preferredChannelsForStereo for \(selectedOutputDevice.name)")
         }
+
+        Log.debug(selectedOutputDevice.name, "returned", stereoPair)
+
+//        let stereoPair: StereoPair = (left: 1, right: 2)
 
         try updateChannelMap(
             device: selectedOutputDevice,
@@ -52,7 +58,7 @@ extension AudioDeviceManagerModel {
         }
 
         // sanity check
-        guard channelCount > 1 && channelCount <= 1024 else {
+        guard channelCount > 1, channelCount <= 1024 else {
             throw NSError(description: "Error: invalid number of output channels (\(channelCount)")
         }
 
@@ -63,7 +69,8 @@ extension AudioDeviceManagerModel {
         let rightIndex = Int(stereoPair.right) - 1
 
         guard channelMap.indices.contains(leftIndex),
-              channelMap.indices.contains(rightIndex) else {
+              channelMap.indices.contains(rightIndex)
+        else {
             throw NSError(description: "Invalid indices are passed in for \(device.name): \(leftIndex)-\(rightIndex)")
         }
 
@@ -124,9 +131,10 @@ extension AudioDeviceManagerModel {
     /// NOTE: this method of direct setting of the device with no input
     /// doesn't work with airpods -
     /// potentially other blue tooth headsets as well.
-    internal func setEngineNodeOutput(to device: AudioDevice) async throws {
+    func setEngineNodeOutput(to device: AudioDevice) async throws {
         if let currentNodeOutputDevice = await currentNodeOutputDevice,
-           currentNodeOutputDevice == device {
+           currentNodeOutputDevice == device
+        {
             Log.debug(device, "is already set as the engine's output")
             return
         }

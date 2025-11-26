@@ -4,7 +4,7 @@ import AVFoundation
 import SPFKUtils
 
 public class AudioUnitValidator {
-    public struct ValidationResult {
+    public struct ValidationResult: Sendable {
         public var result: AudioComponentValidationResult
         public var output: String?
     }

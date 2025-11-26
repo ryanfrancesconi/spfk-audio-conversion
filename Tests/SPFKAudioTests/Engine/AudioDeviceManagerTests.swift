@@ -4,15 +4,15 @@ import AVFoundation
 import Foundation
 @testable import SPFKAudio
 import SPFKAudioHardware
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @Suite(.serialized, .tags(.realtime, .engine))
 final class AudioDeviceManagerTests: TestCaseModel {
     let dm: AudioDeviceManager
 
-    public init() async {
+    init() async {
         dm = AudioDeviceManager()
         do {
             try await dm.setup()
@@ -67,6 +67,19 @@ final class AudioDeviceManagerTests: TestCaseModel {
         } catch {
             Log.error(error)
             return false
+        }
+    }
+}
+
+extension AudioDeviceManagerTests {
+    @Test(arguments: [Scope.output])
+    func preferredChannelsForStereoAllDevices(scope: Scope) async throws {
+        let devices = await dm.allDevices
+
+        for device in devices {
+            let preferredChannels = device.preferredChannelsForStereo(scope: scope)
+
+            Log.debug(device.name, preferredChannels)
         }
     }
 }
