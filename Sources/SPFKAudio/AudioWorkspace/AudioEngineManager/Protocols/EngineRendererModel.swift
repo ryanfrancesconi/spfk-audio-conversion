@@ -13,7 +13,7 @@ public protocol EngineRendererModel {
         prerender: (() -> Void)?,
         postrender: (() -> Void)?,
         progress progressHandler: ((UnitInterval) -> Void)?
-    ) throws
+    ) async throws
 
     func cancelRender()
 }

@@ -11,7 +11,7 @@ import SPFKUtils
 
 /// Wrapper on top of engine renderer with some event handlers
 public class OfflineRenderer {
-    public enum Event {
+    public enum RenderEvent {
         case renderCancelled
         case renderStarted
         case renderProgress(event: LoadStateEvent)
@@ -19,7 +19,7 @@ public class OfflineRenderer {
         case renderError(Error)
     }
 
-    public var eventHandler: ((Event) -> Void)?
+    public var eventHandler: ((RenderEvent) -> Void)?
     public private(set) weak var engineManager: AudioEngineManagerModel?
 
     // MARK: -
@@ -68,7 +68,7 @@ public class OfflineRenderer {
         audioSettings: AudioFormatConverterOptions,
         prerender: @escaping () -> Void,
         postrender: (() -> Void)? = nil
-    ) {
+    ) async {
         self.engineManager = engineManager
 
         bouncedURLs.removeAll()
@@ -85,14 +85,11 @@ public class OfflineRenderer {
         let mixPath = url.deletingPathExtension().path + tempString + "." + renderFileType.pathExtension
         let timelineURL = URL(fileURLWithPath: mixPath)
 
-        Task(priority: .high) {
-            await self.processBounceAsync(timelineURL: timelineURL,
-                                    duration: duration,
-                                    renderUntilSilent: renderUntilSilent,
-                                    prerender: prerender,
-                                    postrender: postrender
-            )
-        }
+        await processBounceAsync(timelineURL: timelineURL,
+                                 duration: duration,
+                                 renderUntilSilent: renderUntilSilent,
+                                 prerender: prerender,
+                                 postrender: postrender)
     }
 
     private func processBounceAsync(
@@ -117,14 +114,13 @@ public class OfflineRenderer {
         do {
             let file = try AVAudioFile(forWriting: timelineURL, settings: renderFormat)
 
-            try engineManager.render(
+            try await engineManager.render(
                 to: file,
                 duration: duration,
                 renderUntilSilent: renderUntilSilent,
                 prerender: prerender,
                 postrender: postrender,
                 progress: { value in
-
                     self.send(event:
                         .renderProgress(
                             event: .loading(string: "Rendering to \(self.filenameNoExtension)...", progress: value)
@@ -218,7 +214,8 @@ public class OfflineRenderer {
 
         // user chose not to save the main mix, so remove now
         if !exportAudio,
-           let convertedMixURL, convertedMixURL.exists {
+           let convertedMixURL, convertedMixURL.exists
+        {
             do {
                 Log.debug("Removing mix:", convertedMixURL)
                 try convertedMixURL.delete()
@@ -265,7 +262,7 @@ public class OfflineRenderer {
     }
 
     // isolate eventHandler? here
-    func send(event: Event) {
+    func send(event: RenderEvent) {
         eventHandler?(event)
     }
 }
