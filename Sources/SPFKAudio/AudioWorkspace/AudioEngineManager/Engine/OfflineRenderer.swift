@@ -117,10 +117,10 @@ public class OfflineRenderer {
             try await engineManager.render(
                 to: file,
                 duration: duration,
-                renderUntilSilent: renderUntilSilent,
+                options: .init(renderUntilSilent: renderUntilSilent),
                 prerender: prerender,
                 postrender: postrender,
-                progress: { value in
+                progressHandler: { value in
                     self.send(event:
                         .renderProgress(
                             event: .loading(string: "Rendering to \(self.filenameNoExtension)...", progress: value)
@@ -139,7 +139,7 @@ public class OfflineRenderer {
 
             Task { @MainActor in
                 send(event: .renderError(error))
-                self.cancel()
+                await self.cancel()
             }
             return
         }
@@ -243,13 +243,14 @@ public class OfflineRenderer {
     }
 
     // not a stub
-    public func cancel() {
+    public func cancel() async {
         guard !abortFlag else {
             return
         }
 
         abortFlag = true
-        engineManager?.cancelRender()
+        
+        await engineManager?.cancelRender()
 
         for url in convertedFiles {
             Log.debug("* Deleting \(url.path)")

@@ -4,16 +4,14 @@ import AVFoundation
 import SPFKBase
 
 public protocol EngineRendererModel {
-    var renderIsCanceled: Bool { get }
+    func cancelRender() async
 
     func render(
         to audioFile: AVAudioFile,
-        duration: TimeInterval,
-        renderUntilSilent: Bool,
-        prerender: (() -> Void)?,
-        postrender: (() -> Void)?,
-        progress progressHandler: ((UnitInterval) -> Void)?
+        duration: Double,
+        options: EngineRendererOptions,
+        prerender: (() throws -> Void)?,
+        postrender: (() throws -> Void)?,
+        progressHandler: ((UnitInterval) -> Void)?
     ) async throws
-
-    func cancelRender()
 }

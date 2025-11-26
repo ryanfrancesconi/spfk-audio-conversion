@@ -2,71 +2,77 @@
 
 import Accelerate
 import AVFoundation
-import OTAtomics
-import SwiftExtensions
 import SPFKBase
 
-// TODO: make async, remove OTAtomicsThreadSafe
+public actor EngineRenderer {
+    public let disableManualRenderingModeOnCompletion: Bool = true
 
-public class EngineRenderer {
-    @OTAtomicsThreadSafe private var abortFlag: Bool = false
+    var renderTask: Task<Void, Error>?
 
-    public var disableManualRenderingModeOnCompletion = true
+    let engine: AVAudioEngine
+    let audioFile: AVAudioFile
+    let duration: TimeInterval
+    let options: EngineRendererOptions
 
-    // can set this to end of timeline
-    public var maxTailToRender: TimeInterval = Double(60 * 5)
+    let prerender: (() throws -> Void)?
+    let postrender: (() throws -> Void)?
+    let progressHandler: ((UnitInterval) -> Void)?
 
-    public var isCanceled: Bool {
-        abortFlag == true
-    }
-
-    public func cancel() {
-        abortFlag = true
-    }
-
-    public init() {}
-
-    /// Render output to an AVAudioFile for a duration.
-    ///     - Parameters
-    ///         - engine: The AVAudioEngine to use
-    ///         - audioFile: A file initialized for writing
-    ///         - duration: Duration to render, in seconds
-    ///         - renderUntilSilent: After completing rendering to the passed in duration, wait for silence. Useful
-    ///         for capturing effects tails.
-    ///         - silenceThreshold: Threshold value to check for silence. Default is 0.00005.
-    ///         - prerender: Closure called before rendering starts, used to start players, set initial parameters, etc.
-    ///         - progress: Closure called while rendering, use this to fetch render progress. 0 ... 1
-    ///
-    public func render(
+    public init(
         engine: AVAudioEngine,
         to audioFile: AVAudioFile,
-        maximumFrameCount: AVAudioFrameCount = 4096,
         duration: TimeInterval,
-        renderUntilSilent: Bool = false,
-        silenceThreshold: Float = 0.00005,
-        prerender: (() -> Void)? = nil,
-        postrender: (() -> Void)? = nil,
-        progress progressHandler: ((UnitInterval) -> Void)? = nil
+        options: EngineRendererOptions = .init(),
+        prerender: (() throws -> Void)?,
+        postrender: (() throws -> Void)? = nil,
+        progressHandler: ((UnitInterval) -> Void)? = nil
     ) throws {
         guard duration >= 0 else {
             throw NSError(description: "duration needs to be a positive value")
         }
 
-        abortFlag = false
+        self.engine = engine
+        self.audioFile = audioFile
+        self.options = options
+        self.duration = duration
+        self.prerender = prerender
+        self.postrender = postrender
+        self.progressHandler = progressHandler
+    }
 
+    public func start() async throws {
+        renderTask?.cancel()
+        renderTask = Task<Void, Error> {
+            try await process()
+        }
+
+        try await renderTask?.value
+
+        if renderTask?.isCancelled == true {
+            Log.debug("🍙⛔️ renderTask.isCancelled, attempting to remove file at \(audioFile.url.path)")
+            try? audioFile.url.delete()
+        }
+
+        if disableManualRenderingModeOnCompletion,
+           engine.isInManualRenderingMode
+        {
+            engine.disableManualRenderingMode()
+        }
+
+        Log.debug("🍙🏁 Complete")
+        renderTask = nil
+    }
+
+    private func process() async throws {
         // Engine can't be running when switching to offline render mode.
         if engine.isRunning { engine.stop() }
 
         if !engine.isInManualRenderingMode || audioFile.processingFormat != engine.manualRenderingFormat {
-            Log.debug("🍙 Switching to ManualRenderingMode...")
-
             try engine.enableManualRenderingMode(
                 .offline,
                 format: audioFile.processingFormat,
-                maximumFrameCount: maximumFrameCount
+                maximumFrameCount: options.maximumFrameCount
             )
-
-            Log.debug("🍙 duration", duration, "audioFile.processingFormat", audioFile.processingFormat, "engine.manualRenderingFormat", engine.manualRenderingFormat)
         }
 
         // This resets the sampleTime of offline rendering to 0.
@@ -76,42 +82,40 @@ public class EngineRenderer {
 
         try engine.start()
 
-        guard let buffer = AVAudioPCMBuffer(
+        guard var buffer = AVAudioPCMBuffer(
             pcmFormat: engine.manualRenderingFormat,
             frameCapacity: engine.manualRenderingMaximumFrameCount
-        ) else {
+        )
+        else {
             throw NSError(description: "Couldn't create buffer")
         }
 
         // This is to prepare the nodes for playing, i.e player.play()
-        prerender?()
+        try prerender?()
 
         // Render until file contains >= target samples
-        let targetSamples = AVAudioFramePosition(duration * engine.manualRenderingFormat.sampleRate)
-        let channelCount = Int(buffer.format.channelCount)
-        var zeroCount = 0
+        let targetSamples = AVAudioFramePosition(
+            duration * engine.manualRenderingFormat.sampleRate
+        )
+
         var isWriting = true
         var tailTimeRendered: TimeInterval = 0
-
+        var zeroCount = 0
         var postrenderTriggered: Bool = false
 
         while isWriting {
-            if abortFlag {
-                Log.debug("🍙🛑 Abort detected...")
-                isWriting = false
-                progressHandler?(1)
-            }
+            try Task.checkCancellation()
 
             let isComplete = audioFile.framePosition >= targetSamples
 
-            if !renderUntilSilent, isComplete {
-                Log.debug("🍙☑️", "Done, renderUntilSilent is false. framePosition:", audioFile.framePosition, targetSamples, "frames were rendered")
+            if !options.renderUntilSilent, isComplete {
                 break
             }
 
-            let framesToRender = renderUntilSilent ?
-                engine.manualRenderingMaximumFrameCount :
-                min(buffer.frameCapacity, AVAudioFrameCount(targetSamples - audioFile.framePosition))
+            let framesToRender =
+                options.renderUntilSilent
+                    ? engine.manualRenderingMaximumFrameCount
+                    : min(buffer.frameCapacity, AVAudioFrameCount(targetSamples - audioFile.framePosition))
 
             let status = try engine.renderOffline(framesToRender, to: buffer)
 
@@ -121,8 +125,8 @@ public class EngineRenderer {
             switch status {
             case .success:
                 try audioFile.write(from: buffer)
-
-                progressValue = min(UnitInterval(audioFile.framePosition) / Double(targetSamples), 1.0)
+                let rawProgress = UnitInterval(audioFile.framePosition) / Double(targetSamples)
+                progressValue = min(rawProgress, 1.0)
                 progressHandler?(progressValue)
 
             case .cannotDoInCurrentContext:
@@ -133,69 +137,88 @@ public class EngineRenderer {
                 throw NSError(description: ".insufficientDataFromInputNode")
 
             case .error:
-                throw NSError(description: "There was an error rendering to \(audioFile.url.path)")
+                throw NSError(
+                    description:
+                    "There was an error rendering to \(audioFile.url.path)"
+                )
 
             @unknown default:
                 Log.error("🍙 Unknown render result:", status)
                 isWriting = false
             }
 
-            if isComplete, !postrenderTriggered {
-                Log.debug("🛑🍙 Triggering postrender action")
-                postrender?()
+            if let postrender, isComplete, !postrenderTriggered {
+                Log.debug("🍙 Triggering postrender action")
+                try postrender()
                 postrenderTriggered = true
             }
 
-            if renderUntilSilent,
-               progressValue == 1,
-               let data = buffer.floatChannelData {
-                //
-                guard tailTimeRendered <= maxTailToRender else {
-                    Log.error("🛑🍙 Exceeded max tail to render", tailTimeRendered, "vs", maxTailToRender)
+            if options.renderUntilSilent, progressValue == 1 {
+                try Task.checkCancellation()
+
+                guard tailTimeRendered <= options.maxTailToRender else {
                     isWriting = false
                     break
                 }
 
-                var rms: Float = 0.0
+                let value = try processTail(buffer: &buffer)
+                tailTimeRendered += value
 
-                for i in 0 ..< channelCount {
-                    var channelRms: Float = 0.0
-                    vDSP_rmsqv(data[i], 1, &channelRms, vDSP_Length(buffer.frameLength))
-                    rms += abs(channelRms)
-                }
-
-                let value = rms / Float(channelCount)
-
-                if value < silenceThreshold {
-                    Log.debug("🍙 Trailing RMS \(value)")
-
+                if value == 0 {
                     zeroCount += 1
 
-                    // check for consecutive buffers of below threshold, then assume it's silent
                     if zeroCount > 2 {
                         isWriting = false
+                        Log.debug("Rendered with \(tailTimeRendered) seconds of tail")
                     }
+
                 } else {
-                    // Log.debug("🍙", "Resetting consecutive threshold check due to positive value")
                     zeroCount = 0
                 }
-
-                tailTimeRendered += buffer.frameLength.double / buffer.format.sampleRate
             }
         }
 
         Log.debug("🍙🏁 Stopping engine")
 
         engine.stop()
+    }
 
-        if isCanceled, audioFile.url.exists {
-            Log.debug("🛑🍙 User Canceled Render - Removing file at", audioFile.url.path)
-            try? audioFile.url.delete()
+    private func processTail(buffer: inout AVAudioPCMBuffer) throws -> TimeInterval {
+        try Task.checkCancellation()
+
+        let channelCount = Int(buffer.format.channelCount)
+
+        guard let data = buffer.floatChannelData else {
+            return 0
         }
 
-        if disableManualRenderingModeOnCompletion, engine.isInManualRenderingMode {
-            Log.debug("🍙 Disabling manual rendering mode...")
-            engine.disableManualRenderingMode()
+        var rms: Float = 0.0
+
+        for i in 0 ..< channelCount {
+            var channelRms: Float = 0.0
+
+            vDSP_rmsqv(data[i], 1, &channelRms, vDSP_Length(buffer.frameLength))
+            rms += abs(channelRms)
         }
+
+        let value = rms / Float(channelCount)
+
+        guard value >= options.silenceThreshold else { return 0 }
+
+        return TimeInterval(buffer.frameLength) / buffer.format.sampleRate
+    }
+
+    public func cancel() {
+        guard let renderTask else {
+            Log.error("renderTask is nil")
+            return
+        }
+
+        Log.debug("🍙⛔️ Canceling...")
+        renderTask.cancel()
+    }
+
+    public var isCanceled: Bool {
+        renderTask?.isCancelled == true
     }
 }

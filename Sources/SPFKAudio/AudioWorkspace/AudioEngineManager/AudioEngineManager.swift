@@ -31,13 +31,13 @@ public final class AudioEngineManager {
         engine.isInManualRenderingMode
     }
 
-    public private(set) var renderer = EngineRenderer()
-
     public var allowInput: Bool {
         get async {
             await delegate?.audioEngineManagerAllowInputDevice() == true
         }
     }
+    
+    var renderer: EngineRenderer?
 
     /// Note: must call rebuildEngine before using
     public init() {}

@@ -9,45 +9,27 @@ extension AudioEngineManager: EngineRendererModel {
     public func render(
         to audioFile: AVAudioFile,
         duration: Double,
-        renderUntilSilent: Bool,
-        prerender: (() -> Void)?,
-        postrender: (() -> Void)?,
-        progress progressHandler: ((UnitInterval) -> Void)?
-    ) throws {
-        try renderer.render(
+        options: EngineRendererOptions = .init(),
+        prerender: (() throws -> Void)?,
+        postrender: (() throws -> Void)?,
+        progressHandler: ((UnitInterval) -> Void)?
+    ) async throws {
+        renderer = try EngineRenderer(
             engine: engine,
             to: audioFile,
-            maximumFrameCount: 4096,
             duration: duration,
-            renderUntilSilent: renderUntilSilent,
-            silenceThreshold: 0.00005,
+            options: options,
             prerender: prerender,
             postrender: postrender,
-            progress: progressHandler
+            progressHandler: progressHandler
         )
 
-//        if !allowInput {
-//            // only needed if the engine outputNode is being set to a different device than the default one
-//            // this is also triggered by the engine configuration notification event
-//            do {
-//                try deviceManager?.reconnectNodeOutput()
-//            } catch {
-//                Log.error(error)
-//                return
-//            }
-//            
-//        }
+        try await renderer?.start()
 
-        // send event engine mode switched, offline realtime
-        
         try startEngine()
     }
 
-    public func cancelRender() {
-        guard !renderIsCanceled else { return }
-
-        renderer.cancel()
+    public func cancelRender() async {
+        await renderer?.cancel()
     }
-
-    public var renderIsCanceled: Bool { renderer.isCanceled }
 }
