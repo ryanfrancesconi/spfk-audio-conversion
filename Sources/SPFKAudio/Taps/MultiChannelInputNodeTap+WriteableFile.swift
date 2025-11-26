@@ -2,7 +2,7 @@
 
 import AVFoundation
 import OTAtomics
-import OTCore
+import SwiftExtensions
 import SPFKBase
 
 extension MultiChannelInputNodeTap {

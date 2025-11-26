@@ -3,7 +3,7 @@
 import Accelerate
 import AVFoundation
 import OTAtomics
-import OTCore
+import SwiftExtensions
 import SPFKBase
 
 // TODO: make async, remove OTAtomicsThreadSafe

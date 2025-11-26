@@ -2,7 +2,7 @@
 
 import Accelerate
 import AVFoundation
-import OTCore
+import SwiftExtensions
 import SPFKBase
 
 /// Tap to do amplitude analysis on any node. Limited to 2 channels.

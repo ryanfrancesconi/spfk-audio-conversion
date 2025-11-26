@@ -2,7 +2,7 @@
 
 import AudioToolbox
 import OTAtomics
-import OTCore
+import SwiftExtensions
 
 public struct HostAUState {
     public init() {}

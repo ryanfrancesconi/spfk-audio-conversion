@@ -3,7 +3,7 @@
 import AEXML
 import AppKit
 import AVFoundation
-import OTCore
+import SwiftExtensions
 import SPFKBase
 
 extension AudioUnitCacheManager {

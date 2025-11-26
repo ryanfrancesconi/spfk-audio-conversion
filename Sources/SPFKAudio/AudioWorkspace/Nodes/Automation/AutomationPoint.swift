@@ -2,7 +2,7 @@
 
 import AudioToolbox
 import Foundation
-import OTCore
+import SwiftExtensions
 import SPFKAudioC
 import SPFKBase
 

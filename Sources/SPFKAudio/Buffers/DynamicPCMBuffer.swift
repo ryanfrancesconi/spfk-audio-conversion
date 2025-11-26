@@ -3,7 +3,7 @@
 import Accelerate
 import AVFoundation
 import OTAtomics
-import OTCore
+import SwiftExtensions
 
 public class DynamicPCMBuffer {
     private(set) var internalBuffer: AVAudioPCMBuffer

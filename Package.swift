@@ -9,17 +9,27 @@ private let dependencyNamesC: [String] = ["SPFKLoudness", "SPFKMetadata", "SPFKS
 private let dependencyBranch: String = "development"
 private let useLocalDependencies: Bool = false
 private let platforms: [PackageDescription.SupportedPlatform]? = [
-    .macOS(.v12)
+    .macOS(.v12),
+]
+
+let remoteDependencies: [RemoteDependency] = [
+    .init(package: .package(url: "https://github.com/orchetect/OTAtomics", branch: "main"),
+          product: .product(name: "OTAtomics", package: "OTAtomics")),
 ]
 
 // MARK: - Reusable Code for a dual Swift + C package without resources
+
+struct RemoteDependency {
+    let package: PackageDescription.Package.Dependency
+    let product: PackageDescription.Target.Dependency
+}
 
 private let nameC: String = "\(name)C" // C/C++ target
 private let nameTests: String = "\(name)Tests" // Test target
 private let githubBase = "https://github.com/ryanfrancesconi"
 
 private let products: [PackageDescription.Product] = [
-    .library(name: name, targets: [name, nameC])
+    .library(name: name, targets: [name, nameC]),
 ]
 
 private var packageDependencies: [PackageDescription.Package.Dependency] {
@@ -33,7 +43,9 @@ private var packageDependencies: [PackageDescription.Package.Dependency] {
             .package(url: "\(githubBase)/\($0)", branch: dependencyBranch)
         }
 
-    return useLocalDependencies ? local : remote
+    var value = useLocalDependencies ? local : remote
+    value.append(contentsOf: remoteDependencies.map { $0.package })
+    return value
 }
 
 private var swiftTargetDependencies: [PackageDescription.Target.Dependency] {
@@ -44,14 +56,14 @@ private var swiftTargetDependencies: [PackageDescription.Target.Dependency] {
     }
 
     value.append(.target(name: nameC))
-
+    value.append(contentsOf: remoteDependencies.map { $0.product })
     return value
 }
 
 private var testTargetDependencies: [PackageDescription.Target.Dependency] {
     var array: [PackageDescription.Target.Dependency] = [
         .byNameItem(name: name, condition: nil),
-        .byNameItem(name: nameC, condition: nil)
+        .byNameItem(name: nameC, condition: nil),
     ]
 
     if dependencyNames.contains("SPFKTesting") {
@@ -84,15 +96,15 @@ private let cTarget: PackageDescription.Target = .target(
     dependencies: cTargetDependencies,
     publicHeadersPath: "include",
     cSettings: [
-        .headerSearchPath("include_private")
+        .headerSearchPath("include_private"),
     ],
     cxxSettings: [
-        .headerSearchPath("include_private")
+        .headerSearchPath("include_private"),
     ]
 )
 
 private let targets: [PackageDescription.Target] = [
-    swiftTarget, cTarget, testTarget
+    swiftTarget, cTarget, testTarget,
 ]
 
 let package = Package(
