@@ -57,10 +57,10 @@ public class AudioUnitValidator {
     static func validateLegacy(component: AVAudioUnitComponent) -> ValidationResult {
         var result: AudioComponentValidationResult = .unknown
 
-        let err = AudioComponentValidate(component.audioComponent, validateParams, &result)
+        let status = AudioComponentValidate(component.audioComponent, validateParams, &result)
 
-        guard err == noErr else {
-            Log.error("*AU AudioComponentValidate error", err.fourCC)
+        guard status == noErr else {
+            Log.error("*AU AudioComponentValidate error", status.fourCC)
             return ValidationResult(result: .failed, output: nil)
         }
 

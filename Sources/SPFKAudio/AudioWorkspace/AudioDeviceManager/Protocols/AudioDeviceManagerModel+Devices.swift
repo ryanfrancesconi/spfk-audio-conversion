@@ -5,59 +5,59 @@ import SPFKAudioHardware
 import SPFKBase
 
 extension AudioDeviceManagerModel {
-    public var allNonAggregateDevices: [AudioDevice] {
+    public var nonAggregateDevices: [AudioDevice] {
         get async {
-            await allDevices.async.filter { await !$0.isAggregateDevice }.toArray()
+            await hardware.nonAggregateDevices
         }
     }
 
-    public var allNonAggregateOutputDevices: [AudioDevice] {
+    public var nonAggregateOutputDevices: [AudioDevice] { // unused spfk
         get async {
-            await allNonAggregateDevices.async.filter { await $0.channels(scope: .output) > 0 }.toArray()
-        }
-    }
+            let devices = await nonAggregateDevices
 
-    public var aggregateDevices: [AudioDevice] {
-        get async {
-            await allDevices.filter {
-                $0.transportType == .aggregate
-            }
-        }
-    }
-
-    public var allInputDevices: [AudioDevice] {
-        get async {
-            await allNonAggregateDevices.async.filter {
-                await $0.channels(scope: .input) > 0
-            }.toArray()
-        }
-    }
-
-    public var allCompatibleInputDevices: [AudioDevice] {
-        get async {
-            await allInputDevices.async.filter {
-                guard let nominalSampleRates = $0.nominalSampleRates else { return false }
-
-                return await nominalSampleRates.async.contains { sampleRate in
-                    await AudioDefaults.shared.isSupported(sampleRate: sampleRate)
-                }
-            }.toArray()
-        }
-    }
-
-    public var allOutputDevices: [AudioDevice] {
-        get async {
-            await allDevices.async.filter {
+            return await devices.async.filter {
                 await $0.channels(scope: .output) > 0
             }.toArray()
         }
     }
 
+    public var aggregateDevices: [AudioDevice] {
+        get async {
+            await hardware.aggregateDevices
+        }
+    }
+
+    public var inputDevices: [AudioDevice] {
+        get async {
+            await hardware.inputDevices
+        }
+    }
+
+    public var compatibleInputDevices: [AudioDevice] { // unused spfk
+        get async {
+            await inputDevices.async.filter {
+                guard let nominalSampleRates = $0.nominalSampleRates else {
+                    return false
+                }
+
+                return await nominalSampleRates.async.contains { sampleRate in
+                    await AudioDefaults.shared.isSupported(
+                        sampleRate: sampleRate
+                    )
+                }
+            }.toArray()
+        }
+    }
+
+    public var outputDevices: [AudioDevice] {
+        get async {
+            await hardware.outputDevices
+        }
+    }
+
     public var bluetoothDevices: [AudioDevice] {
         get async {
-            await allDevices.filter {
-                $0.transportType == .bluetooth
-            }
+            await hardware.bluetoothDevices
         }
     }
 
@@ -72,7 +72,7 @@ extension AudioDeviceManagerModel {
     /// This is a lookup based on the preference UID
     /// Device can be different than the system if inputNode
     /// is disabled. Otherwise return nil.
-    public var selectedEngineOutputDevice: AudioDevice? {
+    public var deviceSettingsOutputDevice: AudioDevice? {
         get async {
             guard await !allowInput,
                   let uid = deviceSettings.outputUID,
@@ -134,7 +134,8 @@ extension SplitAudioDevice {
 
     public var outputIsSupported: Bool {
         get async {
-            guard let rates = output.getNominalSampleRates(scope: .output) else {
+            guard let rates = output.getNominalSampleRates(scope: .output)
+            else {
                 return false
             }
 
@@ -143,8 +144,6 @@ extension SplitAudioDevice {
     }
 
     private func check(rates: [Double]) async -> Bool {
-        // rates.contains { AudioDefaults.shared.isSupported(sampleRate: $0) }
-
         return await rates.async.contains { sampleRate in
             await AudioDefaults.shared.isSupported(sampleRate: sampleRate)
         }

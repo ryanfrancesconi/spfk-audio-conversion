@@ -1,8 +1,10 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import SPFKAudioHardware
 import SPFKBase
 
-extension AudioDeviceManagerModel {
+extension AudioDeviceManager {
     public func updatePreferredOutputChannels() async throws {
         guard let selectedOutputDevice = await selectedOutputDevice else {
             throw NSError(description: "selectedOutputDevice is nil")
@@ -14,7 +16,7 @@ extension AudioDeviceManagerModel {
 
         let allowInput = await self.allowInput
 
-        // If we're allowing input that means that we're using the engine's aggregate.
+        // If we're allowing input that means that we're using the AVAudioEngine's aggregate.
         // So, we must look at its preferredChannelsForStereo and set that on the channel map
         let currentDevice = allowInput ? engineDevice : selectedOutputDevice
 
@@ -24,29 +26,27 @@ extension AudioDeviceManagerModel {
 
         Log.debug(selectedOutputDevice.name, "returned", stereoPair)
 
-        try updateOutputChannelMap(
-            stereoPair: stereoPair
-        )
+        try updateOutputChannelMap(stereoPair: stereoPair)
     }
 
-    /**
-     Example Apple gave here:
-     https://developer.apple.com/forums/thread/16790
-
-     ```
-     AURemoteIO Client Format 2 Channels:   0, 1
-                                            |  |_______
-                                            |_______   |
-                                                    |  |
-     Output Audio Unit Channel Map      :   -1, -1, 0, 1
-                                                    |  |
-     AURemoteIO Output Format 4 Channels:   0,  1,  2, 3
-                                            L  R  HDMI1 HDMI2
-     ```
-     */
-    public func updateOutputChannelMap(stereoPair: StereoPair) throws {
-        guard let engineOutputNode else {
-            throw NSError(description: "engineOutputNode is nil")
+    /// Example Apple gave here:
+    /// https://developer.apple.com/forums/thread/16790
+    ///
+    /// - Parameter stereoPair: The channels to set on the output node
+    ///
+    /// ```
+    /// AURemoteIO Client Format 2 Channels:   0, 1
+    ///                                        |  |_______
+    ///                                        |_______   |
+    ///                                                |  |
+    /// Output Audio Unit Channel Map      :   -1, -1, 0, 1
+    ///                                                |  |
+    /// AURemoteIO Output Format 4 Channels:   0,  1,  2, 3
+    ///                                        L   R   HDMI1  HDMI2
+    /// ```
+    private func updateOutputChannelMap(stereoPair: StereoPair) throws {
+        guard let engineOutputNode = engineOutputNode else {
+            throw NSError(description: "Failed to get engineOutputNode")
         }
 
         guard let audioUnit = engineOutputNode.audioUnit else {
@@ -97,7 +97,7 @@ extension AudioDeviceManagerModel {
     }
 }
 
-extension AudioDeviceManagerModel {
+extension AudioDeviceManager {
     private var currentNodeOutputDevice: AudioDevice? {
         get async {
             guard let audioUnit = engineOutputNode?.audioUnit else {
@@ -108,7 +108,7 @@ extension AudioDeviceManagerModel {
             var id: AudioDeviceID = 0
             var size = UInt32(MemoryLayout<AudioDeviceID>.size)
 
-            let err = AudioUnitGetProperty(
+            let status = AudioUnitGetProperty(
                 audioUnit,
                 kAudioOutputUnitProperty_CurrentDevice,
                 kAudioUnitScope_Global,
@@ -117,13 +117,36 @@ extension AudioDeviceManagerModel {
                 &size
             )
 
-            guard err == noErr else {
-                Log.error("Failed to get engine output node device ID, error: \(err)")
+            guard status == noErr else {
+                Log.error("Failed to get engine output node device ID, error: \(status.fourCC)")
                 return nil
             }
 
             return await AudioObjectPool.shared.lookup(id: id)
         }
+    }
+
+    func reconnectNodeOutput() async throws {
+        guard await !allowInput else {
+            Log.error("Input is enabled, using system settings not node output. Ignoring this call.")
+            return
+        }
+
+        let deviceSettingsOutputDevice = await deviceSettingsOutputDevice
+        let currentNodeOutputDevice = await currentNodeOutputDevice
+
+        guard let deviceSettingsOutputDevice else {
+            Log.debug("selectedEngineOutputDevice is nil")
+            return
+        }
+
+        guard deviceSettingsOutputDevice != currentNodeOutputDevice else {
+            Log.debug(currentNodeOutputDevice, "Device is still connected, no need to change")
+            return
+        }
+
+        // note this will create an engine configuration change event
+        try await setEngineNodeOutput(to: deviceSettingsOutputDevice)
     }
 
     /// NOTE: this method of direct setting of the device with no input
@@ -148,7 +171,7 @@ extension AudioDeviceManagerModel {
 
         let outputElement: AudioUnitElement = 0
 
-        let err = AudioUnitSetProperty(
+        let status = AudioUnitSetProperty(
             audioUnit,
             kAudioOutputUnitProperty_CurrentDevice,
             kAudioUnitScope_Global,
@@ -157,35 +180,12 @@ extension AudioDeviceManagerModel {
             UInt32(MemoryLayout<AudioDeviceID>.size)
         )
 
-        guard err == noErr else {
-            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(err.fourCC)")
+        guard status == noErr else {
+            throw NSError(description: "Unable to set output audio unit to device \(name), error: \(status.fourCC)")
         }
 
         Log.debug("Engine output set to", name)
 
         try await updatePreferredOutputChannels()
-    }
-
-    func reconnectNodeOutput() async throws {
-        guard await !allowInput else {
-            Log.error("Input is enabled, using system settings not node output. Ignoring this call.")
-            return
-        }
-
-        let selectedEngineOutputDevice = await selectedEngineOutputDevice
-        let currentNodeOutputDevice = await currentNodeOutputDevice
-
-        guard let selectedEngineOutputDevice else {
-            Log.debug("selectedEngineOutputDevice is nil")
-            return
-        }
-
-        guard selectedEngineOutputDevice != currentNodeOutputDevice else {
-            Log.debug(currentNodeOutputDevice, "Device is still connected, no need to change")
-            return
-        }
-
-        // note this will create an engine configuration change event
-        try await setEngineNodeOutput(to: selectedEngineOutputDevice)
     }
 }

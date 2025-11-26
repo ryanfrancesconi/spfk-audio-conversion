@@ -14,7 +14,7 @@ import SPFKBaseC
 /// potentially other bluetooth I/O headsets as well.
 public final class AudioDeviceManager: AudioDeviceManagerModel {
     public enum Event {
-        case sampleRateChanged(Double)
+        case sampleRateChanged(device: AudioDevice)
         case inputDeviceChanged(device: AudioDevice)
         case outputDeviceChanged(device: AudioDevice)
         case deviceListChanged(event: DeviceStatusEvent)
@@ -78,7 +78,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         get async {
             await allowInput ?
                 await hardware.defaultOutputDevice :
-                selectedEngineOutputDevice
+                deviceSettingsOutputDevice
         }
     }
 
@@ -112,8 +112,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
             outputUID: settings.outputUID ?? defaultOutputUID
         )
 
-        try await hardware.start()
-        addHardwareObservers()
+        try await registerNotifications()
 
         guard let deviceSampleRate = await selectedOutputDevice?.nominalSampleRate else {
             throw NSError(description: "Failed to get device sample rate")
@@ -122,11 +121,18 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         try await update(systemSampleRate: deviceSampleRate)
     }
 
-    public func dispose() async throws {
-        removeHardwareObservers()
-        try await hardware.dispose()
+    private func registerNotifications() async throws {
+        try await hardware.start()
+        addHardwareObservers()
     }
 
+    public func unregisterNotifications() async throws {
+        removeHardwareObservers()
+        try await hardware.unregister()
+    }
+}
+
+extension AudioDeviceManager {
     public func updateBufferSize(newValue: UInt32) async {
         guard newValue != _bufferSize else { return }
 
@@ -193,14 +199,10 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
         // will set device
         try device.promote(to: .defaultOutput)
-
         try await updatePreferredOutputChannels()
-
         try await setOutputSampleRate(to: systemSampleRate)
     }
-}
 
-extension AudioDeviceManager {
     public func reconnect() async throws {
         let allowInput = await self.allowInput
 

@@ -65,9 +65,9 @@ public class AudioWorkspace {
 
         master = nil
         outputMixer = nil
-        
+
         do {
-            try await deviceManager.dispose()
+            try await deviceManager.unregisterNotifications()
         } catch {
             Log.error(error)
         }
@@ -148,26 +148,26 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
 
     @MainActor public func audioDeviceManager(event: AudioDeviceManager.Event) async {
         Log.debug("🔊", event)
-
-        switch event {
-        case let .sampleRateChanged(sampleRate):
-            _ = sampleRate
-        case let .inputDeviceChanged(device: device):
-            _ = device
-        case let .outputDeviceChanged(device: device):
-            _ = device
-        case let .deviceListChanged(event: event):
-            _ = event
-        case .deviceProcessorOverload:
-            break
-        case let .error(error):
-            _ = error
-        case let .configurationChanged(options):
-            do {
+        do {
+            switch event {
+            case let .sampleRateChanged(sampleRate):
+                _ = sampleRate
+            case let .inputDeviceChanged(device: device):
+                _ = device
+            case let .outputDeviceChanged(device: device):
+                _ = device
+            case let .deviceListChanged(event: event):
+                _ = event
+            case .deviceProcessorOverload:
+                break
+            case let .error(error):
+                _ = error
+            case let .configurationChanged(options):
                 try handleConfigurationChanged(options: options)
-            } catch {
-                Log.error(error)
             }
+
+        } catch {
+            Log.error(error)
         }
     }
 }

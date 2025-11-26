@@ -20,11 +20,11 @@ extension AudioDeviceManager {
 
             string += "\n"
 
-            let outputDevices = await allOutputDevices.map { $0.name }.sorted()
+            let outputDevices = await outputDevices.map { $0.name }.sorted()
             string += "↑ Output Devices: " + outputDevices.joined(separator: ", ")
             string += "\n"
 
-            let inputDevices = await allInputDevices.map { $0.name }.sorted()
+            let inputDevices = await inputDevices.map { $0.name }.sorted()
             string += "↓ Input Devices: " + inputDevices.joined(separator: ", ")
             string += "\n\n"
 

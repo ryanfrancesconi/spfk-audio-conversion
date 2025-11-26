@@ -5,38 +5,40 @@ import SPFKBase
 
 // Mostly for debugging purposes
 
-extension AudioEngineManager: CustomStringConvertible {
-    public var description: String {
-        var string = ""
-        string += "Engine isRunning: \(engineIsRunning)\n"
+extension AudioEngineManager {
+    public var detailedDescription: String {
+        get async {
+            var string = ""
+            string += "Engine isRunning: \(engineIsRunning)\n"
 
-        string += "outputNode outputFormat → \(engine.outputNode.outputFormat(forBus: 0).readableDescription)\n"
-        string += "outputNode inputFormat ← \(engine.outputNode.inputFormat(forBus: 0).readableDescription)\n\n"
+            string += "outputNode outputFormat → \(engine.outputNode.outputFormat(forBus: 0).readableDescription)\n"
+            string += "outputNode inputFormat ← \(engine.outputNode.inputFormat(forBus: 0).readableDescription)\n\n"
 
-//        if let inputNode {
-//            string += "inputNode → \(inputNode.outputFormat(forBus: 0).readableDescription)\n"
-//            string += "inputNode ← \(inputNode.inputFormat(forBus: 0).readableDescription)\n\n"
-//        }
+            if let inputNode = await inputNode {
+                string += "inputNode → \(inputNode.outputFormat(forBus: 0).readableDescription)\n"
+                string += "inputNode ← \(inputNode.inputFormat(forBus: 0).readableDescription)\n\n"
+            }
 
-        // 84 attached nodes:
-        // AVAudioUnitEffect (36), AVAudioOutputNode (1), AVAudioPlayerNode (32)...
-        let sampleRates = engine.attachedNodes.map {
-            $0.outputFormat(forBus: 0).sampleRate
-        }.removingDuplicatesRandomOrdering().sorted()
+            // 84 attached nodes:
+            // AVAudioUnitEffect (36), AVAudioOutputNode (1), AVAudioPlayerNode (32)...
+            let sampleRates = engine.attachedNodes.map {
+                $0.outputFormat(forBus: 0).sampleRate
+            }.removingDuplicatesRandomOrdering().sorted()
 
-        string += "Sample Rates: \(sampleRates)\n"
+            string += "Sample Rates: \(sampleRates)\n"
 
-        if sampleRates.count > 1 {
-            string += "⚠️ Mixed Sample Rates detected\n\n"
+            if sampleRates.count > 1 {
+                string += "⚠️ Mixed Sample Rates detected\n\n"
+            }
+
+            string += "\(engine.attachedNodes.count) attached node\(engine.attachedNodes.pluralString):\n"
+            let classNames = engine.attachedNodes.map { $0.className }
+            string += classNames.elementQuantity.map { "\($0.key) (\($0.value))" }.joined(separator: ", ")
+            string += "\n\n"
+
+            string += engine.debugDescription
+            return string
         }
-
-        string += "\(engine.attachedNodes.count) attached node\(engine.attachedNodes.pluralString):\n"
-        let classNames = engine.attachedNodes.map { $0.className }
-        string += classNames.elementQuantity.map({ "\($0.key) (\($0.value))" }).joined(separator: ", ")
-        string += "\n\n"
-
-        string += engine.debugDescription
-        return string
     }
 
     public var debugDescription: String {

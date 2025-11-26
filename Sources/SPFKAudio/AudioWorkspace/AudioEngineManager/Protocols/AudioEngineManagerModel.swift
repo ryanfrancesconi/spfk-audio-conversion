@@ -5,8 +5,8 @@ import SPFKBase
 public protocol AudioEngineManagerModel: AnyObject,
     AudioEngineConnection,
     EngineRendererModel,
-    CustomStringConvertible,
-    CustomDebugStringConvertible {
+    CustomDebugStringConvertible
+{
     // MARK: - Properties
 
     var systemFormat: AVAudioFormat? { get async }

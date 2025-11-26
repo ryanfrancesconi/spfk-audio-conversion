@@ -130,8 +130,8 @@ extension AudioDeviceManager {
 
         switch deviceNotification {
         case .deviceAvailableNominalSampleRatesDidChange:
-            guard let sampleRate = notificationDevice.nominalSampleRate else { return }
-            await self.send(event: .sampleRateChanged(sampleRate))
+            // guard let sampleRate = notificationDevice.nominalSampleRate else { return }
+            await self.send(event: .sampleRateChanged(device: notificationDevice))
 
         case .deviceProcessorOverload:
             await send(event: .deviceProcessorOverload)
