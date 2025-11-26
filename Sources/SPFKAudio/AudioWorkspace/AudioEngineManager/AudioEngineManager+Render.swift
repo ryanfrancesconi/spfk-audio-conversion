@@ -14,6 +14,14 @@ extension AudioEngineManager: EngineRendererModel {
         postrender: (() throws -> Void)?,
         progressHandler: ((UnitInterval) -> Void)?
     ) async throws {
+        defer {
+            do {
+                try startEngine()
+            } catch {
+                Log.error(error)
+            }
+        }
+
         renderer = try EngineRenderer(
             engine: engine,
             to: audioFile,
@@ -26,7 +34,7 @@ extension AudioEngineManager: EngineRendererModel {
 
         try await renderer?.start()
 
-        try startEngine()
+        renderer = nil
     }
 
     public func cancelRender() async {

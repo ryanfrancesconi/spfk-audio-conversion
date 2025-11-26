@@ -10,10 +10,10 @@ import Testing
 @testable import SPFKAudio
 
 @Suite(.serialized, .tags(.engine))
-final class RenderTests: AudioPlayerTestCase {
+final class RenderTests: AudioUnitChainTests {
     @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
     func render(format: [String: Any]) async throws {
-        deleteBinOnExit = true
+        deleteBinOnExit = false
         try await setup()
         guard let player else { return }
 
@@ -28,10 +28,9 @@ final class RenderTests: AudioPlayerTestCase {
 
     @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
     func renderUntilSilent(format: [String: Any]) async throws {
-        deleteBinOnExit = true
+        deleteBinOnExit = false
         try await setup()
         guard let player else { return }
-
         try player.load(url: TestBundleResources.shared.tabla_wav)
         let audioFile = try createFile(name: #function, settings: format)
         try await render(player: player, to: audioFile, duration: 2, renderUntilSilent: true)
@@ -41,9 +40,27 @@ final class RenderTests: AudioPlayerTestCase {
         #expect(audioFile.duration.isApproximatelyEqual(to: 2.39, absoluteTolerance: 0.01))
     }
 
-    @Test(arguments: [pcmFormatFloat32])
+    @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
+    func renderUntilSilentWithEffects(format: [String: Any]) async throws {
+        deleteBinOnExit = false
+        try await setup()
+        let audioUnitChain = try #require(audioUnitChain)
+        let player = try #require(player)
+        try await audioUnitChain.insertAudioUnit(componentDescription: auDelayDesc, at: 0)
+        try await audioUnitChain.connect()
+        try player.load(url: TestBundleResources.shared.tabla_wav)
+        let audioFile = try createFile(name: #function, settings: format)
+
+        try await render(player: player, to: audioFile, duration: 2, renderUntilSilent: true)
+
+        Log.debug("rendered duration is", audioFile.duration)
+
+        #expect(audioFile.duration.isApproximatelyEqual(to: 12.288, absoluteTolerance: 0.1))
+    }
+
+    @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
     func renderCancel(format: [String: Any]) async throws {
-        deleteBinOnExit = true
+        deleteBinOnExit = false
         try await setup()
         guard let player else { return }
 
@@ -51,15 +68,13 @@ final class RenderTests: AudioPlayerTestCase {
         let audioFile = try createFile(name: #function, settings: format)
 
         Task {
-            try await Task.sleep(seconds: 0.01)
+            try await Task.sleep(seconds: 0.001)
             await self.audioWorkspace.engineManager.renderer?.cancel()
         }
 
-        try await render(player: player, to: audioFile, duration: 120, renderUntilSilent: true)
-
-        Log.debug("rendered duration is", audioFile.duration)
-
-        #expect(!audioFile.url.exists)
+        await #expect(throws: CancellationError.self) {
+            try await render(player: player, to: audioFile, duration: 120, renderUntilSilent: true)
+        }
     }
 }
 
@@ -126,8 +141,10 @@ extension RenderTests {
             prerender: prerender,
             postrender: postrender,
             progressHandler: { progress in
-                // Log.debug(progress)
+                Log.debug(progress)
             }
         )
+
+        #expect(audioFile.duration > 0)
     }
 }

@@ -8,7 +8,7 @@ import SPFKBase
 import Testing
 
 @Suite(.serialized, .tags(.realtime))
-final class AudioUnitChainTests: AudioPlayerTestCase {
+class AudioUnitChainTests: AudioPlayerTestCase {
     let auDelayDesc = AudioComponentDescription(
         componentType: 1635083896,
         componentSubType: 1684368505,
@@ -66,4 +66,5 @@ final class AudioUnitChainTests: AudioPlayerTestCase {
             try await audioUnitChain.insertAudioUnit(componentDescription: self.auDelayDesc, at: audioUnitChain.insertCount + 1)
         }
     }
+    
 }

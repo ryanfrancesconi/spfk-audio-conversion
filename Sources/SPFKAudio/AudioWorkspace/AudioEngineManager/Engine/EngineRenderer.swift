@@ -18,17 +18,23 @@ public actor EngineRenderer {
     let postrender: (() throws -> Void)?
     let progressHandler: ((UnitInterval) -> Void)?
 
+    private var targetSamples: AVAudioFramePosition = 0
+
     public init(
         engine: AVAudioEngine,
         to audioFile: AVAudioFile,
         duration: TimeInterval,
         options: EngineRendererOptions = .init(),
-        prerender: (() throws -> Void)?,
-        postrender: (() throws -> Void)? = nil,
+        prerender: (() throws -> Void)?, // typically play()
+        postrender: (() throws -> Void)? = nil, // typically stop()
         progressHandler: ((UnitInterval) -> Void)? = nil
     ) throws {
-        guard duration >= 0 else {
+        guard duration > 0 else {
             throw NSError(description: "duration needs to be a positive value")
+        }
+
+        guard prerender != nil else {
+            throw NSError(description: "No playback block was passed in, so there is nothing to render")
         }
 
         self.engine = engine
@@ -40,27 +46,44 @@ public actor EngineRenderer {
         self.progressHandler = progressHandler
     }
 
+    deinit {
+        Log.debug("- { \(self) }")
+    }
+
     public func start() async throws {
         renderTask?.cancel()
         renderTask = Task<Void, Error> {
             try await process()
         }
 
-        try await renderTask?.value
+        defer {
+            if disableManualRenderingModeOnCompletion,
+               engine.isInManualRenderingMode
+            {
+                engine.disableManualRenderingMode()
+            }
 
-        if renderTask?.isCancelled == true {
+            Log.debug("🍙🏁 Complete")
+            renderTask = nil
+        }
+
+        guard let renderTask else { return }
+
+        let result = await renderTask.result
+
+        guard !renderTask.isCancelled else {
             Log.debug("🍙⛔️ renderTask.isCancelled, attempting to remove file at \(audioFile.url.path)")
             try? audioFile.url.delete()
+            throw CancellationError()
         }
 
-        if disableManualRenderingModeOnCompletion,
-           engine.isInManualRenderingMode
-        {
-            engine.disableManualRenderingMode()
-        }
+        switch result {
+        case .success:
+            Log.debug("🍙 OK, rendered \(audioFile.length) samples")
 
-        Log.debug("🍙🏁 Complete")
-        renderTask = nil
+        case let .failure(error):
+            throw error
+        }
     }
 
     private func process() async throws {
@@ -74,6 +97,13 @@ public actor EngineRenderer {
                 maximumFrameCount: options.maximumFrameCount
             )
         }
+
+        // don't check sample rate until the engine is in manual mode
+        targetSamples = AVAudioFramePosition(
+            duration * engine.manualRenderingFormat.sampleRate
+        )
+
+        assert(targetSamples > 0)
 
         // This resets the sampleTime of offline rendering to 0.
         engine.reset()
@@ -93,94 +123,83 @@ public actor EngineRenderer {
         // This is to prepare the nodes for playing, i.e player.play()
         try prerender?()
 
-        // Render until file contains >= target samples
-        let targetSamples = AVAudioFramePosition(
-            duration * engine.manualRenderingFormat.sampleRate
-        )
-
-        var isWriting = true
         var tailTimeRendered: TimeInterval = 0
         var zeroCount = 0
-        var postrenderTriggered: Bool = false
 
-        while isWriting {
+        while true {
             try Task.checkCancellation()
 
             let isComplete = audioFile.framePosition >= targetSamples
+            try write(buffer: &buffer)
 
-            if !options.renderUntilSilent, isComplete {
+            let rawProgress = UnitInterval(audioFile.framePosition) / Double(targetSamples)
+
+            progressHandler?(
+                min(rawProgress, 1.0)
+            )
+
+            guard isComplete else { continue }
+
+            if let postrender {
+                Log.debug("🍙 Triggering postrender action")
+                try postrender()
+            }
+
+            guard options.renderUntilSilent else {
                 break
             }
 
-            let framesToRender =
-                options.renderUntilSilent
-                    ? engine.manualRenderingMaximumFrameCount
-                    : min(buffer.frameCapacity, AVAudioFrameCount(targetSamples - audioFile.framePosition))
+            try Task.checkCancellation()
 
-            let status = try engine.renderOffline(framesToRender, to: buffer)
-
-            // 0 - 1
-            var progressValue: Double = 0
-
-            switch status {
-            case .success:
-                try audioFile.write(from: buffer)
-                let rawProgress = UnitInterval(audioFile.framePosition) / Double(targetSamples)
-                progressValue = min(rawProgress, 1.0)
-                progressHandler?(progressValue)
-
-            case .cannotDoInCurrentContext:
-                Log.error(".cannotDoInCurrentContext")
-                continue
-
-            case .insufficientDataFromInputNode:
-                throw NSError(description: ".insufficientDataFromInputNode")
-
-            case .error:
-                throw NSError(
-                    description:
-                    "There was an error rendering to \(audioFile.url.path)"
-                )
-
-            @unknown default:
-                Log.error("🍙 Unknown render result:", status)
-                isWriting = false
+            guard tailTimeRendered <= options.maxTailToRender else {
+                Log.error("tailTimeRendered (\(tailTimeRendered)) > options.maxTailToRender (\(options.maxTailToRender))")
+                break
             }
 
-            if let postrender, isComplete, !postrenderTriggered {
-                Log.debug("🍙 Triggering postrender action")
-                try postrender()
-                postrenderTriggered = true
-            }
+            let value = try processTail(buffer: &buffer)
+            tailTimeRendered += value
 
-            if options.renderUntilSilent, progressValue == 1 {
-                try Task.checkCancellation()
+            if value == 0 {
+                zeroCount += 1
 
-                guard tailTimeRendered <= options.maxTailToRender else {
-                    isWriting = false
+                if zeroCount > 2 {
+                    Log.debug("Rendered with \(tailTimeRendered) seconds of tail")
                     break
                 }
 
-                let value = try processTail(buffer: &buffer)
-                tailTimeRendered += value
-
-                if value == 0 {
-                    zeroCount += 1
-
-                    if zeroCount > 2 {
-                        isWriting = false
-                        Log.debug("Rendered with \(tailTimeRendered) seconds of tail")
-                    }
-
-                } else {
-                    zeroCount = 0
-                }
+            } else {
+                zeroCount = 0
             }
         }
 
-        Log.debug("🍙🏁 Stopping engine")
+        Log.debug("🍙🏁 Stopping engine, wrote", audioFile.duration, "seconds to file")
 
         engine.stop()
+    }
+
+    private func write(buffer: inout AVAudioPCMBuffer) throws {
+        let framesToRender = options.renderUntilSilent ?
+            engine.manualRenderingMaximumFrameCount :
+            min(buffer.frameCapacity, AVAudioFrameCount(targetSamples - audioFile.framePosition))
+
+        let status = try engine.renderOffline(framesToRender, to: buffer)
+
+        switch status {
+        case .success:
+            try audioFile.write(from: buffer)
+
+        case .cannotDoInCurrentContext:
+            throw NSError(description: ".cannotDoInCurrentContext")
+
+        case .insufficientDataFromInputNode:
+            throw NSError(description: ".insufficientDataFromInputNode")
+
+        case .error:
+            throw NSError(description: "There was an error rendering to \(audioFile.url.path)")
+
+        @unknown default:
+            throw NSError(description: "Unknown render result: \(status)")
+        }
     }
 
     private func processTail(buffer: inout AVAudioPCMBuffer) throws -> TimeInterval {
@@ -216,9 +235,5 @@ public actor EngineRenderer {
 
         Log.debug("🍙⛔️ Canceling...")
         renderTask.cancel()
-    }
-
-    public var isCanceled: Bool {
-        renderTask?.isCancelled == true
     }
 }
