@@ -63,7 +63,7 @@ extension AudioDeviceManagerModel {
 
     public var splitDevices: [SplitAudioDevice] {
         get async {
-            await hardware?.splitDevices ?? []
+            await hardware.splitDevices
         }
     }
 }

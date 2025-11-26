@@ -24,8 +24,7 @@ public class AudioWorkspace {
     // All tracks will be connected to this master
     public private(set) var master: AudioTrack?
 
-    public init() {
-    }
+    public init() {}
 
     /// Rebuild the engine graph. Neceessary on startup and sample rate changes
     public func rebuild() async throws {
@@ -66,8 +65,12 @@ public class AudioWorkspace {
 
         master = nil
         outputMixer = nil
-
-        await deviceManager.dispose()
+        
+        do {
+            try await deviceManager.dispose()
+        } catch {
+            Log.error(error)
+        }
     }
 
     public var isRunning: Bool { engineManager.engineIsRunning }
@@ -94,7 +97,7 @@ extension AudioWorkspace: AudioEngineConnection {
 }
 
 extension AudioWorkspace: AudioUnitChainDelegate {
-    public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
+    public func audioUnitChain(_: AudioUnitChain, event: AudioUnitChain.Event) {
         Log.debug(event)
     }
 
@@ -160,7 +163,6 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
         case let .error(error):
             _ = error
         case let .configurationChanged(options):
-
             do {
                 try handleConfigurationChanged(options: options)
             } catch {

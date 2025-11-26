@@ -33,12 +33,12 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
     var hardwareObservers: [NSObjectProtocol] = []
 
-    public private(set) var hardware: AudioHardwareManager?
+    public let hardware: AudioHardwareManager = .shared
 
     // MARK: - Latency
 
     // Cache this value for the selected device
-    internal var _inputLatency: UInt32?
+    var _inputLatency: UInt32?
     public var inputLatency: UInt32? {
         get async {
             if let _inputLatency { return _inputLatency }
@@ -62,7 +62,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
     public var allDevices: [AudioDevice] {
         get async {
-            await hardware?.allDevices ?? []
+            await hardware.allDevices
         }
     }
 
@@ -70,27 +70,27 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         get async {
             guard deviceSettings.allowInput else { return nil }
 
-            return await hardware?.defaultInputDevice
+            return await hardware.defaultInputDevice
         }
     }
 
     public var selectedOutputDevice: AudioDevice? {
         get async {
             await allowInput ?
-                await hardware?.defaultOutputDevice :
+                await hardware.defaultOutputDevice :
                 selectedEngineOutputDevice
         }
     }
 
     public var defaultInputDevice: AudioDevice? {
         get async {
-            await hardware?.defaultInputDevice
+            await hardware.defaultInputDevice
         }
     }
 
     public var defaultOutputDevice: AudioDevice? {
         get async {
-            await hardware?.defaultOutputDevice
+            await hardware.defaultOutputDevice
         }
     }
 
@@ -98,16 +98,15 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
     public var deviceSettings = AudioDeviceSettings()
 
-    public init() {
-    }
+    public init() {}
 
     public func setup(settings: AudioDeviceSettings = .init()) async throws {
         Log.debug(settings)
 
-        hardware = await AudioHardwareManager()
-
-        let defaultInputUID = await hardware?.defaultInputDevice?.uid
-        let defaultOutputUID = await hardware?.defaultOutputDevice?.uid
+        try await hardware.start()
+        
+        let defaultInputUID = await hardware.defaultInputDevice?.uid
+        let defaultOutputUID = await hardware.defaultOutputDevice?.uid
 
         // default to the system selected devices if nothing is passed in
         deviceSettings = AudioDeviceSettings(
@@ -124,10 +123,9 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         try await update(systemSampleRate: deviceSampleRate)
     }
 
-    public func dispose() async {
+    public func dispose() async throws {
         removeHardwareObservers()
-        await hardware?.dispose()
-        hardware = nil
+        try await hardware.dispose()
     }
 
     public func updateBufferSize(newValue: UInt32) async {
@@ -136,7 +134,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         let allowInput = await allowInput
 
         // the engine doesn't like this if input is disabled...
-        guard deviceSettings.allowInput && allowInput else {
+        guard deviceSettings.allowInput, allowInput else {
             Log.error("AVAudioEngine doesn't like the hardware buffer size changed when there is no input.")
             return
         }
@@ -144,7 +142,8 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         _bufferSize = newValue
 
         if await hasInputDevice,
-           let device = await selectedInputDevice {
+           let device = await selectedInputDevice
+        {
             if kAudioHardwareNoError != device.setBufferFrameSize(bufferSize, scope: .input) {
                 Log.error("Unable to set input buffer frame size for", device.name)
             }
@@ -174,9 +173,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     // MARK: - Device Setters
 
     public func setInput(device: AudioDevice) async throws {
-//        let currentDevice = await selectedInputDevice
-//        guard device.uid != deviceSettings.inputUID else { return }
-
         deviceSettings.inputUID = device.uid
 
         // will set device
@@ -188,9 +184,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     }
 
     public func setOutput(device: AudioDevice) async throws {
-//        let currentDevice = await selectedOutputDevice
-//        guard device.uid != deviceSettings.outputUID else { return }
-
         deviceSettings.outputUID = device.uid
 
         guard deviceSettings.allowInput else {

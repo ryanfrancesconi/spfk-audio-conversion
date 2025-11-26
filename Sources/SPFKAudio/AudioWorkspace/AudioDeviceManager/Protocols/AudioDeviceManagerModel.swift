@@ -11,7 +11,7 @@ public protocol AudioDeviceManagerModel {
     var inputLatency: UInt32? { get async }
     var engineOutputNode: AVAudioOutputNode? { get }
 
-    var hardware: AudioHardwareManager? { get }
+    var hardware: AudioHardwareManager { get }
     
     var allDevices: [AudioDevice] { get async }
     var selectedInputDevice: AudioDevice? { get async }
