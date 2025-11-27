@@ -7,7 +7,7 @@ import SPFKAudioBase
 import SPFKMetadata
 import SPFKUtils
 
-// TODO: REFACTOR: abortFlag should be Task cancellation
+// TODO: REFACTOR:
 
 /// Wrapper on top of engine renderer with some event handlers
 public class OfflineRenderer {
@@ -30,13 +30,13 @@ public class OfflineRenderer {
     // TimelineRenderer adds directly to it as it bounces tracks
     public var bouncedURLs: [URL] = []
 
-    @OTAtomicsThreadSafe private var convertedFiles: [URL] = []
+    public private(set) var isRunning: Bool = false
 
     public var currentSettings = AudioFormatConverterOptions()
-    public private(set) var isRunning: Bool = false
-    fileprivate var savedCurrentTime: DispatchTime?
     public var exportAudio: Bool = true
     public var overwriteExistingFiles: Bool = true
+
+    @OTAtomicsThreadSafe private var convertedFiles: [URL] = []
     private var tempMixURL: URL?
     public private(set) var convertedMixURL: URL?
     public private(set) var filenameNoExtension: String = ""
@@ -66,8 +66,8 @@ public class OfflineRenderer {
         duration: Double,
         renderUntilSilent: Bool,
         audioSettings: AudioFormatConverterOptions,
-        prerender: @escaping () -> Void,
-        postrender: (() -> Void)? = nil
+        prerender: @escaping () throws -> Void,
+        postrender: (() throws -> Void)? = nil
     ) async {
         self.engineManager = engineManager
 
@@ -85,19 +85,21 @@ public class OfflineRenderer {
         let mixPath = url.deletingPathExtension().path + tempString + "." + renderFileType.pathExtension
         let timelineURL = URL(fileURLWithPath: mixPath)
 
-        await processBounceAsync(timelineURL: timelineURL,
-                                 duration: duration,
-                                 renderUntilSilent: renderUntilSilent,
-                                 prerender: prerender,
-                                 postrender: postrender)
+        await processBounceAsync(
+            timelineURL: timelineURL,
+            duration: duration,
+            renderUntilSilent: renderUntilSilent,
+            prerender: prerender,
+            postrender: postrender
+        )
     }
 
     private func processBounceAsync(
         timelineURL: URL,
         duration: Double,
         renderUntilSilent: Bool,
-        prerender: @escaping () -> Void,
-        postrender: (() -> Void)? = nil
+        prerender: @escaping () throws -> Void,
+        postrender: (() throws -> Void)? = nil
     ) async {
         guard let engineManager else {
             assertionFailure("engineManager is nil")
@@ -138,7 +140,7 @@ public class OfflineRenderer {
             Log.error("ERROR:", error)
 
             Task { @MainActor in
-                send(event: .renderError(error))
+                send(event: .renderError(error)) // change to throw
                 await self.cancel()
             }
             return
@@ -249,7 +251,7 @@ public class OfflineRenderer {
         }
 
         abortFlag = true
-        
+
         await engineManager?.cancelRender()
 
         for url in convertedFiles {

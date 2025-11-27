@@ -10,7 +10,7 @@ public protocol EngineRendererModel {
         to audioFile: AVAudioFile,
         duration: Double,
         options: EngineRendererOptions,
-        prerender: (() throws -> Void)?,
+        prerender: @escaping (() throws -> Void),
         postrender: (() throws -> Void)?,
         progressHandler: ((UnitInterval) -> Void)?
     ) async throws

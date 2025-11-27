@@ -10,7 +10,7 @@ extension AudioEngineManager: EngineRendererModel {
         to audioFile: AVAudioFile,
         duration: Double,
         options: EngineRendererOptions = .init(),
-        prerender: (() throws -> Void)?,
+        prerender: @escaping (() throws -> Void),
         postrender: (() throws -> Void)?,
         progressHandler: ((UnitInterval) -> Void)?
     ) async throws {

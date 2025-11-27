@@ -10,7 +10,7 @@ import Testing
 @testable import SPFKAudio
 
 @Suite(.serialized, .tags(.engine))
-final class RenderTests: AudioUnitChainTests {
+final class EngineRendererTests: AudioPlayerTestCase {
     @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
     func render(format: [String: Any]) async throws {
         deleteBinOnExit = false
@@ -78,7 +78,7 @@ final class RenderTests: AudioUnitChainTests {
     }
 }
 
-extension RenderTests {
+extension EngineRendererTests {
     static var pcmFormatFloat32: [String: Any] {
         let sampleRate = 48000.0
         let channels = 2

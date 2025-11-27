@@ -14,7 +14,7 @@ public actor EngineRenderer {
     let duration: TimeInterval
     let options: EngineRendererOptions
 
-    let prerender: (() throws -> Void)?
+    let prerender: (() throws -> Void)
     let postrender: (() throws -> Void)?
     let progressHandler: ((UnitInterval) -> Void)?
 
@@ -25,16 +25,12 @@ public actor EngineRenderer {
         to audioFile: AVAudioFile,
         duration: TimeInterval,
         options: EngineRendererOptions = .init(),
-        prerender: (() throws -> Void)?, // typically play()
-        postrender: (() throws -> Void)? = nil, // typically stop()
+        prerender: @escaping () throws -> Void, // play()
+        postrender: (() throws -> Void)? = nil, // stop()
         progressHandler: ((UnitInterval) -> Void)? = nil
     ) throws {
         guard duration > 0 else {
             throw NSError(description: "duration needs to be a positive value")
-        }
-
-        guard prerender != nil else {
-            throw NSError(description: "No playback block was passed in, so there is nothing to render")
         }
 
         self.engine = engine
@@ -121,7 +117,7 @@ public actor EngineRenderer {
         }
 
         // This is to prepare the nodes for playing, i.e player.play()
-        try prerender?()
+        try prerender()
 
         var tailTimeRendered: TimeInterval = 0
         var zeroCount = 0

@@ -3,45 +3,29 @@
 import AVFoundation
 import Foundation
 @testable import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @Suite(.serialized, .tags(.realtime))
-class AudioUnitChainTests: AudioPlayerTestCase {
-    let auDelayDesc = AudioComponentDescription(
-        componentType: 1635083896,
-        componentSubType: 1684368505,
-        componentManufacturer: 1634758764,
-        componentFlags: 2,
-        componentFlagsMask: 0
-    )
-
-    let auMatrixReverb = AudioComponentDescription(
-        componentType: 1635083896,
-        componentSubType: 1836213622,
-        componentManufacturer: 1634758764,
-        componentFlags: 2,
-        componentFlagsMask: 0
-    )
-
+final class AudioUnitChainTests: AudioPlayerTestCase {
     @Test func findEffects() async throws {
         let components = [
             AVAudioUnitComponent.component(matching: auDelayDesc),
-            AVAudioUnitComponent.component(matching: auMatrixReverb),
+            AVAudioUnitComponent.component(matching: auMatrixReverbDesc),
         ].compactMap { $0 }
 
         #expect(components.count == 2)
     }
 
-    @Test func testInsert() async throws {
+    @Test func insert() async throws {
         try await setup()
 
         let audioUnitChain = try #require(audioUnitChain)
         let player = try #require(player)
 
         try await audioUnitChain.insertAudioUnit(componentDescription: auDelayDesc, at: 0)
-        try await audioUnitChain.insertAudioUnit(componentDescription: auMatrixReverb, at: 1)
+        try await audioUnitChain.insertAudioUnit(componentDescription: auMatrixReverbDesc, at: 1)
         try await audioUnitChain.connect()
 
         await #expect(audioUnitChain.data.unbypassedEffects.count == 2)
@@ -58,7 +42,7 @@ class AudioUnitChainTests: AudioPlayerTestCase {
         try audioWorkspace.stop()
     }
 
-    @Test func testInsertOutOfBounds() async throws {
+    @Test func insertOutOfBounds() async throws {
         try await setup()
         let audioUnitChain = try #require(audioUnitChain)
 
@@ -66,5 +50,4 @@ class AudioUnitChainTests: AudioPlayerTestCase {
             try await audioUnitChain.insertAudioUnit(componentDescription: self.auDelayDesc, at: audioUnitChain.insertCount + 1)
         }
     }
-    
 }
