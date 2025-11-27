@@ -18,7 +18,7 @@ public final class AudioEngineManager {
     // MARK: -
 
     // AudioEngineManagerModel
-    public internal(set) var engine = AVAudioEngine()
+    public let engine = AVAudioEngine()
 
     var engineObserver: NSObjectProtocol?
 

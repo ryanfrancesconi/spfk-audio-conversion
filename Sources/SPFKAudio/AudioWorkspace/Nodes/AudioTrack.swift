@@ -6,7 +6,7 @@ extension AudioTrack: EngineNode {
     public var outputNode: AVAudioNode? { fader.avAudioNode }
 }
 
-public class AudioTrack {
+public final class AudioTrack {
     /// input
     public let mixer: MixerWrapper
 
@@ -24,8 +24,8 @@ public class AudioTrack {
         mixer = MixerWrapper()
         fader = try await Fader()
         audioUnitChain = AudioUnitChain()
-        audioUnitChain.delegate = self
 
+        await audioUnitChain.update(delegate: self)
         try await audioUnitChain.updateIO(input: mixer.avAudioNode, output: fader.avAudioNode)
     }
 
@@ -44,7 +44,7 @@ extension AudioTrack: AudioUnitChainDelegate {
     }
 
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
-        self.delegate?.availableAudioUnitComponents
+        delegate?.availableAudioUnitComponents
     }
 }
 

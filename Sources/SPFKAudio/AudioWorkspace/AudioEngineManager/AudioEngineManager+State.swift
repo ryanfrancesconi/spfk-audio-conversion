@@ -55,7 +55,7 @@ extension AudioEngineManager {
 
         Log.debug("🔈 Creating new Engine...")
 
-        engine = AVAudioEngine()
+        //engine = AVAudioEngine()
         engine.isAutoShutdownEnabled = false
 
         // The engine creates a singleton on demand when this property is first accessed.

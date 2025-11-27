@@ -1,6 +1,8 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import Foundation
 
-public enum WaveformDrawingResolution: CaseIterable, Equatable, Codable {
+public enum WaveformDrawingResolution: CaseIterable, Equatable, Codable, Sendable {
     case low
     case medium
     case high

@@ -4,16 +4,16 @@ import Foundation
 import SPFKBase
 
 /// Data needed for drawing waveforms
-public struct WaveformData: Hashable, Codable {
-    public private(set) var floatChannelData: FloatChannelData
-    public private(set) var audioDuration: TimeInterval
-    public private(set) var sampleRate: Double
-    public private(set) var samplesPerPoint: Int
+public struct WaveformData: Hashable, Codable, Sendable {
+    public let floatChannelData: FloatChannelData
+    public let audioDuration: TimeInterval
+    public let sampleRate: Double
+    public let samplesPerPoint: Int
 
     // MARK: Derived values
 
-    public private(set) var samplesPerSecond: Double
-    public private(set) var resolution: WaveformDrawingResolution
+    public let samplesPerSecond: Double
+    public let resolution: WaveformDrawingResolution
 
     public var channelCount: Int {
         floatChannelData.count
@@ -29,8 +29,9 @@ public struct WaveformData: Hashable, Codable {
         self.samplesPerPoint = samplesPerPoint
         self.audioDuration = audioDuration
         self.sampleRate = sampleRate
-        self.samplesPerSecond = sampleRate / samplesPerPoint.double
-        self.resolution = WaveformDrawingResolution(samplesPerPoint: samplesPerPoint)
+
+        samplesPerSecond = sampleRate / samplesPerPoint.double
+        resolution = WaveformDrawingResolution(samplesPerPoint: samplesPerPoint)
     }
 
     /// Extract a time range of audio data or the entire data if it matches

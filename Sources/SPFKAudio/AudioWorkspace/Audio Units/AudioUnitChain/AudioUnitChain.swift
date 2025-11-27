@@ -4,7 +4,7 @@ import AVFoundation
 import SPFKBase
 
 /// Audio Unit v3 Host for loading external Audio Units and connecting them together
-public final class AudioUnitChain {
+public actor AudioUnitChain {
     /// The events this class will generate
     public enum Event: Sendable {
         case connectionError(error: Error)
@@ -26,6 +26,10 @@ public final class AudioUnitChain {
 
     /// Delegate that will be sent notifications
     public weak var delegate: AudioUnitChainDelegate?
+
+    public func update(delegate: AudioUnitChainDelegate) {
+        self.delegate = delegate
+    }
 
     /// first node in chain, generally a player or instrument
     public var input: AVAudioNode?

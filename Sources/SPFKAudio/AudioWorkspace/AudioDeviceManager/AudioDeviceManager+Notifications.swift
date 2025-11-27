@@ -4,62 +4,69 @@ import SPFKAudioHardware
 import SPFKBase
 
 extension AudioDeviceManager {
-    @MainActor func send(event: Event) async {
+    func send(event: Event) async {
         Log.debug("🔊 \(event)")
 
-        await delegate?.audioDeviceManager(event: event)
+        guard let delegate else { return }
+
+        await delegate.audioDeviceManager(event: event)
     }
 
     func removeHardwareObservers() {
-        hardwareObservers.forEach {
-            NotificationCenter.default.removeObserver($0)
+        // Remove any token-based observers we might have stored previously.
+        for hardwareObserver in hardwareObservers {
+            NotificationCenter.default.removeObserver(hardwareObserver)
         }
 
         hardwareObservers.removeAll()
+
+        // Also remove selector-based observers registered on self.
+        NotificationCenter.default.removeObserver(self, name: .deviceListChanged, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .defaultInputDeviceChanged, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .defaultOutputDeviceChanged, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .deviceNominalSampleRateDidChange, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .deviceProcessorOverload, object: nil)
     }
 
     func addHardwareObservers() {
         removeHardwareObservers()
 
-        hardwareObservers = [
-            NotificationCenter.default.addObserver(
-                forName: .deviceListChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] in self?.parse(notification: $0) },
+        // Use selector-based observers to avoid @Sendable closure captures of `self`.
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(parse(notification:)),
+                                               name: .deviceListChanged,
+                                               object: nil)
 
-            NotificationCenter.default.addObserver(
-                forName: .defaultInputDeviceChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] in self?.parse(notification: $0) },
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(parse(notification:)),
+                                               name: .defaultInputDeviceChanged,
+                                               object: nil)
 
-            NotificationCenter.default.addObserver(
-                forName: .defaultOutputDeviceChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] in self?.parse(notification: $0) },
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(parse(notification:)),
+                                               name: .defaultOutputDeviceChanged,
+                                               object: nil)
 
-            NotificationCenter.default.addObserver(
-                forName: .deviceNominalSampleRateDidChange,
-                object: nil,
-                queue: .main
-            ) { [weak self] in self?.parse(notification: $0) },
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(parse(notification:)),
+                                               name: .deviceNominalSampleRateDidChange,
+                                               object: nil)
 
-            NotificationCenter.default.addObserver(
-                forName: .deviceProcessorOverload,
-                object: nil,
-                queue: .main
-            ) { [weak self] in self?.parse(notification: $0) },
-        ]
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(parse(notification:)),
+                                               name: .deviceProcessorOverload,
+                                               object: nil)
     }
 
+    @MainActor
     @objc private func parse(notification: Notification) {
-        Task {
-            if let hardwareNotification = notification.object as? AudioHardwareNotification {
+        // Extract a Sendable payload first to avoid capturing Notification/self in a concurrent context.
+        if let hardwareNotification = notification.object as? AudioHardwareNotification {
+            Task {
                 await parse(hardwareNotification: hardwareNotification)
-
-            } else if let deviceNotification = notification.object as? AudioDeviceNotification {
+            }
+        } else if let deviceNotification = notification.object as? AudioDeviceNotification {
+            Task {
                 await parse(deviceNotification: deviceNotification)
             }
         }
@@ -71,37 +78,37 @@ extension AudioDeviceManager {
             break
 
         case .defaultInputDeviceChanged:
-            guard await self.allowInput else {
+            guard await allowInput else {
                 Log.debug("Can ignore this event")
                 return
             }
 
-            guard let defaultInputDevice = await self.defaultInputDevice else { return }
+            guard let defaultInputDevice = await defaultInputDevice else { return }
 
-            guard defaultInputDevice.uid != self.deviceSettings.inputUID else {
+            guard defaultInputDevice.uid != deviceSettings.inputUID else {
                 Log.debug("Same device is already selected", defaultInputDevice)
                 return
             }
 
-            await self.send(event: .inputDeviceChanged(device: defaultInputDevice))
+            await send(event: .inputDeviceChanged(device: defaultInputDevice))
 
         case .defaultOutputDeviceChanged:
-            guard await self.allowInput else {
+            guard await allowInput else {
                 Log.debug("Can ignore this defaultOutputDeviceChanged")
                 return
             }
 
-            guard let defaultOutputDevice = await self.defaultOutputDevice else {
+            guard let defaultOutputDevice = await defaultOutputDevice else {
                 assertionFailure()
                 return
             }
 
-            guard defaultOutputDevice.uid != self.deviceSettings.outputUID else {
+            guard defaultOutputDevice.uid != deviceSettings.outputUID else {
                 Log.debug("Same device is already selected", defaultOutputDevice)
                 return
             }
 
-            await self.send(event: .outputDeviceChanged(device: defaultOutputDevice))
+            await send(event: .outputDeviceChanged(device: defaultOutputDevice))
 
         case let .deviceListChanged(objectID: _, event: event):
             let added = event.addedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
@@ -114,7 +121,7 @@ extension AudioDeviceManager {
                 removedDevices: removed
             )
 
-            await self.send(event: .deviceListChanged(event: filteredEvent))
+            await send(event: .deviceListChanged(event: filteredEvent))
         }
     }
 
@@ -122,8 +129,8 @@ extension AudioDeviceManager {
         guard let notificationDevice = await deviceNotification.getAudioDevice() else { return }
 
         let devices = [
-            await self.selectedInputDevice,
-            await self.selectedOutputDevice,
+            await selectedInputDevice,
+            await selectedOutputDevice,
         ]
 
         guard devices.contains(notificationDevice) else { return }
@@ -131,7 +138,7 @@ extension AudioDeviceManager {
         switch deviceNotification {
         case .deviceAvailableNominalSampleRatesDidChange:
             // guard let sampleRate = notificationDevice.nominalSampleRate else { return }
-            await self.send(event: .sampleRateChanged(device: notificationDevice))
+            await send(event: .sampleRateChanged(device: notificationDevice))
 
         case .deviceProcessorOverload:
             await send(event: .deviceProcessorOverload)
@@ -147,7 +154,8 @@ extension AudioDeviceManager {
 extension AudioDeviceManager {
     public func handleEngineConfigurationChanged() async {
         guard let selectedOutputDevice = await selectedOutputDevice,
-              let outputDeviceSampleRate = await outputDeviceSampleRate else {
+              let outputDeviceSampleRate = await outputDeviceSampleRate
+        else {
             return
         }
 

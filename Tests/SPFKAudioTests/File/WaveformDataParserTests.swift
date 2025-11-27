@@ -62,8 +62,8 @@ class WaveformDataParserTests: BinTestCase {
         )
 
         Task {
-            try await Task.sleep(seconds: 0.15)
-            parser.cancel()
+            try await Task.sleep(seconds: 0.11)
+            await parser.cancel()
         }
 
         try await wait(sec: 0.1)

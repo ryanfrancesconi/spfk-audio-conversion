@@ -10,10 +10,14 @@ public actor BatchAudioFormatConverter {
 
     public weak var delegate: BatchAudioFormatConverterDelegate?
 
+    public func update(delegate: BatchAudioFormatConverterDelegate?) async {
+        self.delegate = delegate
+    }
+
     public init() {}
 
     public init(inputs sources: [AudioFormatConverterSource]) async {
-        await self.data.update(sources: sources)
+        await data.update(sources: sources)
     }
 
     public func start() async throws -> [Result] {
@@ -29,7 +33,6 @@ public actor BatchAudioFormatConverter {
             of: Result?.self,
             returning: [Result].self
         ) { taskGroup in
-
             try Task.checkCancellation()
 
             @Sendable func worker(i: Int) async -> Result? {

@@ -14,9 +14,9 @@ public actor EngineRenderer {
     let duration: TimeInterval
     let options: EngineRendererOptions
 
-    let prerender: () throws -> Void
-    let postrender: () throws -> Void
-    let progressHandler: ((UnitInterval) -> Void)?
+    let prerender: @Sendable () throws -> Void
+    let postrender: (@Sendable () throws -> Void)?
+    let progressHandler: (@Sendable (UnitInterval) -> Void)?
 
     private var targetSamples: AVAudioFramePosition = 0
 
@@ -25,9 +25,9 @@ public actor EngineRenderer {
         to audioFile: AVAudioFile,
         duration: TimeInterval,
         options: EngineRendererOptions = .init(),
-        prerender: @escaping () throws -> Void, // play()
-        postrender: @escaping () throws -> Void, // stop()
-        progressHandler: ((UnitInterval) -> Void)? = nil
+        prerender: @escaping @Sendable () throws -> Void, // play()
+        postrender: (@Sendable () throws -> Void)?, // stop()
+        progressHandler: (@Sendable (UnitInterval) -> Void)? = nil
     ) throws {
         guard duration > 0 else {
             throw NSError(description: "duration needs to be a positive value")
@@ -53,9 +53,7 @@ public actor EngineRenderer {
         }
 
         defer {
-            if disableManualRenderingModeOnCompletion,
-               engine.isInManualRenderingMode
-            {
+            if disableManualRenderingModeOnCompletion, engine.isInManualRenderingMode {
                 engine.disableManualRenderingMode()
             }
 
@@ -136,8 +134,10 @@ public actor EngineRenderer {
 
             guard isComplete else { continue }
 
-            Log.debug("🍙 Triggering postrender action")
-            try postrender()
+            if let postrender {
+                Log.debug("🍙 Triggering postrender action")
+                try postrender()
+            }
 
             guard options.renderUntilSilent else {
                 break

@@ -160,7 +160,7 @@ extension AudioFormatConverter {
 
         source.input = tempFile
 
-        try await self.convertPCMToCompressed()
+        try await convertPCMToCompressed()
     }
 
     /// The AVFoundation way. *This doesn't currently handle compressed input - only compressed output.*
@@ -192,7 +192,8 @@ extension AudioFormatConverter {
         }
 
         guard let format = outputFormat.avFileType,
-              let formatKey = outputFormat.audioFormatID else {
+              let formatKey = outputFormat.audioFormatID
+        else {
             throw NSError(description: "Unsupported output format: \(outputFormat)")
         }
 

@@ -1,5 +1,5 @@
 import Foundation
 
-public protocol WaveformDataParserDelegate: AnyObject {
+public protocol WaveformDataParserDelegate {
     func waveformDataParser(event: WaveformDataLoadEvent) async
 }

@@ -123,12 +123,12 @@ extension EngineRendererTests {
     }
 
     private func render(player: FilePlayer, to audioFile: AVAudioFile, duration: TimeInterval, renderUntilSilent: Bool) async throws {
-        let prerender = {
+        let prerender = { @Sendable in
             try player.schedule() // (from: 0, to: 2, when: 0)
             try player.play()
         }
 
-        let postrender = {
+        let postrender = { @Sendable in
             player.stop()
         }
 

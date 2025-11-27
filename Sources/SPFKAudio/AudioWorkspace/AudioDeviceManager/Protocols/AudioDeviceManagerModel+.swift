@@ -85,8 +85,9 @@ extension AudioDeviceManagerModel {
     public var allowInput: Bool {
         get async {
             let hasInputDevice = await hasInputDevice
-
-            return deviceSettings.allowInput && hasInputDevice
+            let settingsAllow = deviceSettings.allowInput
+            
+            return settingsAllow && hasInputDevice
         }
     }
 
