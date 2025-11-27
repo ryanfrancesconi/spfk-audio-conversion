@@ -5,7 +5,7 @@ import SPFKBase
 
 /// An audio player which is associated with a single file
 open class FilePlayer: EngineNodeAU, Mixable {
-    // MARK: - Nodes
+    // MARK: - Node
 
     public var avAudioNode: AVAudioNode { playerNode }
 
@@ -17,12 +17,6 @@ open class FilePlayer: EngineNodeAU, Mixable {
     public var isScheduled: Bool {
         lastScheduledTime != nil
     }
-
-    // MARK: - Public Properties
-
-    /// Completion handler to be called when Audio is done playing. The handler won't be called if
-    /// stop() is called while playing or when looping from a buffer.
-    public var completionHandler: (() -> Void)?
 
     /// The internal audio file
     public private(set) var audioFile: AVAudioFile?
@@ -44,7 +38,8 @@ open class FilePlayer: EngineNodeAU, Mixable {
               engine.isRunning,
               let nodeTime = playerNode.lastRenderTime,
               nodeTime.isSampleTimeValid,
-              let playerTime = playerNode.playerTime(forNodeTime: nodeTime) else {
+              let playerTime = playerNode.playerTime(forNodeTime: nodeTime)
+        else {
             Log.error("Error getting currentFrame, was detached:", playerNode.engine == nil)
             return nil
         }
@@ -128,7 +123,7 @@ open class FilePlayer: EngineNodeAU, Mixable {
 
     /// Create a player from a URL
     public convenience init(url: URL) throws {
-        self.init(audioFile: try AVAudioFile(forReading: url))
+        try self.init(audioFile: AVAudioFile(forReading: url))
     }
 
     /// Create a player from an AVAudioFile.
@@ -141,7 +136,7 @@ open class FilePlayer: EngineNodeAU, Mixable {
     /// Replace the contents of the player with this url. Note that if your processingFormat changes
     /// you should dispose this Player and create a new one instead.
     public func load(url: URL) throws {
-        try load(audioFile: try AVAudioFile(forReading: url))
+        try load(audioFile: AVAudioFile(forReading: url))
     }
 
     /// Load a new audio file into this player. Note that if your processingFormat changes
@@ -180,7 +175,5 @@ extension FilePlayer: EngineNode {
         unload()
 
         try detachIONodes()
-
-        completionHandler = nil
     }
 }

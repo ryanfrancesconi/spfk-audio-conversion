@@ -14,8 +14,8 @@ public actor EngineRenderer {
     let duration: TimeInterval
     let options: EngineRendererOptions
 
-    let prerender: (() throws -> Void)
-    let postrender: (() throws -> Void)?
+    let prerender: () throws -> Void
+    let postrender: () throws -> Void
     let progressHandler: ((UnitInterval) -> Void)?
 
     private var targetSamples: AVAudioFramePosition = 0
@@ -26,7 +26,7 @@ public actor EngineRenderer {
         duration: TimeInterval,
         options: EngineRendererOptions = .init(),
         prerender: @escaping () throws -> Void, // play()
-        postrender: (() throws -> Void)? = nil, // stop()
+        postrender: @escaping () throws -> Void, // stop()
         progressHandler: ((UnitInterval) -> Void)? = nil
     ) throws {
         guard duration > 0 else {
@@ -136,10 +136,8 @@ public actor EngineRenderer {
 
             guard isComplete else { continue }
 
-            if let postrender {
-                Log.debug("🍙 Triggering postrender action")
-                try postrender()
-            }
+            Log.debug("🍙 Triggering postrender action")
+            try postrender()
 
             guard options.renderUntilSilent else {
                 break

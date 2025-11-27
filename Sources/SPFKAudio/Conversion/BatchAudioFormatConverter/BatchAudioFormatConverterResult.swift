@@ -3,7 +3,7 @@
 import Foundation
 import SPFKBase
 
-public enum BatchAudioFormatConverterResult {
+public enum BatchAudioFormatConverterResult: Sendable {
     case success(source: AudioFormatConverterSource)
     case failed(source: AudioFormatConverterSource, error: Error)
 

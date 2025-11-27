@@ -1,7 +1,7 @@
 import AudioToolbox
 import Foundation
 
-public struct HostTransportState {
+public struct HostTransportState: Sendable {
     public init() {}
 
     /**

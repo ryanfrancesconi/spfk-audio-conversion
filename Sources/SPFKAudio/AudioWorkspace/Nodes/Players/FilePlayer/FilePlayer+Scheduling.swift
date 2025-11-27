@@ -38,7 +38,7 @@ extension FilePlayer {
             throw NSError(description: "invalid edit range")
         }
 
-        self.lastScheduledTime = audioTime
+        lastScheduledTime = audioTime
 
         let sampleRate: Double = audioFile.fileFormat.sampleRate
         let startFrame = AVAudioFramePosition(playbackRange.lowerBound * sampleRate)
@@ -57,7 +57,7 @@ extension FilePlayer {
             frameCount: frameCount,
             at: audioTime,
             completionCallbackType: .dataPlayedBack,
-            completionHandler: completionHandler != nil ? handleCallbackComplete : nil
+            completionHandler: nil // completionHandler != nil ? handleCallbackComplete : nil
         )
 
         playerNode.prepare(withFrameCount: frameCount)
@@ -83,12 +83,5 @@ extension FilePlayer {
         } else {
             return AVAudioTime(hostTime: hostTime).offset(seconds: scheduledTime)
         }
-    }
-
-    // Note that a player node should not be stopped from within a completion handler callback because
-    // it can deadlock while trying to unschedule previously scheduled buffers.
-    private func handleCallbackComplete(completionType: AVAudioPlayerNodeCompletionCallbackType) {
-        isPlaying = false
-        completionHandler?()
     }
 }

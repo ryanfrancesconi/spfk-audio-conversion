@@ -13,7 +13,7 @@ import SPFKBaseC
 /// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
 /// potentially other bluetooth I/O headsets as well.
 public final class AudioDeviceManager: AudioDeviceManagerModel {
-    public enum Event {
+    public enum Event: Sendable {
         case sampleRateChanged(device: AudioDevice)
         case inputDeviceChanged(device: AudioDevice)
         case outputDeviceChanged(device: AudioDevice)
@@ -23,7 +23,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         case configurationChanged(Set<ConfigurationOption>)
     }
 
-    public enum ConfigurationOption: Hashable {
+    public enum ConfigurationOption: Hashable, Sendable {
         case sampleRateChanged
         case outputDeviceChanged
         case inputDeviceChanged

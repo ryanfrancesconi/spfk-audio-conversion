@@ -11,7 +11,7 @@ extension AudioEngineManager: EngineRendererModel {
         duration: Double,
         options: EngineRendererOptions = .init(),
         prerender: @escaping (() throws -> Void),
-        postrender: (() throws -> Void)?,
+        postrender: @escaping (() throws -> Void),
         progressHandler: ((UnitInterval) -> Void)?
     ) async throws {
         defer {

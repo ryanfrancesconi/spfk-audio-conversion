@@ -3,7 +3,7 @@
 import AVFoundation
 import Foundation
 
-public struct AudioFormatConverterSource {
+public struct AudioFormatConverterSource: Sendable {
     /// The source audio file
     public var input: URL
 

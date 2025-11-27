@@ -82,7 +82,10 @@ private var cTargetDependencies: [PackageDescription.Target.Dependency] {
 private let swiftTarget: PackageDescription.Target = .target(
     name: name,
     dependencies: swiftTargetDependencies,
-    resources: nil
+    resources: nil,
+    swiftSettings: [
+        .unsafeFlags(["-Xfrontend", "-strict-concurrency=targeted"]),
+    ]
 )
 
 private let testTarget: PackageDescription.Target = .testTarget(

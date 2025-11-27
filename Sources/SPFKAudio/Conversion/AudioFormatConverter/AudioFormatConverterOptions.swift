@@ -7,13 +7,13 @@ import SPFKUtils
 
 /// The conversion options. In general, leave any property nil to adopt the value of the input file.
 /// bitRate assumes a stereo bit rate and the converter will half it for mono
-public struct AudioFormatConverterOptions {
+public struct AudioFormatConverterOptions: Sendable {
     public static let bitsPerChannelRange: ClosedRange<UInt32> = 16 ... 32
     public static let bitRange: ClosedRange<UInt32> = 64000 ... 320000
 
     /// An option to block upsampling to a higher bit depth than the source.
     /// For example, converting to 24bit from 16 doesn't have much benefit
-    public enum BitDepthRule: String, Codable {
+    public enum BitDepthRule: String, Codable, Sendable {
         public typealias RawValue = String
 
         /// Don't allow upsampling to 24bit if the src is 16

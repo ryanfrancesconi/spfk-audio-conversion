@@ -4,9 +4,9 @@ import AVFoundation
 import SPFKBase
 
 /// Audio Unit v3 Host for loading external Audio Units and connecting them together
-public class AudioUnitChain {
+public final class AudioUnitChain {
     /// The events this class will generate
-    public enum Event {
+    public enum Event: Sendable {
         case connectionError(error: Error)
 
         case willBypass(index: Int, state: Bool)
@@ -22,7 +22,7 @@ public class AudioUnitChain {
     }
 
     /// The default amount of inserts
-    public static var defaultInsertCount = 6
+    public static let defaultInsertCount = 6
 
     /// Delegate that will be sent notifications
     public weak var delegate: AudioUnitChainDelegate?

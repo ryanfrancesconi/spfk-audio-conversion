@@ -125,7 +125,7 @@ extension AudioUnitChain {
         guard let delegate else {
             throw NSError(description: "delegate is nil")
         }
-
+        
         try await delegate.connectAndAttach(
             firstNode,
             to: secondNode,

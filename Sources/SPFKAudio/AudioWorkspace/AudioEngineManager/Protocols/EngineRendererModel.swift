@@ -11,7 +11,7 @@ public protocol EngineRendererModel {
         duration: Double,
         options: EngineRendererOptions,
         prerender: @escaping (() throws -> Void),
-        postrender: (() throws -> Void)?,
+        postrender: @escaping (() throws -> Void),
         progressHandler: ((UnitInterval) -> Void)?
     ) async throws
 }

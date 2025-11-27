@@ -2,8 +2,8 @@
 
 import AVFoundation
 import OTAtomics
-import SwiftExtensions
 import SPFKBase
+import SwiftExtensions
 
 // MARK: - Needs Refactor
 
@@ -57,9 +57,11 @@ public final class MultiChannelInputNodeTap {
                 startedAtTime = AVAudioTime(hostTime: mach_absolute_time())
 
                 Log.debug("⏺", files.count, " to record", startedAtTime)
-                _ = files.map {
-                    $0.createFile()
+
+                for file in files {
+                    file.createFile()
                 }
+
             } else {
                 stoppedAtTime = AVAudioTime(hostTime: mach_absolute_time())
                 Log.debug("⏹", files.count, "recorded", stoppedAtTime)
@@ -165,7 +167,8 @@ public final class MultiChannelInputNodeTap {
     /// How long the class was recording based on the startedAtTime and stoppedAtTime timestamps
     public var durationRecorded: TimeInterval? {
         guard let startedAtTime,
-              let stoppedAtTime else {
+              let stoppedAtTime
+        else {
             return nil
         }
         return AVAudioTime.seconds(forHostTime: stoppedAtTime.hostTime) -
@@ -247,7 +250,8 @@ public final class MultiChannelInputNodeTap {
         let fileChannels = channelMap.map {
             MultiChannelInputNodeTap.FileChannel(
                 name: "Audio \($0 + 1)",
-                channel: $0)
+                channel: $0
+            )
         }
         prepare(fileChannels: fileChannels)
     }
@@ -294,7 +298,8 @@ public final class MultiChannelInputNodeTap {
         guard let directory,
               let fileFormat,
               let recordFormat,
-              let fileChannels else {
+              let fileChannels
+        else {
             Log.error("File Format is nil")
             return
         }

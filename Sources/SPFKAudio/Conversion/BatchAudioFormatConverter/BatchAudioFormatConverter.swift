@@ -3,7 +3,7 @@
 import Foundation
 import SPFKUtils
 
-public class BatchAudioFormatConverter {
+public actor BatchAudioFormatConverter {
     public typealias Result = BatchAudioFormatConverterResult
 
     public var data = BatchAudioFormatConverterData()

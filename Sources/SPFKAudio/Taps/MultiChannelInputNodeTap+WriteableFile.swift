@@ -2,25 +2,25 @@
 
 import AVFoundation
 import OTAtomics
-import SwiftExtensions
 import SPFKBase
+import SwiftExtensions
 
 extension MultiChannelInputNodeTap {
     /// An inner class to represent one channel of data to record to file
-    public class WriteableFile: CustomStringConvertible {
+    public final class WriteableFile: CustomStringConvertible {
         /// Simple description of the file
         public var description: String {
             "url: \(url.path), channel: \(channel), file is open: \(file != nil)"
         }
 
         /// The url being written to, persists after close
-        public private(set) var url: URL
+        public let url: URL
 
         /// The file format being written
-        public private(set) var fileFormat: AVAudioFormat
+        public let fileFormat: AVAudioFormat
 
         /// The channel of the audio device this is reading from
-        @OTAtomicsThreadSafe public private(set) var channel: Int32
+        public let channel: Int32
 
         /// This is the internal file which is only valid when open for writing, then nil'd
         /// out to allow its release
@@ -43,14 +43,15 @@ extension MultiChannelInputNodeTap {
         public init(url: URL,
                     fileFormat: AVAudioFormat,
                     channel: Int32,
-                    ioLatency: AVAudioFrameCount = 0) {
+                    ioLatency: AVAudioFrameCount = 0)
+        {
             self.fileFormat = fileFormat
             self.channel = channel
             self.url = url
             self.ioLatency = ioLatency
         }
 
-        internal func createFile() {
+        func createFile() {
             guard file == nil else { return }
 
             do {
@@ -93,7 +94,7 @@ extension MultiChannelInputNodeTap {
         // strange that they let you set a buffer size in the first place. macOS is setting to
         // 4800 when at 48k, or sampleRate / 10. That's a big buffer.
         private func writeFile(buffer: AVAudioPCMBuffer, time: AVAudioTime) throws {
-            guard let file = self.file else { return }
+            guard let file = file else { return }
 
             var buffer = buffer
             totalFramesRead += buffer.frameLength
@@ -109,7 +110,8 @@ extension MultiChannelInputNodeTap {
 
                     // edit the first buffer to remove io latency samples length
                     if buffer.frameLength > latencyOffset,
-                       let offsetBuffer = try buffer.copyFrom(startSample: startSample) {
+                       let offsetBuffer = try buffer.copyFrom(startSample: startSample)
+                    {
                         buffer = offsetBuffer
                     }
 

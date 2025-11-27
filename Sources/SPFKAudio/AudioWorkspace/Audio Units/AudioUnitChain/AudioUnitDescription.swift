@@ -3,17 +3,17 @@
 import AEXML
 import AppKit
 import AudioToolbox
-import AVFoundation
+@preconcurrency import AVFoundation
 import SPFKBase
 
 /// A wrapper for the `AVAudioUnit` to allow an independent bypass property
 /// which doesn't rely on the `AUAudioUnit` one
-public class AudioUnitDescription: Equatable {
+public struct AudioUnitDescription: Equatable, Sendable {
     public static func == (lhs: AudioUnitDescription, rhs: AudioUnitDescription) -> Bool {
         lhs.avAudioUnit == rhs.avAudioUnit
     }
 
-    public private(set) var name: String?
+    public let name: String?
 
     public var audioComponentDescription: AudioComponentDescription {
         avAudioUnit.audioComponentDescription
@@ -47,9 +47,5 @@ public class AudioUnitDescription: Equatable {
         avAudioUnit.auAudioUnit.musicalContextBlock = nil
         avAudioUnit.auAudioUnit.transportStateBlock = nil
         try avAudioUnit.detach()
-    }
-
-    deinit {
-        Log.debug("* { AudioUnitDescription \(name ?? "?") }")
     }
 }

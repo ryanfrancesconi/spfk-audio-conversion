@@ -2,7 +2,7 @@
 
 import AudioToolbox
 
-public struct AudioTaper {
+public struct AudioTaper: Sendable {
     public var value: AUValue = 3
     public var inverseValue: AUValue { 1 / value }
     public var skew: AUValue = 0.333
