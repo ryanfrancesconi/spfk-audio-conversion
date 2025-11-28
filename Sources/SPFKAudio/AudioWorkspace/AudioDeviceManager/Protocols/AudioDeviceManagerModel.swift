@@ -8,7 +8,7 @@ public protocol AudioDeviceManagerModel {
     
     var deviceSettings: AudioDeviceSettings { get set }
     var bufferSize: UInt32 { get }
-    var inputLatency: UInt32? { get async }
+    var inputDeviceLatency: UInt32? { get async }
     var engineOutputNode: AVAudioOutputNode? { get }
 
     var hardware: AudioHardwareManager { get }

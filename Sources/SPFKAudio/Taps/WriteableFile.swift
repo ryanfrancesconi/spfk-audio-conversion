@@ -121,15 +121,20 @@ public final class WriteableFile: CustomStringConvertible {
             }
         }
 
-        guard let file else { return }
+        guard let file else {
+            assertionFailure()
+            return
+        }
 
         try file.write(from: buffer)
 
         amplitudeArray.append(
-            amplitude //.normalized(from: Float.unitIntervalRange, taper: AudioTaper.default.value)
+            amplitude
         )
 
         totalFramesWritten = file.length
+        
+        Log.debug(totalFramesWritten)
     }
 
     /// Release the file ?

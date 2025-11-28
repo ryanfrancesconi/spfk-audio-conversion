@@ -15,6 +15,7 @@ extension AudioEngineManager: AudioEngineManagerModel {
     public var inputNode: AVAudioInputNode? {
         get async {
             guard await allowInput else { return nil }
+
             return engine.inputNode
         }
     }

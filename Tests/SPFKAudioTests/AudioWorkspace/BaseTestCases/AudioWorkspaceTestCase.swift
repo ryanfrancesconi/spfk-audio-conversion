@@ -12,6 +12,9 @@ import Testing
 public class AudioWorkspaceTestCase: BinTestCase {
     public let audioWorkspace: AudioWorkspace = .init()
 
+    var deviceManager: AudioDeviceManager { audioWorkspace.deviceManager }
+    var engineManager: AudioEngineManager { audioWorkspace.engineManager }
+
     var audioUnitChain: AudioUnitChain? {
         audioWorkspace.master?.audioUnitChain
     }
@@ -34,7 +37,7 @@ public class AudioWorkspaceTestCase: BinTestCase {
 
     override public init() async {
         do {
-            try await audioWorkspace.deviceManager.setup()  // load device prefs here
+            try await audioWorkspace.deviceManager.setup() // load device prefs here
         } catch {
             assertionFailure(error.localizedDescription)
         }

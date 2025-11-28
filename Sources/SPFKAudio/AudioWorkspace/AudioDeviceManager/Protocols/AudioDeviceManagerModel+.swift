@@ -86,7 +86,7 @@ extension AudioDeviceManagerModel {
         get async {
             let hasInputDevice = await hasInputDevice
             let settingsAllow = deviceSettings.allowInput
-            
+
             return settingsAllow && hasInputDevice
         }
     }
@@ -111,7 +111,7 @@ extension AudioDeviceManagerModel {
 
     public var inputLatencyInSeconds: TimeInterval? {
         get async {
-            guard let inputLatency = await inputLatency,
+            guard let inputLatency = await inputDeviceLatency,
                   let inputDeviceSampleRate = await inputDeviceSampleRate else { return nil }
             let seconds = TimeInterval(inputLatency) / inputDeviceSampleRate
             return seconds
@@ -127,12 +127,37 @@ extension AudioDeviceManagerModel {
         device.name.hasPrefix("CADefaultDevice") // this is unstable logic
     }
 
-    public func requestAudioInputAccess() async -> Bool? {
+    public func requestAudioInputAccess() async throws -> Bool {
         guard await hasInputDevice && deviceSettings.allowInput else {
-            Log.error("🎤 Audio Disabled or no Input device.")
-            return nil
+            throw NSError(description: "Audio Disabled or no Input device.")
         }
 
-        return await AVCaptureDevice.requestAccess(for: .audio)
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+
+        var authorized = false
+
+        switch status {
+        case .notDetermined:
+            Log.error("notDetermined")
+
+        case .restricted:
+            Log.error("restricted")
+
+        case .denied:
+            Log.error("denied")
+
+        case .authorized:
+            authorized = true
+            Log.debug("✅ authorized")
+
+        @unknown default:
+            assertionFailure()
+        }
+
+        guard !authorized else { return true }
+
+        let allowed = await AVCaptureDevice.requestAccess(for: .audio)
+
+        return allowed
     }
 }

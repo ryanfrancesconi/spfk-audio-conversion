@@ -37,16 +37,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
     // MARK: - Latency
 
-    // Cache this value for the selected device
-    var _inputLatency: UInt32?
-    public var inputLatency: UInt32? {
-        get async {
-            if let _inputLatency { return _inputLatency }
-            _inputLatency = await inputDeviceLatency
-            return _inputLatency
-        }
-    }
-
     private var _bufferSize: UInt32 = 256
     public var bufferSize: UInt32 {
         _bufferSize
@@ -101,7 +91,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     public init() {}
 
     public func setup(settings: AudioDeviceSettings = .init()) async throws {
-        Log.debug(settings)
 
         let defaultInputUID = await hardware.defaultInputDevice?.uid
         let defaultOutputUID = await hardware.defaultOutputDevice?.uid
@@ -111,6 +100,8 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
             inputUID: settings.inputUID ?? defaultInputUID,
             outputUID: settings.outputUID ?? defaultOutputUID
         )
+
+        Log.debug(deviceSettings)
 
         try await registerNotifications()
 
@@ -182,8 +173,6 @@ extension AudioDeviceManager {
 
         // will set device
         try device.promote(to: .defaultInput)
-
-        _inputLatency = nil // uncache this
 
         try await setInputSampleRate(to: systemSampleRate)
     }

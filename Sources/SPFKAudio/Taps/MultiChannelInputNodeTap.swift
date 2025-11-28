@@ -54,8 +54,6 @@ public actor MultiChannelInputNodeTap {
     public private(set) var bitsPerChannel: UInt32 = 24
 
     /// The requested size of the incoming buffers. The implementation may choose another size.
-    /// I'm seeing it set to 4800 on macOS in general. Given that I'm unclear why they offer
-    /// us a choice
     public var bufferSize: AVAudioFrameCount = 2048
 
     public var recordEnabled: Bool { tapInstalled }
@@ -95,7 +93,6 @@ public actor MultiChannelInputNodeTap {
             Log.debug("⏺ Removing Tap")
 
             inputNode.removeTap(onBus: 0)
-
             setInstalled(false)
         }
     }
@@ -181,6 +178,7 @@ public actor MultiChannelInputNodeTap {
         self.delegate = delegate
 
         let outputFormat = inputNode.outputFormat(forBus: 0)
+
         sampleRate = outputFormat.sampleRate
 
         Log.debug("inputNode", outputFormat.channelCount, "channels at", sampleRate, "Hz")
@@ -244,8 +242,8 @@ public actor MultiChannelInputNodeTap {
         }
 
         channelMap = newValue
+
         recordFormat = createRecordFormat(channelMap: newValue)
-        try update(recordEnabled: false)
     }
 
     // MARK: - Formats
@@ -280,11 +278,16 @@ public actor MultiChannelInputNodeTap {
     }
 
     private func createFiles() throws {
-        guard let directory,
-              let fileFormat,
-              let recordFormat
-        else {
-            throw NSError(description: "setup isn't complete")
+        guard let directory else {
+            throw NSError(description: "directory is nil")
+        }
+
+        guard let fileFormat else {
+            throw NSError(description: "fileFormat is nil")
+        }
+
+        guard let recordFormat else {
+            throw NSError(description: "recordFormat is nil")
         }
 
         guard recordFormat.channelCount == channelMap.count else {
@@ -327,21 +330,6 @@ public actor MultiChannelInputNodeTap {
 
         // record counter to be saved in the project and restored
         recordCounter += 1
-    }
-
-    // switch to Utils version
-    private func getNextURL(directory: URL, name: String, startIndex: Int) -> URL? {
-        let url = directory.appendingPathComponent(name).appendingPathExtension(recordFileType)
-        let pathExtension = url.pathExtension
-        let baseFilename = url.deletingPathExtension().lastPathComponent
-
-        for i in startIndex ... 10000 {
-            let filename = "\(baseFilename) #\(i)"
-            let test = directory.appendingPathComponent(filename)
-                .appendingPathExtension(pathExtension)
-            if !FileManager.default.fileExists(atPath: test.path) { return test }
-        }
-        return nil
     }
 
     // AVAudioNodeTapBlock
@@ -437,11 +425,27 @@ public actor MultiChannelInputNodeTap {
         filesReady = false
 
         for file in files {
-            // release reference to the file. will close it and make it readable from url.
             file.close()
         }
 
-        Log.debug("⏹", files.count, "files")
+        Log.debug("⏹", files.count, "files recorded")
+    }
+}
+
+extension MultiChannelInputNodeTap {
+    // switch to Utils version
+    private func getNextURL(directory: URL, name: String, startIndex: Int) -> URL? {
+        let url = directory.appendingPathComponent(name).appendingPathExtension(recordFileType)
+        let pathExtension = url.pathExtension
+        let baseFilename = url.deletingPathExtension().lastPathComponent
+
+        for i in startIndex ... 10000 {
+            let filename = "\(baseFilename) #\(i)"
+            let test = directory.appendingPathComponent(filename)
+                .appendingPathExtension(pathExtension)
+            if !FileManager.default.fileExists(atPath: test.path) { return test }
+        }
+        return nil
     }
 }
 
