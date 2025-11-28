@@ -32,7 +32,7 @@ extension AudioEngineManager {
             }
 
             string += "\(engine.attachedNodes.count) attached node\(engine.attachedNodes.pluralString):\n"
-            let classNames = engine.attachedNodes.map { $0.className }
+            let classNames = engine.attachedNodes.map(\.className)
             string += classNames.elementQuantity.map { "\($0.key) (\($0.value))" }.joined(separator: ", ")
             string += "\n\n"
 

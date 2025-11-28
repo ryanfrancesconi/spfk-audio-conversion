@@ -6,10 +6,10 @@ extension AudioDeviceManager {
         get async {
             var string = ""
 
-            string += "↑ Selected Output Device: \(await selectedOutputDevice?.name ?? "No Output") @ \(await selectedOutputDevice?.actualSampleRate ?? 0) Hz, \(await numberOfOutputChannels) Channel\n"
+            await string += "↑ Selected Output Device: \(selectedOutputDevice?.name ?? "No Output") @ \(selectedOutputDevice?.actualSampleRate ?? 0) Hz, \(numberOfOutputChannels) Channel\n"
 
             if let selectedInputDevice = await selectedInputDevice {
-                string += "↓ Selected Input Device: \(selectedInputDevice.name) @ \(selectedInputDevice.actualSampleRate ?? 0) Hz, \(await numberOfInputChannels) Channel\n\n"
+                await string += "↓ Selected Input Device: \(selectedInputDevice.name) @ \(selectedInputDevice.actualSampleRate ?? 0) Hz, \(numberOfInputChannels) Channel\n\n"
             } else {
                 string += "↓ Input Device: Disabled or no device detected on this system. ⚠️\n\n"
             }
@@ -20,11 +20,11 @@ extension AudioDeviceManager {
 
             string += "\n"
 
-            let outputDevices = await outputDevices.map { $0.name }.sorted()
+            let outputDevices = await outputDevices.map(\.name).sorted()
             string += "↑ Output Devices: " + outputDevices.joined(separator: ", ")
             string += "\n"
 
-            let inputDevices = await inputDevices.map { $0.name }.sorted()
+            let inputDevices = await inputDevices.map(\.name).sorted()
             string += "↓ Input Devices: " + inputDevices.joined(separator: ", ")
             string += "\n\n"
 
@@ -60,15 +60,15 @@ extension AudioDevice {
 
             let name = " \(name) (\(id))"
 
-            let properties: [Any?] = [
+            let properties: [Any?] = await [
                 "\(aggregateIcon)\(directionIcon)\(name)",
                 "UID: \(uid ?? "<nil>")",
                 "transportType: \(transportType?.rawValue ?? "<nil>")",
                 "nominalSampleRates: \(nominalSampleRates ?? [])",
-                "owning device id: \(await owningDevice?.id ?? 0)",
+                "owning device id: \(owningDevice?.id ?? 0)",
                 "manufacturer: \(manufacturer ?? "<nil>")",
                 "modelUID: \(modelUID ?? "<nil>")",
-                "relatedDevices: \(await relatedDevices ?? [])",
+                "relatedDevices: \(relatedDevices ?? [])",
                 "controlList: \(controlList ?? [])",
                 "isHidden: \(isHidden)",
                 "ownedObjectIDs: \(ownedObjectIDs ?? [])",
@@ -107,18 +107,18 @@ extension AudioDevice {
     }
 
     private func channelsDescription(scope: Scope) async -> [Any?] {
-        guard await channels(scope: scope) > 0 else { return [] }
+        guard await physicalChannels(scope: scope) > 0 else { return [] }
 
-        let names = await namedChannels(scope: scope).map({ $0.description }).joined(separator: ", ")
+        let names = await namedChannels(scope: scope).map(\.description).joined(separator: ", ")
 
         let icon = scope == .input ? "↓" : "↑"
 
-        return [
+        return await [
             "\(icon) \(scope.title)........\n",
-            "\t\(await channels(scope: scope)) channel, [\(names)]", "\n",
+            "\t\(physicalChannels(scope: scope)) channel, [\(names)]", "\n",
             "\tdataSources:", dataSources(scope: scope) as Any, "\n",
             "\tpreferredChannelsForStereo:", preferredChannelsForStereo(scope: scope) as Any?, "\n",
-            "\tpresentationLatency:", await presentationLatency(scope: scope) as Any?, "\n",
+            "\tpresentationLatency:", presentationLatency(scope: scope) as Any?, "\n",
         ]
     }
 }

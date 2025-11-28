@@ -29,7 +29,7 @@ private let nameTests: String = "\(name)Tests" // Test target
 private let githubBase = "https://github.com/ryanfrancesconi"
 
 private let products: [PackageDescription.Product] = [
-    .library(name: name, targets: [name, nameC]),
+    .library(name: name, targets: [name, nameC])
 ]
 
 private var packageDependencies: [PackageDescription.Package.Dependency] {
@@ -44,7 +44,7 @@ private var packageDependencies: [PackageDescription.Package.Dependency] {
         }
 
     var value = useLocalDependencies ? local : remote
-    value.append(contentsOf: remoteDependencies.map { $0.package })
+    value.append(contentsOf: remoteDependencies.map(\.package))
     return value
 }
 
@@ -56,7 +56,7 @@ private var swiftTargetDependencies: [PackageDescription.Target.Dependency] {
     }
 
     value.append(.target(name: nameC))
-    value.append(contentsOf: remoteDependencies.map { $0.product })
+    value.append(contentsOf: remoteDependencies.map(\.product))
     return value
 }
 

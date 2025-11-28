@@ -10,7 +10,7 @@ public actor AudioUnitChainData {
 
     /// A non nil variable length array of Audio Units that are in the chain
     public var linkedEffects: [AudioUnitDescription] {
-        effectsChain.compactMap { $0 }
+        effectsChain.compactMap(\.self)
     }
 
     public var unbypassedEffects: [AudioUnitDescription] {
@@ -20,9 +20,7 @@ public actor AudioUnitChainData {
     }
 
     public var unbypassedAUAudioUnits: [AUAudioUnit] {
-        unbypassedEffects.compactMap {
-            $0.avAudioUnit.auAudioUnit
-        }
+        unbypassedEffects.compactMap(\.avAudioUnit.auAudioUnit)
     }
 
     /// How many effects are active
@@ -43,7 +41,7 @@ public actor AudioUnitChainData {
     }
 
     public var totalLatency: TimeInterval {
-        unbypassedEffects.compactMap { $0.avAudioUnit.latency }.reduce(0, +)
+        unbypassedEffects.compactMap(\.avAudioUnit.latency).reduce(0, +)
     }
 
     public func latency(at index: Int) throws -> TimeInterval {

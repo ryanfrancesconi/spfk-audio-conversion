@@ -47,7 +47,7 @@ extension AutomationCurve {
             AutomationEvent(
                 targetValue: $0.targetValue,
                 startTime: $0.startTime - startPoint,
-                rampDuration: $0.rampDuration
+                rampDuration: $0.rampDuration,
             )
         }
 
@@ -62,7 +62,7 @@ extension AutomationCurve {
             $0.startTime >= 0
         }
 
-        guard pastEvents.isNotEmpty && futureEvents.isNotEmpty else {
+        guard pastEvents.isNotEmpty, futureEvents.isNotEmpty else {
             throw NSError(description: "Failed to crop events")
         }
 
@@ -71,12 +71,12 @@ extension AutomationCurve {
             let immediate = AutomationEvent(
                 targetValue: firstPast.targetValue,
                 startTime: -0.02,
-                rampDuration: 0.02
+                rampDuration: 0.02,
             )
 
             futureEvents.insert(immediate, at: 0)
         }
 
-        self.events = futureEvents
+        events = futureEvents
     }
 }

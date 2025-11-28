@@ -15,13 +15,13 @@ class BatchAudioFormatConverterTests: BinTestCase {
         let sources = TestBundleResources.shared.audioCases.map {
             let output = bin.appending(
                 component: "\($0.deletingPathExtension().lastPathComponent).m4a",
-                directoryHint: .notDirectory
+                directoryHint: .notDirectory,
             )
 
             return AudioFormatConverterSource(
                 input: $0,
                 output: output,
-                options: AudioFormatConverterOptions(format: .m4a)
+                options: AudioFormatConverterOptions(format: .m4a),
             )
         }
 
@@ -31,7 +31,7 @@ class BatchAudioFormatConverterTests: BinTestCase {
 
         #expect(sources.count == results.count)
 
-        let errors = results.compactMap { $0.error }
+        let errors = results.compactMap(\.error)
 
         #expect(sources.count == 7) // could change when files are added to tests
         #expect(errors.count == 2) // could change, two name collisions

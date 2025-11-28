@@ -100,7 +100,7 @@ extension AudioUnitChain {
     public var description: String {
         get async {
             let effects = await data.linkedEffects
-            let audioUnitNames: [String] = effects.compactMap { $0.name }
+            let audioUnitNames: [String] = effects.compactMap(\.name)
 
             var value = "\(effects.count) Audio Unit\(effects.pluralString)"
 

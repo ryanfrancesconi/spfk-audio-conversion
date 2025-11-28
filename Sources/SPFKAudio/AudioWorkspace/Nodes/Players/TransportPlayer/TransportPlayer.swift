@@ -17,7 +17,7 @@ extension TransportPlayer: TransportStateAccess {
             currentTime: currentTime,
             currentURL: currentPlayer?.url,
             duration: duration,
-            measure: measure
+            measure: measure,
         )
     }
 }
@@ -57,7 +57,7 @@ public class TransportPlayer {
     public var url: URL? { currentPlayer?.url }
 
     public var formats: [AVAudioFormat] {
-        players.map { $0.key }
+        players.map(\.key)
     }
 
     public private(set) var outputTap: AmplitudeTap?
@@ -175,7 +175,7 @@ public class TransportPlayer {
 
 extension TransportPlayer {
     @MainActor public func load(url: URL) async throws {
-        try await load(audioFile: try AVAudioFile(forReading: url))
+        try await load(audioFile: AVAudioFile(forReading: url))
     }
 
     @MainActor public func load(audioFile: AVAudioFile) async throws {
@@ -208,6 +208,6 @@ extension TransportPlayer {
         }
 
         try formatPlayer?.load(audioFile: audioFile)
-        self.currentPlayer = formatPlayer
+        currentPlayer = formatPlayer
     }
 }

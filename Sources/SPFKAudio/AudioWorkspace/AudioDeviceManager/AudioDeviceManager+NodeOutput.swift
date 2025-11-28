@@ -14,7 +14,7 @@ extension AudioDeviceManager {
             throw NSError(description: "engineDevice is nil")
         }
 
-        let allowInput = await self.allowInput
+        let allowInput = await allowInput
 
         // If we're allowing input that means that we're using the AVAudioEngine's aggregate.
         // So, we must look at its preferredChannelsForStereo and set that on the channel map
@@ -45,55 +45,13 @@ extension AudioDeviceManager {
     ///                                        L   R   HDMI1  HDMI2
     /// ```
     private func updateOutputChannelMap(stereoPair: StereoPair) throws {
-        guard let engineOutputNode = engineOutputNode else {
+        guard let outputNode = engineOutputNode else {
             throw NSError(description: "Failed to get engineOutputNode")
         }
 
-        guard let audioUnit = engineOutputNode.audioUnit else {
-            throw NSError(description: "Failed to get audioUnit reference from engineOutputNode")
-        }
+        try outputNode.update(preferredOutputs: stereoPair)
 
-        let channelCount = engineOutputNode.outputFormat(forBus: 0).channelCount
-
-        // sanity check
-        guard channelCount > 1, channelCount <= 1024 else {
-            throw NSError(description: "Error: invalid number of output channels (\(channelCount)")
-        }
-
-        var channelMap = [Int32](repeating: -1, count: Int(channelCount))
-
-        // stereoPair starts at 1, so zero indexed array
-        let leftIndex = Int(stereoPair.left) - 1
-        let rightIndex = Int(stereoPair.right) - 1
-
-        guard channelMap.indices.contains(leftIndex),
-              channelMap.indices.contains(rightIndex)
-        else {
-            throw NSError(description: "Invalid indices are passed in: \(leftIndex)-\(rightIndex)")
-        }
-
-        channelMap[leftIndex] = 0
-        channelMap[rightIndex] = 1
-
-        let channelMapSize = UInt32(MemoryLayout<Int32>.size * channelMap.count)
-
-        // 1 is the 'input' element, 0 is output
-        let outputElement: AudioUnitElement = 0
-
-        let status = AudioUnitSetProperty(
-            audioUnit,
-            kAudioOutputUnitProperty_ChannelMap,
-            kAudioUnitScope_Global,
-            outputElement,
-            &channelMap,
-            channelMapSize
-        )
-
-        guard status == noErr else {
-            throw NSError(description: "Failed setting kAudioOutputUnitProperty_ChannelMap, error: \(status.fourCC)")
-        }
-
-        Log.debug("set to", stereoPair, "channelMap", channelMap, "total channels", channelCount)
+        Log.debug("set to", stereoPair)
     }
 }
 
@@ -114,7 +72,7 @@ extension AudioDeviceManager {
                 kAudioUnitScope_Global,
                 0,
                 &id,
-                &size
+                &size,
             )
 
             guard status == noErr else {
@@ -177,7 +135,7 @@ extension AudioDeviceManager {
             kAudioUnitScope_Global,
             outputElement,
             &id,
-            UInt32(MemoryLayout<AudioDeviceID>.size)
+            UInt32(MemoryLayout<AudioDeviceID>.size),
         )
 
         guard status == noErr else {

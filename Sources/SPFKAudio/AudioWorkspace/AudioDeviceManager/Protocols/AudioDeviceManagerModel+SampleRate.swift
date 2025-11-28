@@ -41,13 +41,14 @@ extension AudioDeviceManagerModel {
 }
 
 extension AudioDeviceManagerModel {
-    internal func setSampleRate(device: AudioDevice, to newValue: Double) async throws {
+    func setSampleRate(device: AudioDevice, to newValue: Double) async throws {
         guard await AudioDefaults.shared.isSupported(sampleRate: newValue) else {
             throw NSError(description: "This sample rate \(newValue) isn't supported.")
         }
 
         guard let currentValue = device.nominalSampleRate,
-              let supportedRates = device.nominalSampleRates else {
+              let supportedRates = device.nominalSampleRates
+        else {
             throw NSError(description: "Failed to get current rate for \(device.name)")
         }
 
@@ -57,7 +58,7 @@ extension AudioDeviceManagerModel {
         }
 
         guard supportedRates.contains(newValue) else {
-            let supportedRatesString = supportedRates.map({ $0.string }).joined(separator: ", ")
+            let supportedRatesString = supportedRates.map(\.string).joined(separator: ", ")
 
             throw NSError(description: "\(device.name) doesn't support \(newValue) Hz. Available rate\(supportedRates.pluralString) \(supportedRatesString)")
         }

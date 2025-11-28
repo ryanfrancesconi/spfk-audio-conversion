@@ -56,4 +56,9 @@ public class AudioWorkspaceTestCase: BinTestCase {
             Log.error(error)
         }
     }
+
+    func tearDown() async throws {
+        try audioWorkspace.stop()
+        await audioWorkspace.dispose()
+    }
 }

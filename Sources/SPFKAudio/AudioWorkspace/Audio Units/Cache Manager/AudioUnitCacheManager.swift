@@ -3,8 +3,8 @@
 import AEXML
 import AppKit
 import AVFoundation
-import SwiftExtensions
 import SPFKBase
+import SwiftExtensions
 
 public class AudioUnitCacheManager {
     public var eventHandler: ((AudioUnitCacheEvent) -> Void)?
@@ -36,7 +36,7 @@ public class AudioUnitCacheManager {
     ]
 
     public var debugDescription: String {
-        let names = AudioUnitCacheManager.compatibleComponents.map { $0.name }.sorted()
+        let names = AudioUnitCacheManager.compatibleComponents.map(\.name).sorted()
 
         var out = "\(names.count) total Audio Unit\(names.pluralString) found\n\n"
         out += names.joined(separator: ", ")

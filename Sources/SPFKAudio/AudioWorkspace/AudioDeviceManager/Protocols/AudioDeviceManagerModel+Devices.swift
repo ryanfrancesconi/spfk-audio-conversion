@@ -16,7 +16,7 @@ extension AudioDeviceManagerModel {
             let devices = await nonAggregateDevices
 
             return await devices.async.filter {
-                await $0.channels(scope: .output) > 0
+                await $0.physicalChannels(scope: .output) > 0
             }.toArray()
         }
     }

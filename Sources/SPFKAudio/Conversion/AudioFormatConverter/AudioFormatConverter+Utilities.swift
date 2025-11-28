@@ -13,7 +13,7 @@ extension AudioFormatConverter {
         .wav, .aiff, .caf, .m4a, .mp3,
     ]
 
-    public static let outputPathExtensions: [String] = outputFormats.map { $0.pathExtension }
+    public static let outputPathExtensions: [String] = outputFormats.map(\.pathExtension)
 
     /// Formats that this class can read
     public static let inputFormats: [AudioFileType] = AudioFileType.allCases
@@ -76,7 +76,7 @@ extension AudioFormatConverter {
 
         if noErr != ExtAudioFileOpenURL(
             url as CFURL,
-            &inputFile
+            &inputFile,
         ) {
             Log.error("Unable to open", url.lastPathComponent)
             return nil
@@ -93,7 +93,7 @@ extension AudioFormatConverter {
             strongInputFile,
             kExtAudioFileProperty_FileDataFormat,
             &inputDescriptionSize,
-            &inputDescription
+            &inputDescription,
         ) {
             //
             Log.error("Unable to get kExtAudioFileProperty_FileDataFormat", url.lastPathComponent)
@@ -119,7 +119,7 @@ extension AudioFormatConverter {
         inputURL: URL,
         outputURL: URL,
         sampleRate: Double?,
-        bitDepth: UInt32 = 16
+        bitDepth: UInt32 = 16,
     ) async throws -> URL {
         var options = AudioFormatConverterOptions()
         options.bitsPerChannel = bitDepth
@@ -129,7 +129,7 @@ extension AudioFormatConverter {
         let converter = AudioFormatConverter(
             inputURL: inputURL,
             outputURL: outputURL,
-            options: options
+            options: options,
         )
 
         try await converter.convertToPCM()

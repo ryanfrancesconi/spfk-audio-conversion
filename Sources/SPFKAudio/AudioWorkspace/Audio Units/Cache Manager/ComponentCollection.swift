@@ -41,9 +41,7 @@ public struct ComponentCollection {
             var text = ""
             text += "\(title)\n\n"
 
-            text += collection.map {
-                $0.description
-            }.sorted().joined(separator: "\n")
+            text += collection.map(\.description).sorted().joined(separator: "\n")
             return text
         }
 
@@ -75,7 +73,7 @@ public struct ComponentCollection {
         }
 
         if unavailableEffects.isNotEmpty {
-            let incompatibleEffects = unavailableEffects.filter { $0.supportsStereo }
+            let incompatibleEffects = unavailableEffects.filter(\.supportsStereo)
 
             if incompatibleEffects.isNotEmpty {
                 text += flatten(collection: incompatibleEffects, title: "These Audio Units aren't supported:")
@@ -108,7 +106,8 @@ public struct ComponentCollection {
 
     public mutating func update(audioComponentDescription: AudioComponentDescription, isEnabled: Bool) {
         for i in 0 ..< validationResults.count
-            where validationResults[i].audioComponentDescription.matches(audioComponentDescription) {
+            where validationResults[i].audioComponentDescription.matches(audioComponentDescription)
+        {
             //
             validationResults[i].isEnabled = isEnabled
         }
@@ -116,7 +115,8 @@ public struct ComponentCollection {
 
     public mutating func update(result: ComponentValidationResult) {
         for i in 0 ..< validationResults.count
-            where validationResults[i].audioComponentDescription.matches(result.audioComponentDescription) {
+            where validationResults[i].audioComponentDescription.matches(result.audioComponentDescription)
+        {
             //
             validationResults[i].validation = result.validation
         }

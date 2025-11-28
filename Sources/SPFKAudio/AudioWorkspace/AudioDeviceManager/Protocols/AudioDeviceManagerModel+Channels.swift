@@ -19,7 +19,7 @@ extension AudioDeviceManagerModel {
 
     public var numberOfInputChannels: Int {
         get async {
-            guard let layoutChannels = await selectedInputDevice?.channels(scope: .input) else {
+            guard let layoutChannels = await selectedInputDevice?.physicalChannels(scope: .input) else {
                 return 0
             }
 
@@ -29,7 +29,7 @@ extension AudioDeviceManagerModel {
 
     public var numberOfOutputChannels: Int {
         get async {
-            guard let layoutChannels = await selectedOutputDevice?.channels(scope: .output) else {
+            guard let layoutChannels = await selectedOutputDevice?.physicalChannels(scope: .output) else {
                 return 0
             }
 

@@ -37,13 +37,11 @@ public class AudioUnitValidator {
     public static func validate(component: AVAudioUnitComponent) -> ValidationResult {
         // note component.passesAUVal causes some AUs to hang indefinitely here
 
-        var result: ValidationResult
-
-        if #available(macOS 13.0, *) {
-            result = validateWithResults(component: component)
+        let result: ValidationResult = if #available(macOS 13.0, *) {
+            validateWithResults(component: component)
 
         } else {
-            result = validateLegacy(component: component)
+            validateLegacy(component: component)
         }
 
         if result.result == .passed {
@@ -100,7 +98,7 @@ public class AudioUnitValidator {
             desc.componentType.fourCC,
             desc.componentSubType.fourCC,
             desc.componentManufacturer.fourCC,
-        ].compactMap { $0 }
+        ].compactMap(\.self)
 
         Log.default("*AU validateExternal \(component.name):", cmd.lastPathComponent + " " + args.joined(separator: " "))
 
@@ -120,7 +118,7 @@ public class AudioUnitValidator {
 
             return ValidationResult(
                 result: result,
-                output: out
+                output: out,
             )
 
         } catch {
@@ -130,16 +128,16 @@ public class AudioUnitValidator {
 
     private static func parse(result: String) -> AudioComponentValidationResult {
         if result.contains("AU VALIDATION SUCCEEDED") {
-            return .passed
+            .passed
 
         } else if result.contains("FATAL ERROR: OpenAComponent") {
-            return .unauthorizedError_Open
+            .unauthorizedError_Open
 
         } else if result.contains("FATAL ERROR: Initialize") {
-            return .unauthorizedError_Init
+            .unauthorizedError_Init
 
         } else {
-            return .failed
+            .failed
         }
     }
 }

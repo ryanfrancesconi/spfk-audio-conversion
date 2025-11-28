@@ -132,7 +132,11 @@ extension AudioDeviceManagerModel {
             throw NSError(description: "Audio Disabled or no Input device.")
         }
 
-        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        return await Self.requestAccess(for: .audio)
+    }
+
+    public static func requestAccess(for mediaType: AVMediaType) async -> Bool {
+        let status = AVCaptureDevice.authorizationStatus(for: mediaType)
 
         var authorized = false
 
@@ -156,7 +160,7 @@ extension AudioDeviceManagerModel {
 
         guard !authorized else { return true }
 
-        let allowed = await AVCaptureDevice.requestAccess(for: .audio)
+        let allowed = await AVCaptureDevice.requestAccess(for: mediaType)
 
         return allowed
     }
