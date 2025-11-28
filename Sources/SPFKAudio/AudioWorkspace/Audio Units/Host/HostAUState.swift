@@ -1,7 +1,6 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AudioToolbox
-import OTAtomics
 import SwiftExtensions
 
 public struct HostAUState {
@@ -9,8 +8,8 @@ public struct HostAUState {
 
     public var isEnabled: Bool = true
 
-    @OTAtomicsThreadSafe public var musicalContext = HostMusicalContext()
-    @OTAtomicsThreadSafe public var transportState = HostTransportState()
+    public var musicalContext = HostMusicalContext()
+    public var transportState = HostTransportState()
 
     public var musicalContextBlock: AUHostMusicalContextBlock {
         // Log.debug("musicalContextBlock requested")
@@ -38,7 +37,8 @@ public struct HostAUState {
                    timeSignatureDenominator: UnsafeMutablePointer<Int>?,
                    currentBeatPosition: UnsafeMutablePointer<Double>?,
                    sampleOffsetToNextBeat: UnsafeMutablePointer<Int>?,
-                   currentMeasureDownbeatPosition: UnsafeMutablePointer<Double>?) -> Bool {
+                   currentMeasureDownbeatPosition: UnsafeMutablePointer<Double>?) -> Bool
+        {
             currentTempo?.pointee = musicalContext.currentTempo
             timeSignatureNumerator?.pointee = musicalContext.timeSignatureNumerator
             timeSignatureDenominator?.pointee = musicalContext.timeSignatureDenominator
@@ -76,7 +76,8 @@ public struct HostAUState {
         func block(transportStateFlags: UnsafeMutablePointer<AUHostTransportStateFlags>?,
                    currentSamplePosition: UnsafeMutablePointer<Double>?,
                    cycleStartBeatPosition: UnsafeMutablePointer<Double>?,
-                   cycleEndBeatPosition: UnsafeMutablePointer<Double>?) -> Bool {
+                   cycleEndBeatPosition: UnsafeMutablePointer<Double>?) -> Bool
+        {
             transportStateFlags?.pointee = transportState.flags
             currentSamplePosition?.pointee = transportState.currentSamplePosition
             cycleStartBeatPosition?.pointee = transportState.cycleStartBeatPosition

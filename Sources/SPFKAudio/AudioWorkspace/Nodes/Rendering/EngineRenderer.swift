@@ -48,6 +48,7 @@ public actor EngineRenderer {
 
     public func start() async throws {
         renderTask?.cancel()
+        // Ensure the Task’s closure is main-actor isolated so it does not “send” self.
         renderTask = Task<Void, Error> {
             try await process()
         }

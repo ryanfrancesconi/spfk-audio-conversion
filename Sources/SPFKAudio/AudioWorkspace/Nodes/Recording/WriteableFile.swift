@@ -16,6 +16,7 @@ public final class WriteableFile {
 
     private var ioLatencyHandled: Bool = false
 
+    // isolates the sendable properties to here
     public private(set) var properties: WriteableFileProperties
 
     /// Create the file, passing in an optional hardware latency
@@ -100,7 +101,7 @@ public final class WriteableFile {
         properties.totalFramesWritten = file.length
     }
 
-    /// Release the file ?
+    /// Release the file
     public func close() {
         file = nil
     }

@@ -6,7 +6,7 @@ extension AudioEngineManager: EngineRendererModel {
     /// `prerender` is the block containing play commands
     /// `postrender` is an optional block to call when duration has been rendered.
     /// Can call stop() in this block
-    public func render(
+    @MainActor public func render(
         to audioFile: AVAudioFile,
         duration: Double,
         options: EngineRendererOptions = .init(),

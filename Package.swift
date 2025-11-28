@@ -12,10 +12,7 @@ private let platforms: [PackageDescription.SupportedPlatform]? = [
     .macOS(.v12),
 ]
 
-let remoteDependencies: [RemoteDependency] = [
-    .init(package: .package(url: "https://github.com/orchetect/OTAtomics", branch: "main"),
-          product: .product(name: "OTAtomics", package: "OTAtomics")),
-]
+let remoteDependencies: [RemoteDependency] = []
 
 // MARK: - Reusable Code for a dual Swift + C package without resources
 

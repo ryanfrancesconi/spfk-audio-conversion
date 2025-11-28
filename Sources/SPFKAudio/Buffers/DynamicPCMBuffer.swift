@@ -2,7 +2,6 @@
 
 import Accelerate
 import AVFoundation
-import OTAtomics
 import SwiftExtensions
 
 public class DynamicPCMBuffer {
@@ -20,16 +19,12 @@ public class DynamicPCMBuffer {
         internalBuffer.format
     }
 
-    public lazy var rms: Float = {
-        internalBuffer.rmsValue
-    }()
+    public lazy var rms: Float = internalBuffer.rmsValue
 
-    public lazy var peak: Peak? = {
-        try? internalBuffer.peak()
-    }()
+    public lazy var peak: Peak? = try? internalBuffer.peak()
 
-    @OTAtomicsThreadSafe public internal(set) var _abortFlag: Bool = false
-    @OTAtomicsThreadSafe public internal(set) var _isProcessing: Bool = false
+    public internal(set) var _abortFlag: Bool = false
+    public internal(set) var _isProcessing: Bool = false
 
     // MARK: - Init
 
