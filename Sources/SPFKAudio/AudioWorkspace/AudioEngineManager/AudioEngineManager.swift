@@ -27,10 +27,12 @@ public final class AudioEngineManager {
         }
     }
 
-    var renderer: EngineRenderer?
+    let renderer: EngineRenderer
 
     /// Note: must call rebuildEngine before using
-    public init() {}
+    public init() {
+        renderer = EngineRenderer(engine: engine)
+    }
 
     deinit {
         removeEngineObserver()

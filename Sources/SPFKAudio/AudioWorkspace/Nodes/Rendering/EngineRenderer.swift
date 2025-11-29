@@ -5,48 +5,52 @@ import AVFoundation
 import SPFKBase
 
 public actor EngineRenderer {
+    public let engine: AVAudioEngine
+
     public let disableManualRenderingModeOnCompletion: Bool = true
 
     var renderTask: Task<Void, Error>?
 
-    let engine: AVAudioEngine
-    
-    let audioFile: AVAudioFile
-    let duration: TimeInterval
-    let options: EngineRendererOptions
-    let prerender: @Sendable () throws -> Void
-    let postrender: (@Sendable () throws -> Void)?
-    let progressHandler: (@Sendable (UnitInterval) -> Void)?
+    var audioFile: AVAudioFile?
+    var duration: TimeInterval = 0
+    var options: EngineRendererOptions = .init()
+    var prerender: (@Sendable () throws -> Void)?
+    var postrender: (@Sendable () throws -> Void)?
+    var progressHandler: (@Sendable (UnitInterval) -> Void)?
 
     private var targetSamples: AVAudioFramePosition = 0
 
-    public init(
-        engine: AVAudioEngine,
+    public init(engine: AVAudioEngine) {
+        self.engine = engine
+    }
+
+    public func render(
         to audioFile: AVAudioFile,
         duration: TimeInterval,
         options: EngineRendererOptions = .init(),
         prerender: @escaping @Sendable () throws -> Void, // play()
         postrender: (@Sendable () throws -> Void)?, // stop()
         progressHandler: (@Sendable (UnitInterval) -> Void)? = nil
-    ) throws {
+    ) async throws {
         guard duration > 0 else {
             throw NSError(description: "duration needs to be a positive value")
         }
 
-        self.engine = engine
         self.audioFile = audioFile
         self.options = options
         self.duration = duration
         self.prerender = prerender
         self.postrender = postrender
         self.progressHandler = progressHandler
+
+        try await start()
     }
 
-    deinit {
-        Log.debug("- { \(self) }")
-    }
+    private func start() async throws {
+        guard let audioFile else {
+            throw NSError(description: "audioFile is nil")
+        }
 
-    public func start() async throws {
         renderTask?.cancel()
         // Ensure the Task’s closure is main-actor isolated so it does not “send” self.
         renderTask = Task<Void, Error> {
@@ -82,6 +86,19 @@ public actor EngineRenderer {
     }
 
     private func process() async throws {
+        guard let audioFile else {
+            throw NSError(description: "audioFile is nil")
+        }
+
+        guard let prerender else {
+            throw NSError(description: "prerender is nil")
+        }
+
+        defer {
+            Log.debug("🍙🏁 Stopping engine, wrote", audioFile.duration, "seconds to file")
+            engine.stop()
+        }
+
         // Engine can't be running when switching to offline render mode.
         if engine.isRunning { engine.stop() }
 
@@ -118,13 +135,9 @@ public actor EngineRenderer {
         // This is to prepare the nodes for playing, i.e player.play()
         try prerender()
 
-        var tailTimeRendered: TimeInterval = 0
-        var zeroCount = 0
-
         while true {
             try Task.checkCancellation()
 
-            let isComplete = audioFile.framePosition >= targetSamples
             try write(buffer: &buffer)
 
             let rawProgress = UnitInterval(audioFile.framePosition) / Double(targetSamples)
@@ -133,23 +146,34 @@ public actor EngineRenderer {
                 min(rawProgress, 1.0)
             )
 
+            let isComplete = rawProgress >= 1
+
             guard isComplete else { continue }
 
-            if let postrender {
-                Log.debug("🍙 Triggering postrender action")
-                try postrender()
-            }
+            break
+        }
 
-            guard options.renderUntilSilent else {
-                break
-            }
+        if let postrender {
+            Log.debug("🍙 Triggering postrender action")
+            try postrender()
+        }
 
+        guard options.renderUntilSilent else {
+            return
+        }
+
+        var tailTimeRendered: TimeInterval = 0
+        var zeroCount = 0
+
+        while true {
             try Task.checkCancellation()
 
             guard tailTimeRendered <= options.maxTailToRender else {
                 Log.error("tailTimeRendered (\(tailTimeRendered)) > options.maxTailToRender (\(options.maxTailToRender))")
                 break
             }
+
+            try write(buffer: &buffer)
 
             let value = try processTail(buffer: &buffer)
             tailTimeRendered += value
@@ -166,18 +190,39 @@ public actor EngineRenderer {
                 zeroCount = 0
             }
         }
-
-        Log.debug("🍙🏁 Stopping engine, wrote", audioFile.duration, "seconds to file")
-
-        engine.stop()
     }
 
     private func write(buffer: inout AVAudioPCMBuffer) throws {
-        let framesToRender = options.renderUntilSilent ?
-            engine.manualRenderingMaximumFrameCount :
-            min(buffer.frameCapacity, AVAudioFrameCount(targetSamples - audioFile.framePosition))
+        guard let audioFile, targetSamples > 0 else {
+            throw NSError(description: "audioFile is nil")
+        }
 
-        let status = try engine.renderOffline(framesToRender, to: buffer)
+        var framesToRenderAdjusted = buffer.frameCapacity // min(buffer.frameCapacity, AVAudioFrameCount(frameCountRemaining))
+
+        if !options.renderUntilSilent {
+            let frameCountRemaining: Int64 = targetSamples - audioFile.framePosition
+
+            assert(frameCountRemaining > 0)
+
+            if frameCountRemaining < buffer.frameCapacity {
+                framesToRenderAdjusted = AVAudioFrameCount(frameCountRemaining)
+
+                guard let shortBuffer = AVAudioPCMBuffer(
+                    pcmFormat: engine.manualRenderingFormat,
+                    frameCapacity: framesToRenderAdjusted
+                ) else {
+                    throw NSError(description: "error editing buffer")
+                }
+
+                buffer = shortBuffer
+            }
+        }
+
+        assert(buffer.frameCapacity > 0)
+
+        Log.debug("renderOffline buffer.frameCapacity", buffer.frameCapacity)
+
+        let status = try engine.renderOffline(buffer.frameCapacity, to: buffer)
 
         switch status {
         case .success:

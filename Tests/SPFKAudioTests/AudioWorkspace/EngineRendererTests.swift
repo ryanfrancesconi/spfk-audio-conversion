@@ -69,7 +69,7 @@ final class EngineRendererTests: AudioPlayerTestCase {
 
         Task {
             try await Task.sleep(seconds: 0.001)
-            await self.audioWorkspace.engineManager.renderer?.cancel()
+            await self.audioWorkspace.engineManager.renderer.cancel()
         }
 
         await #expect(throws: CancellationError.self) {
