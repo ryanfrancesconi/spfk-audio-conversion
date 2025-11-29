@@ -1,15 +1,17 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AVFoundation
-@testable import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.tags(.file))
 class WaveformDataParserTests: BinTestCase {
     @Test func parse() async throws {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)")
+        defer { benchmark.stop() }
 
         let url = TestBundleResources.shared.tabla_6_channel
 
@@ -29,7 +31,8 @@ class WaveformDataParserTests: BinTestCase {
     }
 
     @Test func parseLossless() async throws {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)")
+        defer { benchmark.stop() }
 
         let url = TestBundleResources.shared.cowbell_wav
 
@@ -59,14 +62,21 @@ class WaveformDataParserTests: BinTestCase {
         let parser = WaveformDataParser(
             resolution: .low,
             priority: .low
-        )
+        ) { event in
+            switch event {
+            case .loading:
+                break
 
-        Task {
-            try await Task.sleep(seconds: 0.11)
-            await parser.cancel()
+            case .loaded(url: let url, waveformData: _):
+                Log.debug("complete", url.lastPathComponent)
+                Issue.record("shouldn't trigger")
+            }
         }
 
-        try await wait(sec: 0.1)
+        Task {
+            try await Task.sleep(seconds: 0.02)
+            await parser.cancel()
+        }
 
         await #expect(throws: CancellationError.self) {
             _ = try await parser.parse(url: input)
@@ -128,7 +138,8 @@ extension WaveformDataParserTests {
 
         while reader.status == .reading {
             guard let sampleBuffer = output.copyNextSampleBuffer(),
-                  let dataBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else {
+                  let dataBuffer = CMSampleBufferGetDataBuffer(sampleBuffer)
+            else {
                 throw NSError(description: "failed to copyNextSampleBuffer")
             }
 

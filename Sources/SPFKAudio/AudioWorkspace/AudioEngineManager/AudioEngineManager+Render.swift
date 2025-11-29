@@ -12,7 +12,8 @@ extension AudioEngineManager: EngineRendererModel {
         options: EngineRendererOptions = .init(),
         prerender: @escaping (@Sendable () throws -> Void),
         postrender: (@Sendable () throws -> Void)?,
-        progressHandler: (@Sendable (UnitInterval) -> Void)?
+        progressHandler: (@Sendable (UnitInterval) -> Void)?,
+        disableManualRenderingModeOnCompletion: Bool
     ) async throws {
         try await renderer.render(
             to: audioFile,
@@ -20,13 +21,14 @@ extension AudioEngineManager: EngineRendererModel {
             options: options,
             prerender: prerender,
             postrender: postrender,
-            progressHandler: progressHandler
+            progressHandler: progressHandler,
+            disableManualRenderingModeOnCompletion: disableManualRenderingModeOnCompletion
         )
 
         try startEngine()
     }
 
     public func cancelRender() async {
-        await renderer.cancel()
+        await renderer.cancelRender()
     }
 }

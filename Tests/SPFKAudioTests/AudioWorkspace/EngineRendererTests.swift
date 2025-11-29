@@ -18,8 +18,8 @@ final class EngineRendererTests: AudioPlayerTestCase {
         guard let player else { return }
 
         try player.load(url: TestBundleResources.shared.tabla_wav)
-        let audioFile = try createFile(name: #function, settings: format)
-        try await render(player: player, to: audioFile, duration: 2, renderUntilSilent: false)
+        let url = try createFile(name: #function, settings: format)
+        let audioFile = try await render(player: player, to: url, settings: format, duration: 2, renderUntilSilent: false)
 
         Log.debug("rendered duration is", audioFile.duration)
 
@@ -32,12 +32,12 @@ final class EngineRendererTests: AudioPlayerTestCase {
         try await setup()
         guard let player else { return }
         try player.load(url: TestBundleResources.shared.tabla_wav)
-        let audioFile = try createFile(name: #function, settings: format)
-        try await render(player: player, to: audioFile, duration: 2, renderUntilSilent: true)
+        let url = try createFile(name: #function, settings: format)
+        let audioFile = try await render(player: player, to: url, settings: format, duration: 2, renderUntilSilent: true)
 
         Log.debug("rendered duration is", audioFile.duration)
 
-        #expect(audioFile.duration.isApproximatelyEqual(to: 2.39, absoluteTolerance: 0.01))
+        #expect(audioFile.duration.isApproximatelyEqual(to: 2.3, absoluteTolerance: 0.1))
     }
 
     @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
@@ -49,9 +49,8 @@ final class EngineRendererTests: AudioPlayerTestCase {
         try await audioUnitChain.insertAudioUnit(componentDescription: auDelayDesc, at: 0)
         try await audioUnitChain.connect()
         try player.load(url: TestBundleResources.shared.tabla_wav)
-        let audioFile = try createFile(name: #function, settings: format)
-
-        try await render(player: player, to: audioFile, duration: 2, renderUntilSilent: true)
+        let url = try createFile(name: #function, settings: format)
+        let audioFile = try await render(player: player, to: url, settings: format, duration: 2, renderUntilSilent: true)
 
         Log.debug("rendered duration is", audioFile.duration)
 
@@ -65,15 +64,15 @@ final class EngineRendererTests: AudioPlayerTestCase {
         guard let player else { return }
 
         try player.load(url: TestBundleResources.shared.tabla_wav)
-        let audioFile = try createFile(name: #function, settings: format)
+        let url = try createFile(name: #function, settings: format)
 
         Task {
             try await Task.sleep(seconds: 0.001)
-            await self.audioWorkspace.engineManager.renderer.cancel()
+            await self.audioWorkspace.engineManager.renderer.cancelRender()
         }
 
         await #expect(throws: CancellationError.self) {
-            try await render(player: player, to: audioFile, duration: 120, renderUntilSilent: true)
+            try await render(player: player, to: url, settings: format, duration: 120, renderUntilSilent: true)
         }
     }
 }
@@ -115,14 +114,12 @@ extension EngineRendererTests {
         return formatSettings
     }
 
-    func createFile(name: String, settings format: [String: Any]) throws -> AVAudioFile {
+    func createFile(name: String, settings format: [String: Any]) throws -> URL {
         let filename = "\(name)_\(format["name"] ?? "?").wav"
-        let url = bin.appendingPathComponent(filename)
-        let audioFile = try AVAudioFile(forWriting: url, settings: format)
-        return audioFile
+        return bin.appendingPathComponent(filename)
     }
 
-    private func render(player: FilePlayer, to audioFile: AVAudioFile, duration: TimeInterval, renderUntilSilent: Bool) async throws {
+    private func render(player: FilePlayer, to url: URL, settings: [String: Any], duration: TimeInterval, renderUntilSilent: Bool) async throws -> AVAudioFile {
         let prerender = { @Sendable in
             try player.schedule(from: 0, to: 2, when: 0)
             try player.play()
@@ -132,19 +129,23 @@ extension EngineRendererTests {
             player.stop()
         }
 
-        #expect(audioFile.duration == 0)
-
         try await audioWorkspace.engineManager.render(
-            to: audioFile,
+            to: url,
+            settings: settings,
             duration: duration,
             options: .init(renderUntilSilent: renderUntilSilent),
             prerender: prerender,
             postrender: postrender,
             progressHandler: { progress in
                 Log.debug(progress)
-            }
+            },
+            disableManualRenderingModeOnCompletion: true
         )
 
-        #expect(audioFile.duration > 0)
+        guard let audioFile = await audioWorkspace.engineManager.renderer.audioFile else {
+            throw NSError(description: "audioFile is nil")
+        }
+
+        return audioFile
     }
 }

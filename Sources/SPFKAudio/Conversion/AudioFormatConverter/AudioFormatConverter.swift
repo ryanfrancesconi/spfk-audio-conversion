@@ -3,19 +3,14 @@
 import AVFoundation
 import Foundation
 import SPFKAudioBase
-import SPFKMetadata
 import SPFKBase
+import SPFKMetadata
 
 /// AudioFormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
 public class AudioFormatConverter {
     public var source: AudioFormatConverterSource
 
     // MARK: - private properties
-
-    // The reader needs to exist outside the start func otherwise the async nature of the
-    // AVAssetWriterInput will lose its reference
-    var reader: AVAssetReader?
-    var writer: AVAssetWriter?
 
     // MARK: - initialization
 
@@ -30,28 +25,25 @@ public class AudioFormatConverter {
         self.source = source
     }
 
-    deinit {
-        reader = nil
-        writer = nil
-    }
-
     // MARK: -
 
     /// The entry point for file conversionÏ
     public func start() async throws {
-        var inputFormat: AudioFileType?
+        let inputFormat: AudioFileType? =
+            if source.input.pathExtension == "",
+            let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
+                AudioFileType(pathExtension: ext)
 
-        if source.input.pathExtension == "",
-           let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
-            inputFormat = AudioFileType(pathExtension: ext)
-
-        } else {
-            inputFormat = AudioFileType(pathExtension: source.input.pathExtension)
-        }
+            } else {
+                AudioFileType(pathExtension: source.input.pathExtension)
+            }
 
         // verify inputFormat, only allow files with path extensions for speed?
         guard let inputFormat, AudioFormatConverter.inputFormats.contains(inputFormat) else {
-            throw NSError(description: "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")")
+            throw NSError(
+                description:
+                "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")"
+            )
         }
 
         if source.output.exists {
@@ -82,12 +74,14 @@ public class AudioFormatConverter {
 
             // PCM input, compressed output
         } else if Self.isPCM(url: source.input) == true,
-                  Self.isCompressed(url: source.output) == true {
-            try await convertPCMToCompressed()
+                  Self.isCompressed(url: source.output) == true
+        {
+            try await AssetWriter(source: source).start()
 
             // Compressed input and output
         } else if Self.isCompressed(url: source.input) == true,
-                  Self.isCompressed(url: source.output) == true {
+                  Self.isCompressed(url: source.output) == true
+        {
             try await convertCompressed()
 
         } else {

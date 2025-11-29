@@ -81,7 +81,7 @@ private let swiftTarget: PackageDescription.Target = .target(
     dependencies: swiftTargetDependencies,
     resources: nil,
     swiftSettings: [
-        .unsafeFlags(["-Xfrontend", "-strict-concurrency=targeted"]),
+        .unsafeFlags(["-strict-concurrency=complete"]),
     ]
 )
 

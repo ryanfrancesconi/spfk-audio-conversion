@@ -26,7 +26,10 @@ extension AudioFormatConverter {
         let list = await session.compatibleFileTypes
 
         guard let outputFileType: AVFileType = list.first else {
-            throw NSError(description: "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)")
+            throw NSError(
+                description:
+                "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)"
+            )
         }
 
         session.outputURL = source.output
@@ -70,9 +73,7 @@ extension AudioFormatConverter {
 
         let inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
 
-        let supportedInput = inputFormat == .wav ||
-            inputFormat == .aiff ||
-            inputFormat == .mp3
+        let supportedInput = inputFormat == .wav || inputFormat == .aiff || inputFormat == .mp3
 
         let supportedChannels = (source.asset.audioFormat?.channelCount ?? 0) <= 2
 
@@ -160,186 +161,6 @@ extension AudioFormatConverter {
 
         source.input = tempFile
 
-        try await convertPCMToCompressed()
-    }
-
-    /// The AVFoundation way. *This doesn't currently handle compressed input - only compressed output.*
-    func convertPCMToCompressed() async throws {
-        guard let outputFormat = source.options.format else {
-            throw NSError(description: "Options format can't be nil.")
-        }
-
-        // verify outputFormat
-        guard AudioFormatConverter.outputFormats.contains(outputFormat) else {
-            throw NSError(description: "The output file format isn't able to be produced by this class.")
-        }
-
-        self.reader = try AVAssetReader(asset: source.asset)
-
-        guard let reader else {
-            throw NSError(description: "Unable to setup the AVAssetReader.")
-        }
-
-        guard let inputFormat = source.asset.audioFormat else {
-            throw NSError(description: "Unable to read the input file format.")
-        }
-
-        switch outputFormat {
-        case .m4a, .mp4, .aiff, .caf, .wav:
-            break
-        default:
-            throw NSError(description: "Unsupported output format: \(outputFormat)")
-        }
-
-        guard let format = outputFormat.avFileType,
-              let formatKey = outputFormat.audioFormatID
-        else {
-            throw NSError(description: "Unsupported output format: \(outputFormat)")
-        }
-
-        self.writer = try AVAssetWriter(outputURL: source.output, fileType: format)
-
-        guard let writer else {
-            throw NSError(description: "Unable to setup the AVAssetWriter.")
-        }
-
-        // 1. chosen option. 2. same as input file. 3. 16 bit
-        // optional in case of compressed audio. That said, the other conversion methods are actually used in
-        // that case
-        let bitDepth = (source.options.bitsPerChannel ?? inputFormat.settings[AVLinearPCMBitDepthKey] ?? 16) as Any
-
-        var isFloat = false
-
-        if let intDepth = bitDepth as? Int {
-            isFloat = intDepth >= 32
-        }
-
-        var sampleRate = source.options.sampleRate ?? inputFormat.sampleRate
-        let channels = source.options.channels ?? inputFormat.channelCount
-
-        if sampleRate == 0 {
-            Log.error("Sample rate can't be 0 - assigning to default format of 48k. inputFormat is", inputFormat)
-            sampleRate = 48000
-        }
-        var outputSettings: [String: Any]?
-
-        // Note: AVAssetReaderOutput does not currently support compressed audio
-        if formatKey == kAudioFormatMPEG4AAC {
-            if sampleRate > 48000 {
-                sampleRate = 48000
-            }
-            // mono should be 1/2 the shown bitrate
-            let perChannel = channels == 1 ? 2 : 1
-
-            // reset these for m4a:
-            outputSettings = [
-                AVFormatIDKey: formatKey,
-                AVSampleRateKey: sampleRate,
-                AVNumberOfChannelsKey: channels,
-                AVEncoderBitRateKey: Int(source.options.bitRate) / perChannel,
-                AVEncoderBitRateStrategyKey: AVAudioBitRateStrategy_Constant,
-            ]
-        } else {
-            outputSettings = [
-                AVFormatIDKey: formatKey,
-                AVSampleRateKey: sampleRate,
-                AVNumberOfChannelsKey: channels,
-                AVLinearPCMBitDepthKey: bitDepth,
-                AVLinearPCMIsFloatKey: isFloat,
-                AVLinearPCMIsBigEndianKey: format != .wav,
-                AVLinearPCMIsNonInterleaved: !(source.options.isInterleaved ?? inputFormat.isInterleaved),
-            ]
-        }
-
-        let hint = source.asset.audioFormat?.formatDescription
-
-        let writerInput = AVAssetWriterInput(mediaType: .audio, outputSettings: outputSettings, sourceFormatHint: hint)
-
-        writer.add(writerInput)
-
-        guard let track = source.asset.tracks(withMediaType: .audio).first else {
-            throw NSError(description: "No audio was found in the input file.")
-        }
-
-        let readerOutput = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
-
-        guard reader.canAdd(readerOutput) else {
-            throw NSError(description: "Unable to add reader output.")
-        }
-
-        reader.add(readerOutput)
-
-        if !writer.startWriting() {
-            throw writer.error ?? NSError(description: "Failed to start writing")
-        }
-
-        writer.startSession(atSourceTime: .zero)
-
-        if !reader.startReading() {
-            throw reader.error ?? NSError(description: "Failed to start reading")
-        }
-
-        try await withCheckedThrowingContinuation { [weak self] (continuation: CheckedContinuation<Void, Error>) in
-            guard let self else { return }
-
-            self.write(reader: reader, readerOutput: readerOutput, writer: writer, writerInput: writerInput) { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
-        }
-
-        await writer.finishWriting()
-    }
-
-    private func write(
-        reader: AVAssetReader,
-        readerOutput: AVAssetReaderOutput,
-        writer: AVAssetWriter,
-        writerInput: AVAssetWriterInput,
-        completionHandler: @escaping (Error?) -> Void
-    ) {
-        let queue = DispatchQueue(label: "com.spongefork.AudioFormatConverter")
-
-        var error: Error?
-
-        // session.progress could be sent out via a delegate for this session
-        writerInput.requestMediaDataWhenReady(
-            on: queue,
-            using: {
-                var processing = true // safety flag to prevent runaway loops if errors
-
-                while writerInput.isReadyForMoreMediaData, processing {
-                    if reader.status == .reading, let buffer = readerOutput.copyNextSampleBuffer() {
-                        writerInput.append(buffer)
-
-                    } else {
-                        writerInput.markAsFinished()
-
-                        switch reader.status {
-                        case .failed:
-                            writer.cancelWriting()
-                            error = reader.error ?? NSError(description: "Conversion failed with error")
-
-                        case .cancelled:
-                            Log.error("Conversion cancelled")
-                            error = NSError(description: "Conversion cancelled")
-
-                        case .completed:
-                            break
-
-                        default:
-                            break
-                        }
-
-                        completionHandler(error)
-                        processing = false
-                        break
-                    }
-                }
-            }
-        )
+        try await AssetWriter(source: source).start()
     }
 }

@@ -21,18 +21,15 @@ public actor WaveformDataParser {
     ) {
         self.resolution = resolution
         self.priority = priority
-
         self.eventHandler = eventHandler
     }
 
     deinit {
-         Log.debug("- { WaveformDataParser }")
+        Log.debug("- { WaveformDataParser }")
     }
 
     public func parse(url: URL) async throws -> WaveformData {
-        try await parse(
-            audioFile: AVAudioFile(forReading: url)
-        )
+        try await parse(audioFile: AVAudioFile(forReading: url))
     }
 
     public func parse(audioFile: AVAudioFile) async throws -> WaveformData {
@@ -49,12 +46,17 @@ public actor WaveformDataParser {
         let task = Task<FloatChannelData, Error>(priority: priority) {
             try await _parse(audioFile: audioFile)
         }
-
         self.task = task
+
+        let result = await task.result
+
+        guard !task.isCancelled else {
+            throw CancellationError()
+        }
 
         var floatChannelData: FloatChannelData
 
-        switch await task.result {
+        switch result {
         case let .success(value):
             floatChannelData = value
 
@@ -76,12 +78,21 @@ public actor WaveformDataParser {
     }
 
     public func cancel() {
-        task?.cancel()
+        guard let task else {
+            Log.error("task is nil")
+            return
+        }
+
+        Log.debug("task.cancel")
+
+        task.cancel()
     }
 }
 
 extension WaveformDataParser {
     private func _parse(audioFile: AVAudioFile) async throws -> FloatChannelData {
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
+
         guard resolution != .lossless else {
             return try await readEntire(audioFile: audioFile)
         }
@@ -95,6 +106,8 @@ extension WaveformDataParser {
 
             // don't send too many progress events
             lastSentProgress = progress
+
+            Log.debug(progress, url.lastPathComponent)
 
             eventHandler?(.loading(url: url, progress: progress))
         }
@@ -110,10 +123,12 @@ extension WaveformDataParser {
         // analysis buffer size
         var framesPerBuffer = AVAudioFrameCount(samplesPerPoint)
 
-        guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: audioFile.processingFormat,
-            frameCapacity: framesPerBuffer
-        ), buffer.frameCapacity > 0 else {
+        guard
+            let buffer = AVAudioPCMBuffer(
+                pcmFormat: audioFile.processingFormat,
+                frameCapacity: framesPerBuffer
+            ), buffer.frameCapacity > 0
+        else {
             throw NSError(description: "Unable to create buffer")
         }
 
@@ -168,6 +183,8 @@ extension WaveformDataParser {
             }
 
             send(progress: currentFrame.double / totalFrames.double)
+
+            await Task.yield()
         }
 
         if chunksSkipped.isNotEmpty {

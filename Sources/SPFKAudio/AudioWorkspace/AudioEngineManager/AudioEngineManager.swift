@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import SPFKBase
 
 public final class AudioEngineManager {
@@ -18,8 +18,6 @@ public final class AudioEngineManager {
 
     // AudioEngineManagerModel
     public let engine = AVAudioEngine()
-
-    var engineObserver: NSObjectProtocol?
 
     public var allowInput: Bool {
         get async {

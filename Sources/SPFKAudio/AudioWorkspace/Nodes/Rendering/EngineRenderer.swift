@@ -4,11 +4,10 @@ import Accelerate
 import AVFoundation
 import SPFKBase
 
-public actor EngineRenderer {
-    public let engine: AVAudioEngine
+public actor EngineRenderer: EngineRendererModel {
+    let engine: AVAudioEngine
 
-    public let disableManualRenderingModeOnCompletion: Bool = true
-
+    var disableManualRenderingModeOnCompletion: Bool = true
     var renderTask: Task<Void, Error>?
 
     var audioFile: AVAudioFile?
@@ -30,7 +29,8 @@ public actor EngineRenderer {
         options: EngineRendererOptions = .init(),
         prerender: @escaping @Sendable () throws -> Void, // play()
         postrender: (@Sendable () throws -> Void)?, // stop()
-        progressHandler: (@Sendable (UnitInterval) -> Void)? = nil
+        progressHandler: (@Sendable (UnitInterval) -> Void)? = nil,
+        disableManualRenderingModeOnCompletion: Bool = true
     ) async throws {
         guard duration > 0 else {
             throw NSError(description: "duration needs to be a positive value")
@@ -42,6 +42,7 @@ public actor EngineRenderer {
         self.prerender = prerender
         self.postrender = postrender
         self.progressHandler = progressHandler
+        self.disableManualRenderingModeOnCompletion = disableManualRenderingModeOnCompletion
 
         try await start()
     }
@@ -124,10 +125,12 @@ public actor EngineRenderer {
 
         try engine.start()
 
-        guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: engine.manualRenderingFormat,
-            frameCapacity: engine.manualRenderingMaximumFrameCount
-        ) else {
+        guard
+            let buffer = AVAudioPCMBuffer(
+                pcmFormat: engine.manualRenderingFormat,
+                frameCapacity: engine.manualRenderingMaximumFrameCount
+            )
+        else {
             throw NSError(description: "Couldn't create buffer")
         }
 
@@ -172,7 +175,8 @@ public actor EngineRenderer {
             try Task.checkCancellation()
 
             guard tailTimeRendered <= options.maxTailToRender else {
-                Log.error("tailTimeRendered (\(tailTimeRendered)) > options.maxTailToRender (\(options.maxTailToRender))")
+                Log.error(
+                    "tailTimeRendered (\(tailTimeRendered)) > options.maxTailToRender (\(options.maxTailToRender))")
                 break
             }
 
@@ -211,10 +215,12 @@ public actor EngineRenderer {
             if frameCountRemaining < buffer.frameCapacity {
                 framesToRenderAdjusted = AVAudioFrameCount(frameCountRemaining)
 
-                guard let shortBuffer = AVAudioPCMBuffer(
-                    pcmFormat: engine.manualRenderingFormat,
-                    frameCapacity: framesToRenderAdjusted
-                ) else {
+                guard
+                    let shortBuffer = AVAudioPCMBuffer(
+                        pcmFormat: engine.manualRenderingFormat,
+                        frameCapacity: framesToRenderAdjusted
+                    )
+                else {
                     throw NSError(description: "error editing buffer")
                 }
 
@@ -271,7 +277,7 @@ public actor EngineRenderer {
         return TimeInterval(buffer.frameLength) / buffer.format.sampleRate
     }
 
-    public func cancel() {
+    public func cancelRender() async {
         guard let renderTask else {
             Log.error("renderTask is nil")
             return
