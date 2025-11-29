@@ -1,5 +1,4 @@
 import AVFoundation
-import SPFKAudioHardware
 import SPFKBase
 
 public final class AudioEngineManager {
@@ -22,21 +21,12 @@ public final class AudioEngineManager {
 
     var engineObserver: NSObjectProtocol?
 
-    /// Will return whether the engine is rendering offline or realtime
-    public var renderingMode: AVAudioEngineManualRenderingMode {
-        engine.manualRenderingMode
-    }
-
-    public var isRendering: Bool {
-        engine.isInManualRenderingMode
-    }
-
     public var allowInput: Bool {
         get async {
             await delegate?.audioEngineManagerAllowInputDevice() == true
         }
     }
-    
+
     var renderer: EngineRenderer?
 
     /// Note: must call rebuildEngine before using

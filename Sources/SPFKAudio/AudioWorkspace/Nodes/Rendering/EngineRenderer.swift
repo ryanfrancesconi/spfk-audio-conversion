@@ -10,10 +10,10 @@ public actor EngineRenderer {
     var renderTask: Task<Void, Error>?
 
     let engine: AVAudioEngine
+    
     let audioFile: AVAudioFile
     let duration: TimeInterval
     let options: EngineRendererOptions
-
     let prerender: @Sendable () throws -> Void
     let postrender: (@Sendable () throws -> Void)?
     let progressHandler: (@Sendable (UnitInterval) -> Void)?
