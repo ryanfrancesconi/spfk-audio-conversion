@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "949D1F07-A6B8-4654-AB5D-C9307CDB6A7C",
+      "id" : "A8A6FBCF-7019-4544-A793-4045F343C3FC",
       "name" : "Test Scheme Action",
       "options" : {
 
@@ -9,17 +9,17 @@
     }
   ],
   "defaultOptions" : {
-
+    "performanceAntipatternCheckerEnabled" : true
   },
   "testTargets" : [
     {
       "parallelizable" : false,
       "target" : {
-        "containerPath" : "container:Packages\/SPFKAudio",
+        "containerPath" : "container:",
         "identifier" : "SPFKAudioTests",
         "name" : "SPFKAudioTests"
       }
     }
   ],
-  "version" : 2
+  "version" : 1
 }
