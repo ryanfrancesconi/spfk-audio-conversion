@@ -124,13 +124,14 @@ public actor EngineRenderer {
 
         try engine.start()
 
-        guard var buffer = AVAudioPCMBuffer(
+        guard let buffer = AVAudioPCMBuffer(
             pcmFormat: engine.manualRenderingFormat,
             frameCapacity: engine.manualRenderingMaximumFrameCount
-        )
-        else {
+        ) else {
             throw NSError(description: "Couldn't create buffer")
         }
+
+        // MARK: - Render Loop
 
         // This is to prepare the nodes for playing, i.e player.play()
         try prerender()
@@ -138,7 +139,7 @@ public actor EngineRenderer {
         while true {
             try Task.checkCancellation()
 
-            try write(buffer: &buffer)
+            try write(buffer: buffer)
 
             let rawProgress = UnitInterval(audioFile.framePosition) / Double(targetSamples)
 
@@ -153,14 +154,16 @@ public actor EngineRenderer {
             break
         }
 
+        // MARK: - Stop
+
         if let postrender {
             Log.debug("🍙 Triggering postrender action")
             try postrender()
         }
 
-        guard options.renderUntilSilent else {
-            return
-        }
+        guard options.renderUntilSilent else { return }
+
+        // MARK: - Tail Loop
 
         var tailTimeRendered: TimeInterval = 0
         var zeroCount = 0
@@ -173,30 +176,31 @@ public actor EngineRenderer {
                 break
             }
 
-            try write(buffer: &buffer)
+            try write(buffer: buffer)
 
-            let value = try processTail(buffer: &buffer)
-            tailTimeRendered += value
+            let value = try processTail(buffer: buffer)
 
-            if value == 0 {
-                zeroCount += 1
-
-                if zeroCount > 2 {
-                    Log.debug("Rendered with \(tailTimeRendered) seconds of tail")
-                    break
-                }
-
-            } else {
+            guard value == 0 else {
+                tailTimeRendered += value
                 zeroCount = 0
+                continue
+            }
+
+            zeroCount += 1
+
+            if zeroCount > 2 {
+                Log.debug("Rendered with \(tailTimeRendered) seconds of tail")
+                break
             }
         }
     }
 
-    private func write(buffer: inout AVAudioPCMBuffer) throws {
+    private func write(buffer: AVAudioPCMBuffer) throws {
         guard let audioFile, targetSamples > 0 else {
             throw NSError(description: "audioFile is nil")
         }
 
+        var buffer = buffer
         var framesToRenderAdjusted = buffer.frameCapacity // min(buffer.frameCapacity, AVAudioFrameCount(frameCountRemaining))
 
         if !options.renderUntilSilent {
@@ -242,7 +246,7 @@ public actor EngineRenderer {
         }
     }
 
-    private func processTail(buffer: inout AVAudioPCMBuffer) throws -> TimeInterval {
+    private func processTail(buffer: AVAudioPCMBuffer) throws -> TimeInterval {
         try Task.checkCancellation()
 
         let channelCount = Int(buffer.format.channelCount)
