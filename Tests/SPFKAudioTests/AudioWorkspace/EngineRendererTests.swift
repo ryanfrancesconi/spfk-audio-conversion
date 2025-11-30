@@ -37,7 +37,7 @@ final class EngineRendererTests: AudioPlayerTestCase {
 
         Log.debug("rendered duration is", audioFile.duration)
 
-        #expect(audioFile.duration.isApproximatelyEqual(to: 2.3, absoluteTolerance: 0.1))
+        #expect(audioFile.duration == 2.32)
     }
 
     @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
@@ -54,7 +54,7 @@ final class EngineRendererTests: AudioPlayerTestCase {
 
         Log.debug("rendered duration is", audioFile.duration)
 
-        #expect(audioFile.duration.isApproximatelyEqual(to: 12.288, absoluteTolerance: 0.1))
+        #expect(audioFile.duration.isApproximatelyEqual(to: 13.1, absoluteTolerance: 0.1))
     }
 
     @Test(arguments: [pcmFormatFloat32, pcmFormatInt24])
@@ -121,7 +121,7 @@ extension EngineRendererTests {
 
     private func render(player: FilePlayer, to url: URL, settings: [String: Any], duration: TimeInterval, renderUntilSilent: Bool) async throws -> AVAudioFile {
         let prerender = { @Sendable in
-            try player.schedule(from: 0, to: 2, when: 0)
+            try player.schedule(from: 0, to: duration, when: 0)
             try player.play()
         }
 

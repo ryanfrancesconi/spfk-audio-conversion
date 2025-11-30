@@ -9,6 +9,8 @@ public struct EngineRendererOptions: Sendable {
     let renderUntilSilent: Bool
 
     let silenceThreshold: Float
+    let underSilenceThresholdQuantity: TimeInterval
+    let zeroSilenceQuantity: TimeInterval
 
     let maxTailToRender: TimeInterval
 
@@ -18,14 +20,17 @@ public struct EngineRendererOptions: Sendable {
         maximumFrameCount: AVAudioFrameCount = 4096,
         renderUntilSilent: Bool = false,
         silenceThreshold: Float = 0.00005,
-        maxTailToRender: TimeInterval = TimeInterval(60 * 5),
+        underSilenceThresholdQuantity: TimeInterval = 2,
+        zeroSilenceQuantity: TimeInterval = 0.3,
+        maxTailToRender: TimeInterval = 60, // 1 minute
         disableManualRenderingModeOnCompletion: Bool = true
     ) {
         self.maximumFrameCount = maximumFrameCount
         self.renderUntilSilent = renderUntilSilent
         self.silenceThreshold = silenceThreshold
+        self.underSilenceThresholdQuantity = underSilenceThresholdQuantity
+        self.zeroSilenceQuantity = zeroSilenceQuantity
         self.maxTailToRender = maxTailToRender
-        self.disableManualRenderingModeOnCompletion =
-            disableManualRenderingModeOnCompletion
+        self.disableManualRenderingModeOnCompletion = disableManualRenderingModeOnCompletion
     }
 }

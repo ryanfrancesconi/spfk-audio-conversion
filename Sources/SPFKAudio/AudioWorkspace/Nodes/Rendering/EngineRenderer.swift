@@ -3,8 +3,9 @@
 import Accelerate
 import AVFoundation
 import SPFKBase
+import SPFKSoX
 
-public actor EngineRenderer: EngineRendererModel {
+public actor EngineRenderer {
     let engine: AVAudioEngine
 
     var disableManualRenderingModeOnCompletion: Bool = true
@@ -19,10 +20,20 @@ public actor EngineRenderer: EngineRendererModel {
 
     private var targetSamples: AVAudioFramePosition = 0
 
+    var maxFramePerSlice: AVAudioFrameCount {
+        engine.outputNode.auAudioUnit.maximumFramesToRender
+    }
+
+    var manualRenderingFormat: AVAudioFormat {
+        audioFile?.processingFormat ?? engine.manualRenderingFormat
+    }
+
     public init(engine: AVAudioEngine) {
         self.engine = engine
     }
+}
 
+extension EngineRenderer: EngineRendererModel {
     public func render(
         to audioFile: AVAudioFile,
         duration: TimeInterval,
@@ -47,15 +58,27 @@ public actor EngineRenderer: EngineRendererModel {
         try await start()
     }
 
+    public func cancelRender() async {
+        guard let renderTask else {
+            Log.error("renderTask is nil")
+            return
+        }
+
+        Log.debug("🍙⛔️ Canceling...")
+
+        renderTask.cancel()
+    }
+}
+
+extension EngineRenderer {
     private func start() async throws {
         guard let audioFile else {
             throw NSError(description: "audioFile is nil")
         }
 
         renderTask?.cancel()
-        // Ensure the Task’s closure is main-actor isolated so it does not “send” self.
         renderTask = Task<Void, Error> {
-            try await process()
+            try await setupEngine()
         }
 
         defer {
@@ -86,13 +109,9 @@ public actor EngineRenderer: EngineRendererModel {
         }
     }
 
-    private func process() async throws {
+    private func setupEngine() async throws {
         guard let audioFile else {
             throw NSError(description: "audioFile is nil")
-        }
-
-        guard let prerender else {
-            throw NSError(description: "prerender is nil")
         }
 
         defer {
@@ -101,22 +120,19 @@ public actor EngineRenderer: EngineRendererModel {
         }
 
         // Engine can't be running when switching to offline render mode.
-        if engine.isRunning { engine.stop() }
+        engine.stop()
 
         if !engine.isInManualRenderingMode || audioFile.processingFormat != engine.manualRenderingFormat {
+            let maxFrameCount: AVAudioFrameCount = UInt32(duration * audioFile.processingFormat.sampleRate) / 100
+
             try engine.enableManualRenderingMode(
                 .offline,
-                format: audioFile.processingFormat,
-                maximumFrameCount: options.maximumFrameCount
+                format: manualRenderingFormat,
+                maximumFrameCount: maxFrameCount
             )
         }
 
-        // don't check sample rate until the engine is in manual mode
-        targetSamples = AVAudioFramePosition(
-            duration * engine.manualRenderingFormat.sampleRate
-        )
-
-        assert(targetSamples > 0)
+        assert(engine.manualRenderingFormat == audioFile.processingFormat)
 
         // This resets the sampleTime of offline rendering to 0.
         engine.reset()
@@ -125,24 +141,42 @@ public actor EngineRenderer: EngineRendererModel {
 
         try engine.start()
 
+        try write()
+    }
+
+    private func write() throws {
+        guard let audioFile else {
+            throw NSError(description: "audioFile is nil")
+        }
+
+        guard let prerender else {
+            throw NSError(description: "prerender is nil")
+        }
+
         guard
             let buffer = AVAudioPCMBuffer(
                 pcmFormat: engine.manualRenderingFormat,
                 frameCapacity: engine.manualRenderingMaximumFrameCount
             )
         else {
-            throw NSError(description: "Couldn't create buffer")
+            throw NSError(description: "Couldn't create buffer with format \(engine.manualRenderingFormat)")
         }
 
         // MARK: - Render Loop
 
+        targetSamples = AVAudioFramePosition(
+            duration * manualRenderingFormat.sampleRate
+        )
+
+        assert(targetSamples > 0)
+
         // This is to prepare the nodes for playing, i.e player.play()
         try prerender()
 
-        while true {
-            try Task.checkCancellation()
-
-            try write(buffer: buffer)
+        while engine.manualRenderingSampleTime < targetSamples {
+            let frameCount = targetSamples - engine.manualRenderingSampleTime
+            let framesToRender = min(AVAudioFrameCount(frameCount), buffer.frameCapacity)
+            try write(buffer: buffer, framesToRender: framesToRender)
 
             let rawProgress = UnitInterval(audioFile.framePosition) / Double(targetSamples)
 
@@ -152,9 +186,9 @@ public actor EngineRenderer: EngineRendererModel {
 
             let isComplete = rawProgress >= 1
 
-            guard isComplete else { continue }
-
-            break
+            if isComplete {
+                break
+            }
         }
 
         // MARK: - Stop
@@ -164,75 +198,17 @@ public actor EngineRenderer: EngineRendererModel {
             try postrender()
         }
 
-        guard options.renderUntilSilent else { return }
-
-        // MARK: - Tail Loop
-
-        var tailTimeRendered: TimeInterval = 0
-        var zeroCount = 0
-
-        while true {
-            try Task.checkCancellation()
-
-            guard tailTimeRendered <= options.maxTailToRender else {
-                Log.error(
-                    "tailTimeRendered (\(tailTimeRendered)) > options.maxTailToRender (\(options.maxTailToRender))")
-                break
-            }
-
-            try write(buffer: buffer)
-
-            let value = try processTail(buffer: buffer)
-
-            guard value == 0 else {
-                tailTimeRendered += value
-                zeroCount = 0
-                continue
-            }
-
-            zeroCount += 1
-
-            if zeroCount > 2 {
-                Log.debug("Rendered with \(tailTimeRendered) seconds of tail")
-                break
-            }
+        if options.renderUntilSilent {
+            try writeTail()
         }
     }
 
-    private func write(buffer: AVAudioPCMBuffer) throws {
-        guard let audioFile, targetSamples > 0 else {
+    private func write(buffer: AVAudioPCMBuffer, framesToRender: AVAudioFrameCount) throws {
+        guard let audioFile else {
             throw NSError(description: "audioFile is nil")
         }
 
-        var buffer = buffer
-        var framesToRenderAdjusted = buffer.frameCapacity // min(buffer.frameCapacity, AVAudioFrameCount(frameCountRemaining))
-
-        if !options.renderUntilSilent {
-            let frameCountRemaining: Int64 = targetSamples - audioFile.framePosition
-
-            assert(frameCountRemaining > 0)
-
-            if frameCountRemaining < buffer.frameCapacity {
-                framesToRenderAdjusted = AVAudioFrameCount(frameCountRemaining)
-
-                guard
-                    let shortBuffer = AVAudioPCMBuffer(
-                        pcmFormat: engine.manualRenderingFormat,
-                        frameCapacity: framesToRenderAdjusted
-                    )
-                else {
-                    throw NSError(description: "error editing buffer")
-                }
-
-                buffer = shortBuffer
-            }
-        }
-
-        assert(buffer.frameCapacity > 0)
-
-        Log.debug("renderOffline buffer.frameCapacity", buffer.frameCapacity)
-
-        let status = try engine.renderOffline(buffer.frameCapacity, to: buffer)
+        let status = try engine.renderOffline(framesToRender, to: buffer)
 
         switch status {
         case .success:
@@ -251,8 +227,53 @@ public actor EngineRenderer: EngineRendererModel {
             throw NSError(description: "Unknown render result: \(status)")
         }
     }
+}
 
-    private func processTail(buffer: AVAudioPCMBuffer) throws -> TimeInterval {
+// MARK: - Tail Loop
+
+extension EngineRenderer {
+    private func writeTail() throws {
+        Log.debug("Entering audio tail loop...")
+
+        let framesToRender: AVAudioFrameCount = maxFramePerSlice
+
+        guard
+            let buffer = AVAudioPCMBuffer(
+                pcmFormat: engine.manualRenderingFormat,
+                frameCapacity: framesToRender
+            )
+        else {
+            throw NSError(description: "Couldn't create buffer with format \(engine.manualRenderingFormat)")
+        }
+
+        var silenceRendered: TimeInterval = 0
+        var zerosRendered: TimeInterval = 0
+
+        while true {
+            try Task.checkCancellation()
+
+            try write(buffer: buffer, framesToRender: framesToRender)
+
+            let rms = try rms(for: buffer)
+
+            if rms < options.silenceThreshold {
+                silenceRendered += (Double(buffer.frameLength) / buffer.format.sampleRate)
+
+                if rms == 0 {
+                    zerosRendered = silenceRendered
+                }
+
+                if zerosRendered > options.zeroSilenceQuantity { break }
+
+                if silenceRendered > options.underSilenceThresholdQuantity { break }
+                if silenceRendered > options.maxTailToRender { break }
+            }
+        }
+
+        Log.debug("Rendered an extra", silenceRendered, "seconds")
+    }
+
+    private func rms(for buffer: AVAudioPCMBuffer) throws -> Float {
         try Task.checkCancellation()
 
         let channelCount = Int(buffer.format.channelCount)
@@ -272,18 +293,6 @@ public actor EngineRenderer: EngineRendererModel {
 
         let value = rms / Float(channelCount)
 
-        guard value >= options.silenceThreshold else { return 0 }
-
-        return TimeInterval(buffer.frameLength) / buffer.format.sampleRate
-    }
-
-    public func cancelRender() async {
-        guard let renderTask else {
-            Log.error("renderTask is nil")
-            return
-        }
-
-        Log.debug("🍙⛔️ Canceling...")
-        renderTask.cancel()
+        return value
     }
 }
