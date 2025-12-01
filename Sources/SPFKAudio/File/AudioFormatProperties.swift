@@ -4,7 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKTime
 
-public struct AudioFormatProperties: Hashable, Codable {
+public struct AudioFormatProperties: Hashable, Codable, Sendable {
     public private(set) var channelCount: AVAudioChannelCount
     public private(set) var sampleRate: Double
     public private(set) var bitsPerChannel: Int?

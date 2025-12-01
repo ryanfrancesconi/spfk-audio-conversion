@@ -28,6 +28,7 @@ public struct TransportState {
     }
 }
 
+@MainActor
 public protocol TransportStateAccess {
     var transportState: TransportState { get }
 }
