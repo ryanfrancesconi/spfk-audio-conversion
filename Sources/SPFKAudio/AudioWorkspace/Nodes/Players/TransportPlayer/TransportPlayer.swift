@@ -10,7 +10,7 @@ import SPFKTime
 /// looping and a built in `DisplayLinkTimer` for screen based refresh events such
 /// as tracking a playhead. This class is intended for real time only use such as an
 /// audio editor.
-public final class TransportPlayer {
+public final class TransportPlayer: @unchecked Sendable {
     public weak var delegate: TransportPlayerDelegate?
 
     public private(set) var mixer: MixerWrapper

@@ -4,11 +4,11 @@ import AVFoundation
 import Foundation
 import SPFKTime
 
-public enum TransportAction: Equatable {
+public enum TransportAction: Equatable, Sendable {
     case load(url: URL, tempo: Double?)
     case unload
 
-    case play(time: TimeInterval?)
+    case play(time: TimeInterval?, hostTime: UInt64?)
     case stop
     case update(time: TimeInterval)
     case scrub(time: TimeInterval)
