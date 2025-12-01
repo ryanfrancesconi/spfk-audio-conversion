@@ -6,7 +6,7 @@ import SPFKBase
 
 /// A collection of real-time `AVAudioTime` objects with a hostTime reference for use with player scheduling
 public struct LoopScheduler {
-    public enum Event {
+    public enum Event: Sendable {
         case updated(times: [AVAudioTime])
         case complete
     }
@@ -61,7 +61,7 @@ public struct LoopScheduler {
 
         // Log.debug("Generated \(numberOfLoops) more loops", self)
 
-        let times = self.times
+        let times = times
         eventHandler?(.updated(times: times))
 
         return avTime

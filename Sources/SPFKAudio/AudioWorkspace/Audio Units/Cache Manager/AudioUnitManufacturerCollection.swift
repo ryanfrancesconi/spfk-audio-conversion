@@ -1,16 +1,17 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 
 /// AVAudioUnitComponent collection grouped by Manufacturer
-public struct AudioUnitManufacturerCollection: Equatable {
+public struct AudioUnitManufacturerCollection: Equatable, Sendable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.componentManufacturer == rhs.componentManufacturer
     }
 
-    public var name: String
-    public var componentManufacturer: OSType
-    public var audioUnits = [AVAudioUnitComponent]()
+    public let name: String
+    public let componentManufacturer: OSType
+    public let audioUnits: [AVAudioUnitComponent]
 
     public init(
         name: String,

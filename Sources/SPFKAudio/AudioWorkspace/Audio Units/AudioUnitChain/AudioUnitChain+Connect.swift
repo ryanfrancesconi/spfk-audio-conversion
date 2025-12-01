@@ -1,7 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
 import AudioToolbox
-import AVFoundation
+@preconcurrency import AVFoundation
 import SPFKBase
 
 extension AudioUnitChain {
@@ -16,7 +16,7 @@ extension AudioUnitChain {
 
     public func removeEffect(at index: Int, reconnectChain: Bool = true, sendEvent: Bool = true) async throws {
         if sendEvent {
-            delegate?.audioUnitChain(self, event: .willRemove(index: index))
+            delegate.audioUnitChain(self, event: .willRemove(index: index))
         }
 
         try await data.remove(index: index)
@@ -26,7 +26,7 @@ extension AudioUnitChain {
         }
 
         if sendEvent {
-            delegate?.audioUnitChain(self, event: .didRemove(index: index))
+            delegate.audioUnitChain(self, event: .didRemove(index: index))
         }
     }
 
@@ -40,7 +40,7 @@ extension AudioUnitChain {
     }
 
     public func bypassEffect(at index: Int, state: Bool, reconnect: Bool) async throws {
-        delegate?.audioUnitChain(self, event: .willBypass(index: index, state: state))
+        delegate.audioUnitChain(self, event: .willBypass(index: index, state: state))
 
         try await state ?
             data.bypass(index: index) :
@@ -50,13 +50,13 @@ extension AudioUnitChain {
             try await connect()
         }
 
-        delegate?.audioUnitChain(self, event: .didBypass(index: index, state: state))
+        delegate.audioUnitChain(self, event: .didBypass(index: index, state: state))
     }
 
     public func moveEffect(from startIndex: Int, to endIndex: Int) async throws {
         try await data.moveEffect(from: startIndex, to: endIndex)
         try await connect()
-        delegate?.audioUnitChain(self, event: .effectMoved(from: startIndex, to: endIndex))
+        delegate.audioUnitChain(self, event: .effectMoved(from: startIndex, to: endIndex))
     }
 
     /// Main effects chain connection method
@@ -93,7 +93,7 @@ extension AudioUnitChain {
             throw NSError(description: "Connection error in audio unit chain")
         }
 
-        Log.debug("🔌 Connecting \(unbypassedEffects.count) unbypassed, \(await data.linkedEffects.count) total.")
+        await Log.debug("🔌 Connecting \(unbypassedEffects.count) unbypassed, \(data.linkedEffects.count) total.")
 
         // connect the input to the first effect
         try await connect(input, to: firstEffect.avAudioUnit)
@@ -120,16 +120,10 @@ extension AudioUnitChain {
         effectsCount = await data.effectsCount
         effectsLatency = await data.totalLatency
     }
+}
 
-    private func connect(_ firstNode: AVAudioNode, to secondNode: AVAudioNode) async throws {
-        guard let delegate else {
-            throw NSError(description: "delegate is nil")
-        }
-        
-        try await delegate.connectAndAttach(
-            firstNode,
-            to: secondNode,
-            format: nil
-        )
+extension AudioUnitChain {
+    private func connect(_ firstNode: AVAudioNode, to secondNode: AVAudioNode) async throws {        
+        try await delegate.connectAndAttach(firstNode, to: secondNode, format: nil)
     }
 }

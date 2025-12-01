@@ -9,7 +9,7 @@ import Testing
 
 @testable import SPFKAudio
 
-class TransportPlayerTestCase: AudioWorkspaceTestCase {
+class TransportPlayerTestCase: AudioWorkspaceTestCase, @unchecked Sendable {
     var player: TransportPlayer?
 
     override func setup() async throws {

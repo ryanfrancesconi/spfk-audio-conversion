@@ -1,19 +1,11 @@
 import AVFoundation
 import SPFKUtils
 
-public class AudioWorkspace {
-    public private(set) lazy var engineManager: AudioEngineManager = {
-        var engineManager = AudioEngineManager()
-        engineManager.delegate = self
-        return engineManager
-    }()
+public final class AudioWorkspace: @unchecked Sendable {
+    public private(set) lazy var engineManager = AudioEngineManager(delegate: self)
 
-    // Must call deviceManager.setup() to prepare hardware
-    public private(set) lazy var deviceManager: AudioDeviceManager = {
-        var deviceManager = AudioDeviceManager()
-        deviceManager.delegate = self
-        return deviceManager
-    }()
+    // Note: Must call deviceManager.setup() to prepare hardware
+    public private(set) lazy var deviceManager = AudioDeviceManager(delegate: self)
 
     public weak var delegate: AudioWorkspaceDelegate?
 
@@ -146,7 +138,7 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
         }
     }
 
-    @MainActor public func audioDeviceManager(event: AudioDeviceManager.Event) async {
+    public func audioDeviceManager(event: AudioDeviceManager.Event) async {
         Log.debug("🔊", event)
         do {
             switch event {

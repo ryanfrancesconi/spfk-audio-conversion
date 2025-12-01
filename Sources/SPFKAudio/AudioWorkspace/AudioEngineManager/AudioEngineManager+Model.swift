@@ -10,6 +10,12 @@ extension AudioEngineManager: AudioEngineManagerModel {
         }
     }
 
+    public var allowInput: Bool {
+        get async {
+            await delegate.audioEngineManagerAllowInputDevice() == true
+        }
+    }
+
     /// Don't access the engine.inputNode if input is disabled as the node is lazily created.
     /// This is the only point in the codebase where AVAudioEngine's inputNode is referenced
     public var inputNode: AVAudioInputNode? {
@@ -35,9 +41,7 @@ extension AudioEngineManager: AudioEngineConnection {
             throw NSError(description: "Unable to determine systemFormat from deviceManager")
         }
 
-        try ExceptionTrap.withThrowing { [weak self] in
-            guard let self else { return }
-
+        try ExceptionTrap.withThrowing { [engine] in
             engine.connectAndAttach(node1, to: node2, format: format)
         }
     }

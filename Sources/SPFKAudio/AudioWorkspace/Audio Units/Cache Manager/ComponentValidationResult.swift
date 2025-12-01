@@ -1,6 +1,5 @@
-
-import AppKit
 @preconcurrency import AVFoundation
+import AppKit
 import SPFKBase
 
 public struct ComponentValidationResult: Sendable {
@@ -14,9 +13,10 @@ public struct ComponentValidationResult: Sendable {
 
     public var validation: AudioUnitValidator.ValidationResult
     public var isEnabled: Bool
-    
+
     public var isFormatCompatible: Bool {
-        (audioComponentDescription.isEffect || audioComponentDescription.isMusicDevice) && component?.supportsStereo == true
+        (audioComponentDescription.isEffect || audioComponentDescription.isMusicDevice)
+            && component?.supportsStereo == true
     }
 
     public var supportsMono: Bool {
@@ -29,10 +29,10 @@ public struct ComponentValidationResult: Sendable {
 
     public var description: String {
         if let component {
-            return "\(component.manufacturerName): \(component.name) (\(component.typeName)), " +
-                "More info: \(component.audioComponentDescription.validationCommand)"
+            "\(component.manufacturerName): \(component.name) (\(component.typeName)), "
+                + "More info: \(component.audioComponentDescription.validationCommand)"
         } else {
-            return audioComponentDescription.validationCommand
+            audioComponentDescription.validationCommand
         }
     }
 

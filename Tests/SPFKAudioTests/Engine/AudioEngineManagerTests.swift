@@ -10,8 +10,7 @@ import Testing
 @Suite(.serialized, .tags(.engine))
 final class AudioEngineManagerTests {
     @Test func state() async throws {
-        let engineManager = AudioEngineManager()
-        engineManager.delegate = self
+        let engineManager = AudioEngineManager(delegate: self)
 
         try engineManager.startEngine()
         #expect(engineManager.engineIsRunning)

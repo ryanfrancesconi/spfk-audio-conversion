@@ -45,12 +45,6 @@ extension AudioEngineManagerModel {
         }
     }
 
-    public var allowInput: Bool {
-        get async {
-            await inputFormat != nil
-        }
-    }
-
     public var outputFormat: AVAudioFormat {
         outputNode.outputFormat(forBus: 0)
     }

@@ -3,12 +3,12 @@
 import AVFoundation
 import Foundation
 @testable import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @Suite(.serialized, .tags(.realtime))
-final class TransportPlayerTests: TransportPlayerTestCase {
+final class TransportPlayerTests: TransportPlayerTestCase, @unchecked Sendable {
     @Test func formats() async throws {
         try await setup()
         let player = try #require(player)

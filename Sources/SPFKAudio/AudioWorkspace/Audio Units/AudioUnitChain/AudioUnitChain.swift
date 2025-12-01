@@ -5,7 +5,7 @@ import SPFKBase
 
 /// Audio Unit v3 Host for loading external Audio Units and connecting them together
 public actor AudioUnitChain {
-    /// The events this class will generate
+    /// The events this actor will generate
     public enum Event: Sendable {
         case connectionError(error: Error)
 
@@ -25,11 +25,7 @@ public actor AudioUnitChain {
     public static let defaultInsertCount = 6
 
     /// Delegate that will be sent notifications
-    public weak var delegate: AudioUnitChainDelegate?
-
-    public func update(delegate: AudioUnitChainDelegate) {
-        self.delegate = delegate
-    }
+    public let delegate: AudioUnitChainDelegate
 
     /// first node in chain, generally a player or instrument
     public var input: AVAudioNode?
@@ -38,7 +34,7 @@ public actor AudioUnitChain {
     public var output: AVAudioNode?
 
     public var availableAudioUnitComponents: [AVAudioUnitComponent] {
-        delegate?.availableAudioUnitComponents ?? []
+        delegate.availableAudioUnitComponents ?? []
     }
 
     public var data: AudioUnitChainData
@@ -56,19 +52,23 @@ public actor AudioUnitChain {
     // MARK: - Initialization
 
     /// Create a chain with the default number of inserts
-    public init() {
+    public init(delegate: AudioUnitChainDelegate) {
+        self.delegate = delegate
         data = AudioUnitChainData(insertCount: AudioUnitChain.defaultInsertCount)
     }
 
     /// Initialize the manager with an arbritary amount of inserts
-    public init(inserts: Int) {
+    public init(delegate: AudioUnitChainDelegate, inserts: Int) {
+        self.delegate = delegate
+
         data = AudioUnitChainData(insertCount: inserts)
     }
 
-    public init(input: AVAudioNode, output: AVAudioNode, delegate: AudioUnitChainDelegate) async throws {
+    public init(delegate: AudioUnitChainDelegate, input: AVAudioNode, output: AVAudioNode) async throws {
+        self.delegate = delegate
+
         data = AudioUnitChainData(insertCount: AudioUnitChain.defaultInsertCount)
 
-        self.delegate = delegate
         try await updateIO(input: input, output: output)
     }
 
@@ -92,7 +92,6 @@ public actor AudioUnitChain {
 
         input = nil
         output = nil
-        delegate = nil
     }
 }
 

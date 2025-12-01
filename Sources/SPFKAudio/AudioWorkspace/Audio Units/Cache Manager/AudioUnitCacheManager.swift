@@ -6,11 +6,17 @@ import AVFoundation
 import SPFKBase
 import SwiftExtensions
 
-public class AudioUnitCacheManager {
+public actor AudioUnitCacheManager {
     public var eventHandler: ((AudioUnitCacheEvent) -> Void)?
+    public func update(eventHandler: ((AudioUnitCacheEvent) -> Void)?) {
+        self.eventHandler = eventHandler
+    }
 
     /// Where it writes its xml cache file. Can be set to an alternate directory for testing.
     public var cachesDirectory: URL?
+    public func update(cachesDirectory: URL) {
+        self.cachesDirectory = cachesDirectory
+    }
 
     var cachedComponentCount: Int?
 
@@ -23,12 +29,6 @@ public class AudioUnitCacheManager {
     // MARK: - Observation
 
     var isScanning: Bool { scanTask != nil }
-
-    public var notificationTimer: Timer?
-
-    public var sendNotifications: Bool = false
-
-    var isObserving = false
 
     // HACK: some special cases to allow through the filter
     var allowedComponentDescriptions = [
@@ -49,14 +49,19 @@ public class AudioUnitCacheManager {
         return out
     }
 
-    public init(cachesDirectory: URL? = nil) {
+    var cacheObservation: AudioUnitCacheObservation = .init()
+
+    public init(cachesDirectory: URL? = nil, eventHandler: ((AudioUnitCacheEvent) -> Void)? = nil) {
         self.cachesDirectory = cachesDirectory
+    }
+
+    public func dispose() {
+        cacheObservation.stop()
+        componentCollection = nil
     }
 
     deinit {
         Log.debug("* { AudioUnitCacheManager }")
-        removeObservers()
-        componentCollection = nil
     }
 
     public func cancelScan() {
@@ -69,21 +74,34 @@ public class AudioUnitCacheManager {
     }
 
     /// load effects cache document
-    public func load() async {
-        guard componentCollection == nil else {
-            // already loaded
-            return
+    public func load() async throws -> ComponentCollection {
+        // already loaded
+        if let componentCollection {
+            return componentCollection
         }
 
         // request plugins
         Log.debug("*AU Loading cached Audio Units...")
 
-        let systemComponentsResponse = await loadCache()
+        let loadTask = Task<SystemComponentsResponse, Error> {
+            await loadCache()
+        }
 
-        componentCollection = ComponentCollection(results: systemComponentsResponse.results)
+        let systemComponentsResponse = try await loadTask.value
+
+        let componentCollection = ComponentCollection(results: systemComponentsResponse.results)
+        self.componentCollection = componentCollection
 
         Log.debug("*AU \(systemComponentsResponse.results.count) Effects are available now.")
 
-        send(event: .cacheLoaded(systemComponentsResponse))
+        await send(event: .cacheLoaded(systemComponentsResponse))
+
+        cacheObservation.start()
+
+        return componentCollection
+    }
+
+    func send(event: AudioUnitCacheEvent) async {
+        eventHandler?(event)
     }
 }

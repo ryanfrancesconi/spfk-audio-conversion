@@ -1,48 +1,20 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AppKit
 import AVFoundation
 import Foundation
 import SPFKBase
 import SPFKTime
 
-extension TransportPlayer: EngineNode {
-    public var inputNode: AVAudioNode? { mixer.inputNode }
-    public var outputNode: AVAudioNode? { mixer.outputNode }
-}
-
-extension TransportPlayer: TransportStateAccess {
-    public var transportState: TransportState {
-        TransportState(
-            isPlaying: isPlaying,
-            isLooping: isLooping,
-            currentTime: currentTime,
-            currentURL: currentPlayer?.url,
-            duration: duration,
-            measure: measure,
-        )
-    }
-}
-
-extension TransportPlayer: Mixable {
-    public var volume: AUValue {
-        get { mixer.volume }
-        set { mixer.volume = newValue }
-    }
-
-    public var pan: AUValue {
-        get { mixer.pan }
-        set { mixer.pan = newValue }
-    }
-}
-
 /// A player which supports any audio format, realtime sample rate conversion,
 /// looping and a built in `DisplayLinkTimer` for screen based refresh events such
 /// as tracking a playhead. This class is intended for real time only use such as an
 /// audio editor.
-public class TransportPlayer {
-    public private(set) var mixer: MixerWrapper
-    public private(set) var transportTimer: TransportTimer
-
+public final class TransportPlayer {
     public weak var delegate: TransportPlayerDelegate?
+
+    public private(set) var mixer: MixerWrapper
+    public let transportTimer: TransportTimer
 
     public var outputFormat: AVAudioFormat {
         mixer.mixerNode.outputFormat(forBus: 0)
@@ -100,6 +72,8 @@ public class TransportPlayer {
     var restartAfterEventTask: Task<Void, Error>?
     var shouldRestartAfterEvent = false
 
+    // MARK: - Init
+
     /// Will attempt to use a NSScreen display link
     /// - Parameter delegate: needed to connect to the engine
     @MainActor public init(delegate: TransportPlayerDelegate? = nil) throws {
@@ -129,6 +103,8 @@ public class TransportPlayer {
         transportTimer.eventHandler = { [weak self] in self?.update(timerEvent: $0) }
         scheduler.eventHandler = { [weak self] in self?.handle(loopEvent: $0) }
     }
+
+    // MARK: -
 
     /// To be called on sample rate changes
     public func rebuild() throws {
@@ -174,11 +150,11 @@ public class TransportPlayer {
 }
 
 extension TransportPlayer {
-    @MainActor public func load(url: URL) async throws {
+    public func load(url: URL) async throws {
         try await load(audioFile: AVAudioFile(forReading: url))
     }
 
-    @MainActor public func load(audioFile: AVAudioFile) async throws {
+    public func load(audioFile: AVAudioFile) async throws {
         guard let delegate else {
             throw NSError(description: "delegate is nil")
         }
@@ -209,5 +185,35 @@ extension TransportPlayer {
 
         try formatPlayer?.load(audioFile: audioFile)
         currentPlayer = formatPlayer
+    }
+}
+
+extension TransportPlayer: EngineNode {
+    public var inputNode: AVAudioNode? { mixer.inputNode }
+    public var outputNode: AVAudioNode? { mixer.outputNode }
+}
+
+extension TransportPlayer: TransportStateAccess {
+    public var transportState: TransportState {
+        TransportState(
+            isPlaying: isPlaying,
+            isLooping: isLooping,
+            currentTime: currentTime,
+            currentURL: currentPlayer?.url,
+            duration: duration,
+            measure: measure,
+        )
+    }
+}
+
+extension TransportPlayer: Mixable {
+    public var volume: AUValue {
+        get { mixer.volume }
+        set { mixer.volume = newValue }
+    }
+
+    public var pan: AUValue {
+        get { mixer.pan }
+        set { mixer.pan = newValue }
     }
 }

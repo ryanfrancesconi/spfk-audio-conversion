@@ -88,7 +88,9 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
     public var deviceSettings = AudioDeviceSettings()
 
-    public init() {}
+    public init(delegate: AudioDeviceManagerDelegate? = nil) {
+        self.delegate = delegate
+    }
 
     public func setup(settings: AudioDeviceSettings = .init()) async throws {
 

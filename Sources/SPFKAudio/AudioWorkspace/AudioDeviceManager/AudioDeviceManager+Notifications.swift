@@ -32,30 +32,35 @@ extension AudioDeviceManager {
         removeHardwareObservers()
 
         // Use selector-based observers to avoid @Sendable closure captures of `self`.
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(parse(notification:)),
-                                               name: .deviceListChanged,
-                                               object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .deviceListChanged,
+            object: nil)
 
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(parse(notification:)),
-                                               name: .defaultInputDeviceChanged,
-                                               object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .defaultInputDeviceChanged,
+            object: nil)
 
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(parse(notification:)),
-                                               name: .defaultOutputDeviceChanged,
-                                               object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .defaultOutputDeviceChanged,
+            object: nil)
 
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(parse(notification:)),
-                                               name: .deviceNominalSampleRateDidChange,
-                                               object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .deviceNominalSampleRateDidChange,
+            object: nil)
 
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(parse(notification:)),
-                                               name: .deviceProcessorOverload,
-                                               object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .deviceProcessorOverload,
+            object: nil)
     }
 
     @MainActor
@@ -110,7 +115,7 @@ extension AudioDeviceManager {
 
             await send(event: .outputDeviceChanged(device: defaultOutputDevice))
 
-        case let .deviceListChanged(objectID: _, event: event):
+        case .deviceListChanged(objectID: _, event: let event):
             let added = event.addedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
             let removed = event.removedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
 
@@ -143,7 +148,7 @@ extension AudioDeviceManager {
         case .deviceProcessorOverload:
             await send(event: .deviceProcessorOverload)
 
-            // more events available...
+        // more events available...
 
         default:
             break
@@ -154,14 +159,17 @@ extension AudioDeviceManager {
 extension AudioDeviceManager {
     public func handleEngineConfigurationChanged() async {
         guard let selectedOutputDevice = await selectedOutputDevice,
-              let outputDeviceSampleRate = await outputDeviceSampleRate
+            let outputDeviceSampleRate = await outputDeviceSampleRate
         else {
             return
         }
 
         guard await AudioDefaults.shared.isSupported(sampleRate: outputDeviceSampleRate) else {
             let errorEvent: Event = .error(
-                NSError(description: "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)")
+                NSError(
+                    description:
+                        "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)"
+                )
             )
 
             await send(event: errorEvent)

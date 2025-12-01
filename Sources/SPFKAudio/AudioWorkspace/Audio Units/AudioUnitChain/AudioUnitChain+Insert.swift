@@ -14,7 +14,7 @@ extension AudioUnitChain {
             return []
         }
 
-        var errors = [Error?](repeating: nil, count: await data.insertCount)
+        var errors = await [Error?](repeating: nil, count: data.insertCount)
 
         for desc in chainDescription {
             guard let index = desc.index, errors.indices.contains(index) else {
@@ -58,7 +58,7 @@ extension AudioUnitChain {
     ) async throws -> AVAudioUnit {
         try await data.check(index: index)
 
-        delegate?.audioUnitChain(self, event: .willInsert(index: index))
+        delegate.audioUnitChain(self, event: .willInsert(index: index))
 
         let ctype = componentDescription.componentType
 
@@ -89,12 +89,11 @@ extension AudioUnitChain {
 
         try await insert(audioUnit: audioUnit, at: index)
 
-        delegate?.audioUnitChain(self, event: .didInsert(index: index))
+        delegate.audioUnitChain(self, event: .didInsert(index: index))
 
         return audioUnit
     }
 
-    @MainActor
     private func insert(audioUnit: AVAudioUnit, at index: Int) async throws {
         // if it has inputs, verify it supports stereo
         if audioUnit.numberOfInputs > 0 {

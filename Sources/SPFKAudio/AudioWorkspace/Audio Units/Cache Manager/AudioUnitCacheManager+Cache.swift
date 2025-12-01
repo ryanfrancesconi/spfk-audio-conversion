@@ -3,8 +3,8 @@
 import AEXML
 import AppKit
 import AVFoundation
-import SwiftExtensions
 import SPFKBase
+import SwiftExtensions
 
 extension AudioUnitCacheManager {
     public var validationIsNeeded: Bool {
@@ -147,17 +147,15 @@ extension AudioUnitCacheManager {
 
         let validation = AudioUnitValidator.ValidationResult(result: validationResult ?? .passed)
 
-        var result: ComponentValidationResult
-
-        if let component {
-            result = ComponentValidationResult(
+        let result: ComponentValidationResult = if let component {
+            ComponentValidationResult(
                 audioComponentDescription: audioComponentDescription,
                 component: component,
                 validation: validation,
                 isEnabled: isEnabled
             )
         } else {
-            result = ComponentValidationResult(audioComponentDescription: audioComponentDescription, validation: validation, isEnabled: isEnabled, name: item.attributes["name"] ?? "", typeName: item.attributes["typeName"] ?? "", manufacturerName: item.attributes["manufacturerName"] ?? "", versionString: item.attributes["version"] ?? "", icon: nil)
+            ComponentValidationResult(audioComponentDescription: audioComponentDescription, validation: validation, isEnabled: isEnabled, name: item.attributes["name"] ?? "", typeName: item.attributes["typeName"] ?? "", manufacturerName: item.attributes["manufacturerName"] ?? "", versionString: item.attributes["version"] ?? "", icon: nil)
         }
 
         return result
@@ -165,8 +163,8 @@ extension AudioUnitCacheManager {
 
     /// Called to refresh the internal Audio Unit cache by collecting system AUs
     /// - Parameter completionHandler: handler
-    public func createCache() async {
-        send(event: .cachingStarted)
+    public func createCache() async throws {
+        await send(event: .cachingStarted)
 
         // preserve previous enabled values...
 
@@ -174,7 +172,7 @@ extension AudioUnitCacheManager {
 
         removeCache()
 
-        let results = (try? await validate()) ?? []
+        let results = try await validate()
 
         componentCollection = ComponentCollection(results: results)
 
@@ -183,13 +181,13 @@ extension AudioUnitCacheManager {
             componentCollection?.update(from: value)
         }
 
-        await writeCache()
+        try await writeCache()
 
-        send(event: .cacheUpdated)
+        await send(event: .cacheUpdated)
     }
 
     /// Write current component collection to disk
-    public func writeCache() async {
+    public func writeCache() async throws {
         guard let cacheURL else {
             Log.error("*AU Failed to create cache URL")
             return
@@ -233,23 +231,17 @@ extension AudioUnitCacheManager {
 
         Log.debug("*AU Writing cache to", cacheURL)
 
-        do {
-            let string = doc.xml.removing(characters: .null)
-            try string.write(to: cacheURL,
-                             atomically: false,
-                             encoding: .utf8)
+        let string = doc.xml.removing(characters: .null)
+        try string.write(to: cacheURL,
+                         atomically: false,
+                         encoding: .utf8)
 
-            Log.debug("*AU Wrote cache to", cacheURL)
-
-        } catch {
-            Log.error("*AU There was an error saving the audio unit cache.", error.localizedDescription)
-            return
-        }
+        Log.debug("*AU Wrote cache to", cacheURL)
     }
 
     func removeCache() {
         guard cacheExists else { return }
-        guard let cacheURL = cacheURL else { return }
+        guard let cacheURL else { return }
 
         do {
             try cacheURL.delete()

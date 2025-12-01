@@ -1,12 +1,9 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import AVFoundation
 import SPFKBase
 
-extension AudioTrack: EngineNode {
-    public var inputNode: AVAudioNode? { mixer.avAudioNode }
-    public var outputNode: AVAudioNode? { fader.avAudioNode }
-}
-
-public final class AudioTrack {
+public final class AudioTrack: @unchecked Sendable {
     /// input
     public let mixer: MixerWrapper
 
@@ -14,18 +11,16 @@ public final class AudioTrack {
     public let fader: Fader
 
     /// effects
-    public let audioUnitChain: AudioUnitChain
+    public private(set) lazy var audioUnitChain: AudioUnitChain = .init(delegate: self)
 
-    public weak var delegate: AudioTrackDelegate?
+    public let delegate: AudioTrackDelegate?
 
-    public init(delegate: AudioTrackDelegate? = nil) async throws {
+    public init(delegate: AudioTrackDelegate?) async throws {
         self.delegate = delegate
 
         mixer = MixerWrapper()
         fader = try await Fader()
-        audioUnitChain = AudioUnitChain()
 
-        await audioUnitChain.update(delegate: self)
         try await audioUnitChain.updateIO(input: mixer.avAudioNode, output: fader.avAudioNode)
     }
 
@@ -46,6 +41,11 @@ extension AudioTrack: AudioUnitChainDelegate {
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
         delegate?.availableAudioUnitComponents
     }
+}
+
+extension AudioTrack: EngineNode {
+    public var inputNode: AVAudioNode? { mixer.avAudioNode }
+    public var outputNode: AVAudioNode? { fader.avAudioNode }
 }
 
 public protocol AudioTrackDelegate: AnyObject, AudioEngineConnection, AudioUnitAvailability {}

@@ -3,4 +3,3 @@
 public protocol AudioUnitChainDelegate: AudioEngineConnection, AudioUnitAvailability {
     func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event)
 }
-

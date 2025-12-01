@@ -29,7 +29,14 @@ extension AudioUnitAvailability {
         // now fill in the audioUnits
 
         for i in 0 ..< componentManufacturers.count {
-            componentManufacturers[i].audioUnits = audioUnits(componentManufacturer: componentManufacturers[i].componentManufacturer)
+            let item = componentManufacturers[i]
+            let value = filterComponents(for: item.componentManufacturer)
+
+            componentManufacturers[i] = AudioUnitManufacturerCollection(
+                name: item.name,
+                componentManufacturer: item.componentManufacturer,
+                audioUnits: value
+            )
         }
 
         componentManufacturers = componentManufacturers.sorted {
@@ -39,7 +46,8 @@ extension AudioUnitAvailability {
         return componentManufacturers
     }
 
-    public func audioUnits(componentManufacturer: OSType) -> [AVAudioUnitComponent] {
+    // was audioUnits(componentManufacturer:)
+    func filterComponents(for componentManufacturer: OSType) -> [AVAudioUnitComponent] {
         availableAudioUnitComponents?.filter {
             $0.audioComponentDescription.componentManufacturer == componentManufacturer
 

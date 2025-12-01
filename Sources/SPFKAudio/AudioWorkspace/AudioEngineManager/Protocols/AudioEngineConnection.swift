@@ -3,7 +3,7 @@
 import AVFoundation
 import SPFKBase
 
-public protocol AudioEngineConnection: AnyObject {
+public protocol AudioEngineConnection: Sendable {
     func connectAndAttach(_ node1: AVAudioNode, to node2: AVAudioNode, format: AVAudioFormat?) async throws
 }
 

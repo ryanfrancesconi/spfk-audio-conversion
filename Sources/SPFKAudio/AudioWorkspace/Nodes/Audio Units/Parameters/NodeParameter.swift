@@ -125,7 +125,7 @@ public class NodeParameter {
 
     /// Records automation for this parameter.
     /// - Parameter callback: Called on the main queue for each parameter event.
-    public func recordAutomation(callback: @escaping (AUParameterAutomationEvent) -> Void) {
+    @MainActor public func recordAutomation(callback: @escaping (AUParameterAutomationEvent) -> Void) {
         parameterObserverToken = parameter.token(byAddingParameterAutomationObserver: { numberEvents, events in
             for index in 0 ..< numberEvents {
                 let event = events[index]

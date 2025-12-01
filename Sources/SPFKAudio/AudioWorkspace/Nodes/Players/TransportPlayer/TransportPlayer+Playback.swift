@@ -90,12 +90,12 @@ extension TransportPlayer {
             throw NSError(description: "scheduleLoops: currentPlayer is nil")
         }
 
-        let playbackRange = self.playbackRange
+        let playbackRange = playbackRange
 
         var partialLoopDuration: TimeInterval = 0
 
         // if the playhead is started inside the current loop range
-        if time > playbackRange.lowerBound && time < playbackRange.upperBound {
+        if time > playbackRange.lowerBound, time < playbackRange.upperBound {
             partialLoopDuration = playbackRange.upperBound - time
             try currentPlayer.schedule(from: time, to: time + partialLoopDuration, when: 0, hostTime: hostTime)
         }
@@ -183,10 +183,8 @@ extension TransportPlayer {
 
             // the amount of loops requested is complete
             case .complete:
-                Task { @MainActor in
-                    try stop()
-                    try rewindAll()
-                }
+                try stop()
+                try rewindAll()
             }
 
         } catch {
@@ -229,7 +227,7 @@ extension TransportPlayer {
         }
     }
 
-    public func rewind(by pulse: MusicalPulse?) throws {
+    @MainActor public func rewind(by pulse: MusicalPulse?) throws {
         if let loopRange, loopRange.contains(currentTime) {
             try move(to: loopRange.lowerBound)
             return
@@ -238,16 +236,16 @@ extension TransportPlayer {
         try move(by: stepInterval(for: pulse, direction: .backward))
     }
 
-    public func forward(by pulse: MusicalPulse?) throws {
+    @MainActor public func forward(by pulse: MusicalPulse?) throws {
         try move(by: stepInterval(for: pulse, direction: .forward))
     }
 
-    private func move(by stepTime: TimeInterval) throws {
+    @MainActor private func move(by stepTime: TimeInterval) throws {
         let time = (currentTime + stepTime).clamped(to: 0 ... duration)
         try move(to: time)
     }
 
-    private func move(to time: TimeInterval) throws {
+    @MainActor private func move(to time: TimeInterval) throws {
         if isPlaying {
             shouldRestartAfterEvent = true
             try stop()
@@ -265,7 +263,6 @@ extension TransportPlayer {
                 shouldRestartAfterEvent = false
 
                 Task { @MainActor in
-
                     // this needs to be an event sent out if another player needs to sync to this one
                     delegate?.transportPlayer(shouldRestartAtTime: time)
                 }

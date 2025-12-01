@@ -8,8 +8,7 @@ extension AudioEngineManager {
 
         Log.debug("🔈 engine.prepare()")
 
-        try ExceptionTrap.withThrowing { [weak self] in
-            guard let self else { return }
+        try ExceptionTrap.withThrowing { [engine] in
             engine.prepare()
         }
     }
@@ -24,10 +23,8 @@ extension AudioEngineManager {
 
         Log.debug("🔈 Attempting to start engine with outputFormat", outputFormat)
         // Log.debug("🔈", engine.debugDescription)
-        
-        try ExceptionTrap.withThrowing { [weak self] in
-            guard let self else { return }
 
+        try ExceptionTrap.withThrowing { [engine] in
             engine.prepare()
             try engine.start()
         }
@@ -55,13 +52,15 @@ extension AudioEngineManager {
 
         Log.debug("🔈 Creating new Engine...")
 
-        //engine = AVAudioEngine()
+        // engine = AVAudioEngine()
         engine.isAutoShutdownEnabled = false
 
         // The engine creates a singleton on demand when this property is first accessed.
         _ = outputNode
 
         await send(event: .rebuild)
+        // eventHandler?(.rebuild)
+
         addEngineObserver()
     }
 }

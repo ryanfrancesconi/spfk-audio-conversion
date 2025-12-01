@@ -3,9 +3,9 @@
 import AEXML
 import AudioToolbox
 import AVFoundation
-import SwiftExtensions
 import SPFKAudioBase
 import SPFKBase
+import SwiftExtensions
 
 extension AudioUnitCacheManager {
     public static var audioComponentCount: Int {
@@ -78,13 +78,13 @@ extension AudioUnitCacheManager {
 
                 Log.debug("Checking", name)
 
-                send(event: .validating(name: name, index: i, count: components.count))
+                await send(event: .validating(name: name, index: i, count: components.count))
 
                 results.append(
                     validate(component: component)
                 )
 
-                // try? await Task.sleep(seconds: 1) // useful for testing
+                await Task.yield()
             }
 
             results = results.sorted(by: { lhs, rhs in

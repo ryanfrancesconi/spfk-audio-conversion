@@ -1,6 +1,5 @@
-
-import AudioToolbox
 import AVFoundation
+import AudioToolbox
 import SPFKUtils
 
 public class AudioUnitValidator {
@@ -13,7 +12,7 @@ public class AudioUnitValidator {
         [
             kAudioComponentValidationParameter_LoadOutOfProcess: 1, // requires that the AU be able to load out of process
             kAudioComponentValidationParameter_TimeOut: 15, // this seems to work
-            // kAudioComponentValidationParameter_ForceValidation: 1
+                // kAudioComponentValidationParameter_ForceValidation: 1
         ] as CFDictionary
     }
 
@@ -37,12 +36,13 @@ public class AudioUnitValidator {
     public static func validate(component: AVAudioUnitComponent) -> ValidationResult {
         // note component.passesAUVal causes some AUs to hang indefinitely here
 
-        let result: ValidationResult = if #available(macOS 13.0, *) {
-            validateWithResults(component: component)
+        let result: ValidationResult =
+            if #available(macOS 13.0, *) {
+                validateWithResults(component: component)
 
-        } else {
-            validateLegacy(component: component)
-        }
+            } else {
+                validateLegacy(component: component)
+            }
 
         if result.result == .passed {
             return ValidationResult(result: .passed)
@@ -100,7 +100,8 @@ public class AudioUnitValidator {
             desc.componentManufacturer.fourCC,
         ].compactMap(\.self)
 
-        Log.default("*AU validateExternal \(component.name):", cmd.lastPathComponent + " " + args.joined(separator: " "))
+        Log.default(
+            "*AU validateExternal \(component.name):", cmd.lastPathComponent + " " + args.joined(separator: " "))
 
         let process = ProcessHandler(url: cmd, args: args, qos: .default)
 
