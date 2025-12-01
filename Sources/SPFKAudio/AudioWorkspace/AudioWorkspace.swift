@@ -166,16 +166,20 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
 
 extension AudioWorkspace {
     func handleConfigurationChanged(options: Set<AudioDeviceManager.ConfigurationOption>) throws {
-        if options.contains(.sampleRateChanged) {
-            delegate?.audioWorkspaceShouldRebuild(self)
+        guard let delegate else { return }
+        
+        Task { @MainActor in
+            if options.contains(.sampleRateChanged) {
+                await delegate.audioWorkspaceShouldRebuild(self)
 
-        } else {
-            delegate?.audioWorkspaceShouldRestart(self)
+            } else {
+                await delegate.audioWorkspaceShouldRestart(self)
+            }
         }
     }
 }
 
 public protocol AudioWorkspaceDelegate: AnyObject {
-    func audioWorkspaceShouldRebuild(_ audioWorkspace: AudioWorkspace)
-    func audioWorkspaceShouldRestart(_ audioWorkspace: AudioWorkspace)
+    func audioWorkspaceShouldRebuild(_ audioWorkspace: AudioWorkspace) async
+    func audioWorkspaceShouldRestart(_ audioWorkspace: AudioWorkspace) async
 }

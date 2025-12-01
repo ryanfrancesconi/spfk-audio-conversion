@@ -127,7 +127,11 @@ public final class TransportPlayer {
     }
 
     private func handleAmplitudeEvent(_ array: [Float]) {
-        delegate?.transportPlayer(amplitudeEvent: array)
+        guard let delegate else { return }
+
+        Task { @MainActor in
+            delegate.transportPlayer(amplitudeEvent: array)
+        }
     }
 
     public func unload() {
@@ -165,7 +169,8 @@ extension TransportPlayer {
             }
 
             currentTime = 0
-            delegate.transportPlayer(timerEvent: .time(0))
+
+            // delegate.transportPlayer(timerEvent: .time(0))
 
             currentPlayer.unload()
         }

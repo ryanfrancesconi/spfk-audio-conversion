@@ -2,8 +2,8 @@
 
 import Accelerate
 import AVFoundation
-import SwiftExtensions
 import SPFKBase
+import SwiftExtensions
 
 /// Tap to do amplitude analysis on any node. Limited to 2 channels.
 /// start() will add the tap, and stop() will remove it.
@@ -68,7 +68,8 @@ public class AmplitudeTap {
     /// - parameter input: Node to analyze
     public init(_ input: AVAudioNode?,
                 bufferSize: UInt32 = 1024,
-                eventHandler: (([Float]) -> Void)?) {
+                eventHandler: (([Float]) -> Void)?)
+    {
         self.bufferSize = bufferSize
         self.input = input
         self.eventHandler = eventHandler

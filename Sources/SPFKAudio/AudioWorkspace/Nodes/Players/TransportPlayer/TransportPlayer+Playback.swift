@@ -131,7 +131,7 @@ extension TransportPlayer {
 }
 
 extension TransportPlayer {
-    public func update(timerEvent event: TransportTimerEvent) {
+    @MainActor public func update(timerEvent event: TransportTimerEvent) {
         delegate?.transportPlayer(timerEvent: event)
 
         guard case let .time(transportTime) = event else { return }
@@ -144,7 +144,7 @@ extension TransportPlayer {
         }
     }
 
-    private func handleComplete() {
+    @MainActor private func handleComplete() {
         do {
             let startTime = loopRange?.lowerBound ?? 0
 
@@ -174,7 +174,7 @@ extension TransportPlayer {
     }
 
     /// LoopScheduler events
-    func handle(loopEvent event: LoopScheduler.Event) {
+    @MainActor func handle(loopEvent event: LoopScheduler.Event) {
         do {
             switch event {
             // the loop schedule has changed, schedule the new times in the player
@@ -210,7 +210,7 @@ extension TransportPlayer {
 }
 
 extension TransportPlayer {
-    public func rewindAll() throws {
+    @MainActor public func rewindAll() throws {
         let wasPlaying = isPlaying
 
         if wasPlaying {

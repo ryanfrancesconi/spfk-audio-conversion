@@ -1,6 +1,7 @@
 import Foundation
 import SPFKTime
 
+@MainActor
 public protocol TransportPlayerDelegate: AnyObject, AudioEngineConnection {
     func transportPlayer(timerEvent event: TransportTimerEvent)
     func transportPlayer(amplitudeEvent event: [Float])
