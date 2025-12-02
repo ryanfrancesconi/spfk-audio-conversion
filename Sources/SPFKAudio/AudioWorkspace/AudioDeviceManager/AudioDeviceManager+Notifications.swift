@@ -14,7 +14,9 @@ extension AudioDeviceManager {
 
     @MainActor
     func addObservers() {
-        guard !isObserving else { return }
+        // guard !isObserving else { return }
+
+        removeObservers()
 
         // Use selector-based observers to avoid @Sendable closure captures of `self`.
         NotificationCenter.default.addObserver(
@@ -55,7 +57,7 @@ extension AudioDeviceManager {
 
     @MainActor
     func removeObservers() {
-        guard isObserving else { return }
+        // guard isObserving else { return }
 
         // Also remove selector-based observers registered on self.
         NotificationCenter.default.removeObserver(self, name: .deviceListChanged, object: nil)
@@ -92,7 +94,9 @@ extension AudioDeviceManager {
 
             guard let defaultInputDevice = await defaultInputDevice else { return }
 
-            guard defaultInputDevice.uid != deviceSettings.inputUID else {
+            let currentInputUID = await deviceSettings.inputUID
+
+            guard defaultInputDevice.uid != currentInputUID else {
                 Log.debug("Same device is already selected", defaultInputDevice)
                 return
             }
@@ -110,7 +114,9 @@ extension AudioDeviceManager {
                 return
             }
 
-            guard defaultOutputDevice.uid != deviceSettings.outputUID else {
+            let currentOutputUID = await deviceSettings.outputUID
+
+            guard defaultOutputDevice.uid != currentOutputUID else {
                 Log.debug("Same device is already selected", defaultOutputDevice)
                 return
             }
@@ -178,8 +184,11 @@ extension AudioDeviceManager {
             return
         }
 
-        let outputDeviceChanged = selectedOutputDevice.uid != deviceSettings.outputUID
-        let inputDeviceChanged = await selectedInputDevice?.uid != deviceSettings.inputUID
+        let currentInputUID = await deviceSettings.inputUID
+        let currentOutputUID = await deviceSettings.outputUID
+
+        let inputDeviceChanged = await selectedInputDevice?.uid != currentInputUID
+        let outputDeviceChanged = selectedOutputDevice.uid != currentOutputUID
         let sampleRateChanged = await outputDeviceSampleRate != systemSampleRate
 
         var options = Set<ConfigurationOption>()

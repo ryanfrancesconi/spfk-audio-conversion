@@ -60,7 +60,7 @@ public final class AudioWorkspace: @unchecked Sendable {
         outputMixer = nil
 
         do {
-            try await deviceManager.unregisterNotifications()
+            try await deviceManager.dispose()
         } catch {
             Log.error(error)
         }

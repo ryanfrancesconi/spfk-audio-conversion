@@ -1,11 +1,13 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+
 import Foundation
 
 /// Persistent struct to store device UIDs
-public struct AudioDeviceSettings: Codable, Hashable {
+public actor AudioDeviceSettings {
     public static let inputDeviceDisabledUID = "inputDeviceDisabledUID"
 
-    public internal(set) var inputUID: String?
-    public internal(set) var outputUID: String?
+    public var inputUID: String?
+    public var outputUID: String?
 
     public var allowInput: Bool {
         guard let inputUID else { return false }
@@ -21,7 +23,15 @@ public struct AudioDeviceSettings: Codable, Hashable {
         self.outputUID = outputUID
     }
 
-    public mutating func disableInput() {
+    public func update(inputUID: String?) {
+        self.inputUID = inputUID
+    }
+
+    public func update(outputUID: String?) {
+        self.outputUID = inputUID
+    }
+
+    public func disableInput() {
         inputUID = Self.inputDeviceDisabledUID
     }
 }

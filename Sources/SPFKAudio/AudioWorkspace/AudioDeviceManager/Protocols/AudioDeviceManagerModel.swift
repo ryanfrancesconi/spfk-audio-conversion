@@ -6,7 +6,7 @@ import SPFKAudioHardware
 public protocol AudioDeviceManagerModel: Sendable {
     var systemFormat: AVAudioFormat { get async }
 
-    var deviceSettings: AudioDeviceSettings { get set }
+    var deviceSettings: AudioDeviceSettings { get }
     var bufferSize: UInt32 { get }
     var inputDeviceLatency: UInt32? { get async }
     var engineOutputNode: AVAudioOutputNode? { get }

@@ -75,7 +75,7 @@ extension AudioDeviceManagerModel {
     public var deviceSettingsOutputDevice: AudioDevice? {
         get async {
             guard await !allowInput,
-                  let uid = deviceSettings.outputUID,
+                  let uid = await deviceSettings.outputUID,
                   let device = await AudioDevice.lookup(uid: uid)
             else {
                 return nil

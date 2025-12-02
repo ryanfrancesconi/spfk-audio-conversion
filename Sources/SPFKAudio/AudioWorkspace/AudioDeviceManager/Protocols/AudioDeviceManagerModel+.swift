@@ -9,9 +9,10 @@ extension AudioDeviceManagerModel {
         get async {
             let defaultInputUID = await defaultInputDevice?.uid
             let defaultOutputUID = await defaultOutputDevice?.uid
+            let currentInputUID = await deviceSettings.inputUID
+            let currentOutputUID = await deviceSettings.outputUID
 
-            return deviceSettings.inputUID == defaultInputUID &&
-                deviceSettings.outputUID == defaultOutputUID
+            return currentInputUID == defaultInputUID && currentOutputUID == defaultOutputUID
         }
     }
 
@@ -85,7 +86,7 @@ extension AudioDeviceManagerModel {
     public var allowInput: Bool {
         get async {
             let hasInputDevice = await hasInputDevice
-            let settingsAllow = deviceSettings.allowInput
+            let settingsAllow = await deviceSettings.allowInput
 
             return settingsAllow && hasInputDevice
         }
@@ -128,7 +129,7 @@ extension AudioDeviceManagerModel {
     }
 
     public func requestAudioInputAccess() async throws -> Bool {
-        guard await hasInputDevice && deviceSettings.allowInput else {
+        guard await hasInputDevice, await deviceSettings.allowInput else {
             throw NSError(description: "Audio Disabled or no Input device.")
         }
 

@@ -12,7 +12,7 @@ import SPFKBaseC
 /// the engine audioUnit output directly to the output device selection.
 /// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
 /// potentially other bluetooth I/O headsets as well.
-public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Sendable {
+public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
     public enum Event: Sendable {
         case sampleRateChanged(device: AudioDevice)
         case inputDeviceChanged(device: AudioDevice)
@@ -31,62 +31,9 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
 
     let delegate: (any AudioDeviceManagerDelegate)?
 
-    var isObserving: Bool = false
-
     public let hardware: AudioHardwareManager = .shared
 
-    // MARK: - Latency
-
-    private var _bufferSize: UInt32 = 256
-    public var bufferSize: UInt32 {
-        _bufferSize
-    }
-
-    public var systemFormat: AVAudioFormat {
-        get async {
-            await AudioDefaults.shared.systemFormat
-        }
-    }
-
-    // MARK: - Device convenience
-
-    public var allDevices: [AudioDevice] {
-        get async {
-            await hardware.allDevices
-        }
-    }
-
-    public var selectedInputDevice: AudioDevice? {
-        get async {
-            guard deviceSettings.allowInput else { return nil }
-
-            return await hardware.defaultInputDevice
-        }
-    }
-
-    public var selectedOutputDevice: AudioDevice? {
-        get async {
-            await allowInput ?
-                await hardware.defaultOutputDevice :
-                deviceSettingsOutputDevice
-        }
-    }
-
-    public var defaultInputDevice: AudioDevice? {
-        get async {
-            await hardware.defaultInputDevice
-        }
-    }
-
-    public var defaultOutputDevice: AudioDevice? {
-        get async {
-            await hardware.defaultOutputDevice
-        }
-    }
-
-    public var engineOutputNode: AVAudioOutputNode? { delegate?.audioEngineOutputNode }
-
-    public var deviceSettings = AudioDeviceSettings()
+    public let deviceSettings = AudioDeviceSettings()
 
     public init(delegate: AudioDeviceManagerDelegate? = nil) {
         self.delegate = delegate
@@ -96,11 +43,8 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
         let defaultInputUID = await hardware.defaultInputDevice?.uid
         let defaultOutputUID = await hardware.defaultOutputDevice?.uid
 
-        // default to the system selected devices if nothing is passed in
-        deviceSettings = AudioDeviceSettings(
-            inputUID: settings.inputUID ?? defaultInputUID,
-            outputUID: settings.outputUID ?? defaultOutputUID
-        )
+        await deviceSettings.update(inputUID: settings.inputUID ?? defaultInputUID)
+        await deviceSettings.update(outputUID: settings.outputUID ?? defaultOutputUID)
 
         Log.debug(deviceSettings)
 
@@ -113,30 +57,26 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
         try await update(systemSampleRate: deviceSampleRate)
     }
 
-    private func registerNotifications() async throws {
+    @MainActor private func registerNotifications() async throws {
         try await hardware.start()
-        await addObservers()
+        addObservers()
     }
 
-    public func unregisterNotifications() async throws {
-        await removeObservers()
+    @MainActor public func dispose() async throws {
+        removeObservers()
         try await hardware.unregister()
     }
 }
 
 extension AudioDeviceManager {
     public func updateBufferSize(newValue: UInt32) async {
-        guard newValue != _bufferSize else { return }
-
         let allowInput = await allowInput
 
         // the engine doesn't like this if input is disabled...
-        guard deviceSettings.allowInput, allowInput else {
+        guard await deviceSettings.allowInput, allowInput else {
             Log.error("AVAudioEngine doesn't like the hardware buffer size changed when there is no input.")
             return
         }
-
-        _bufferSize = newValue
 
         if await hasInputDevice,
            let device = await selectedInputDevice
@@ -170,7 +110,7 @@ extension AudioDeviceManager {
     // MARK: - Device Setters
 
     public func setInput(device: AudioDevice) async throws {
-        deviceSettings.inputUID = device.uid
+        await deviceSettings.update(inputUID: device.uid)
 
         // will set device
         try device.promote(to: .defaultInput)
@@ -179,9 +119,9 @@ extension AudioDeviceManager {
     }
 
     public func setOutput(device: AudioDevice) async throws {
-        deviceSettings.outputUID = device.uid
+        await deviceSettings.update(outputUID: device.uid)
 
-        guard deviceSettings.allowInput else {
+        guard await deviceSettings.allowInput else {
             try await setEngineNodeOutput(to: device)
             // will call updatePreferredOutputChannels
             return
