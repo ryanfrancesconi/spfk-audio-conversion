@@ -12,13 +12,50 @@ extension AudioDeviceManager {
         await delegate.audioDeviceManager(event: event)
     }
 
-    func removeHardwareObservers() {
-        // Remove any token-based observers we might have stored previously.
-        for hardwareObserver in hardwareObservers {
-            NotificationCenter.default.removeObserver(hardwareObserver)
-        }
+    @MainActor
+    func addObservers() {
+        guard !isObserving else { return }
 
-        hardwareObservers.removeAll()
+        // Use selector-based observers to avoid @Sendable closure captures of `self`.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .deviceListChanged,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .defaultInputDeviceChanged,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .defaultOutputDeviceChanged,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .deviceNominalSampleRateDidChange,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(parse(notification:)),
+            name: .deviceProcessorOverload,
+            object: nil
+        )
+    }
+
+    @MainActor
+    func removeObservers() {
+        guard isObserving else { return }
 
         // Also remove selector-based observers registered on self.
         NotificationCenter.default.removeObserver(self, name: .deviceListChanged, object: nil)
@@ -26,41 +63,6 @@ extension AudioDeviceManager {
         NotificationCenter.default.removeObserver(self, name: .defaultOutputDeviceChanged, object: nil)
         NotificationCenter.default.removeObserver(self, name: .deviceNominalSampleRateDidChange, object: nil)
         NotificationCenter.default.removeObserver(self, name: .deviceProcessorOverload, object: nil)
-    }
-
-    func addHardwareObservers() {
-        removeHardwareObservers()
-
-        // Use selector-based observers to avoid @Sendable closure captures of `self`.
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .deviceListChanged,
-            object: nil)
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .defaultInputDeviceChanged,
-            object: nil)
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .defaultOutputDeviceChanged,
-            object: nil)
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .deviceNominalSampleRateDidChange,
-            object: nil)
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .deviceProcessorOverload,
-            object: nil)
     }
 
     @MainActor
@@ -133,9 +135,9 @@ extension AudioDeviceManager {
     private func parse(deviceNotification: AudioDeviceNotification) async {
         guard let notificationDevice = await deviceNotification.getAudioDevice() else { return }
 
-        let devices = [
-            await selectedInputDevice,
-            await selectedOutputDevice,
+        let devices = await [
+            selectedInputDevice,
+            selectedOutputDevice,
         ]
 
         guard devices.contains(notificationDevice) else { return }
@@ -159,7 +161,7 @@ extension AudioDeviceManager {
 extension AudioDeviceManager {
     public func handleEngineConfigurationChanged() async {
         guard let selectedOutputDevice = await selectedOutputDevice,
-            let outputDeviceSampleRate = await outputDeviceSampleRate
+              let outputDeviceSampleRate = await outputDeviceSampleRate
         else {
             return
         }
@@ -168,7 +170,7 @@ extension AudioDeviceManager {
             let errorEvent: Event = .error(
                 NSError(
                     description:
-                        "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)"
+                    "\(selectedOutputDevice.name) is set to an incompatible sample rate of \(outputDeviceSampleRate)"
                 )
             )
 

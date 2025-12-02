@@ -4,7 +4,7 @@ import AVFoundation
 import SPFKBase
 
 /// An audio player which is associated with a single file
-open class FilePlayer: EngineNodeAU, Mixable {
+open class FilePlayer: EngineNodeAU, Mixable, @unchecked Sendable {
     // MARK: - Node
 
     public var avAudioNode: AVAudioNode { playerNode }

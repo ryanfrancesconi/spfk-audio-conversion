@@ -3,37 +3,14 @@
 import AVFoundation
 import Foundation
 import SPFKAudioHardware
-@testable import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.serialized, .tags(.realtime, .engine))
 final class AudioWorkspaceTests: AudioWorkspaceTestCase {
     var dm: AudioDeviceManager { audioWorkspace.deviceManager }
     var em: AudioEngineManager { audioWorkspace.engineManager }
-
-    @Test func checkNotifications() async throws {
-        try await setup()
-
-        guard let device = await dm.selectedOutputDevice else { return }
-
-        guard let supportedSampleRates = device.nominalSampleRates else {
-            throw NSError(description: "failed to get sample rates from \(device.name)")
-        }
-        
-        let currentSampleRate = try await #require(dm.selectedOutputDevice?.nominalSampleRate)
-        
-        let nextRate = try #require(
-            supportedSampleRates.first { rate in
-                rate != currentSampleRate
-            }
-        )
-
-        try await dm.setOutputSampleRate(to: nextRate)
-
-        try await wait(sec: 2)
-
-        try await dm.setOutputSampleRate(to: currentSampleRate)
-    }
 }

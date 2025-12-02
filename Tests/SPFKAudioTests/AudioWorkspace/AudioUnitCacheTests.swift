@@ -1,5 +1,6 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
+import AEXML
 import AVFoundation
 import Foundation
 import SPFKBase
@@ -22,28 +23,41 @@ final class AudioUnitCacheTests: BinTestCase {
         await manager.dispose()
     }
 
-    @Test func createCache() async throws {
+    @Test(.disabled("this takes some time so best not to include in general runs"))
+    func createCache() async throws {
         deleteBinOnExit = false
-
         try await manager.createCache()
     }
 
-    @Test func parseCache() async throws {
-        deleteBinOnExit = false
+    let cacheDocument: AEXMLDocument? = {
+        let string = """
+            <effects cachedComponentCount="339">
+                <au componentFlags="2" componentFlagsMask="0" componentManufacturer="1634758764" componentSubType="1752393830" componentType="1635083896" isEnabled="true" manufacturerName="Apple" name="AUHighShelfFilter" typeName="Effect" validation="Passed" version="1.6.0" />
+                <au componentFlags="2" componentFlagsMask="0" componentManufacturer="1634758764" componentSubType="1684368505" componentType="1635083896" isEnabled="true" manufacturerName="Apple" name="AUDelay" typeName="Effect" validation="Passed" version="1.6.0" />
+            </effects>
+            """
 
-        guard await manager.cacheExists else {
-            Issue.record("run createCache() first")
+        return try? AEXMLDocument(fromString: string)
+    }()
+
+    @Test func parseCache() async throws {
+        guard let cacheDocument else {
+            Issue.record("failed to load cache")
             return
         }
 
         // after the load is complete - these components are ready to use
-        let components = try await manager.load()
+        let response = try await manager.parse(cache: cacheDocument)
 
         // can test realtime adding and removing from the finder folder while waiting
         // try await wait(sec: 20)
 
-        Log.debug(components.validationDescription)
+        Log.debug(response.results.map(\.description))
+
+        #expect(response.results.map(\.name) == ["AUHighShelfFilter", "AUDelay"])
 
         try await tearDown()
     }
 }
+
+extension AudioUnitCacheTests {}

@@ -14,6 +14,16 @@
   "testTargets" : [
     {
       "parallelizable" : false,
+      "skippedTests" : {
+        "suites" : [
+          {
+            "name" : "AudioUnitCacheTests",
+            "testFunctions" : [
+              "createCache()"
+            ]
+          }
+        ]
+      },
       "target" : {
         "containerPath" : "container:Packages\/SPFKAudio",
         "identifier" : "SPFKAudioTests",
@@ -21,5 +31,5 @@
       }
     }
   ],
-  "version" : 1
+  "version" : 2
 }

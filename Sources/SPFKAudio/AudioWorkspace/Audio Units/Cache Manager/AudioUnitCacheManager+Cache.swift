@@ -11,47 +11,17 @@ extension AudioUnitCacheManager {
         AudioUnitCacheManager.compatibleComponents.count != cachedComponentCount
     }
 
-    var cacheURL: URL? {
-        guard let folder = cachesDirectory else {
-            return nil
-        }
-
-        let filename = "AudioUnitCache.xml"
-
-        // the caches folder might not yet exist
-        if !folder.exists {
-            do {
-                try FileManager.default.createDirectory(
-                    at: folder,
-                    withIntermediateDirectories: true,
-                    attributes: nil
-                )
-            } catch {
-                Log.error("Unable to create folder at \(folder.path)")
-                return nil
-            }
-        }
-        return folder.appendingPathComponent(filename)
-    }
-
-    var cacheExists: Bool {
-        cacheURL?.exists == true
-    }
-
-    var cacheDocument: AEXMLDocument? {
-        guard let cacheURL else {
-            Log.error("*AU Invalid cache URL", cacheURL)
-            return nil
+    func cacheDocument() throws -> AEXMLDocument {
+        guard let cacheURL, cacheURL.exists else {
+            throw NSError(description: "*AU nil cache URL")
         }
 
         guard cacheURL.exists else {
-            Log.error("*AU AudioUnitCache.xml wasn't found")
-            return nil
+            throw NSError(description: "*AU AudioUnitCache.xml wasn't found")
         }
 
         guard let doc = try? AEXMLDocument(fromURL: cacheURL) else {
-            Log.error("*AU Failed to parse cache file. Document is invalid.")
-            return nil
+            throw NSError(description: "*AU Failed to parse cache file. Document is invalid.")
         }
 
         Log.debug("*AU Parsed", cacheURL.path)
@@ -63,24 +33,22 @@ extension AudioUnitCacheManager {
 
     /// Load AudioComponentDescription list from xml cache file
     /// - Parameter completionHandler: callback with an array of `AVAudioUnitComponent`
-    func loadCache() async -> SystemComponentsResponse {
+    func loadCache() async throws -> SystemComponentsResponse {
         cachedComponentCount = nil
 
         var response = SystemComponentsResponse()
 
-        if let doc = cacheDocument {
-            response = parse(cache: doc)
-        }
+        let doc = try cacheDocument()
+        response = try await parse(cache: doc)
 
         return response
     }
 
-    func parse(cache doc: AEXMLDocument) -> SystemComponentsResponse {
-        guard let aus = doc.root["au"].all,
-              aus.isNotEmpty
+    func parse(cache doc: AEXMLDocument) async throws -> SystemComponentsResponse {
+        guard let collection = doc.root["au"].all,
+              collection.isNotEmpty
         else {
-            Log.error("*AU No entries in cache file")
-            return SystemComponentsResponse()
+            throw NSError(description: "*AU No entries in cache file")
         }
 
         // the last saved value
@@ -90,7 +58,7 @@ extension AudioUnitCacheManager {
         // and convert to components
         var out = [ComponentValidationResult]()
 
-        out = aus.compactMap {
+        out = collection.compactMap {
             parse(cacheItem: $0)
         }
 
@@ -240,8 +208,7 @@ extension AudioUnitCacheManager {
     }
 
     func removeCache() {
-        guard cacheExists else { return }
-        guard let cacheURL else { return }
+        guard let cacheURL, cacheURL.exists else { return }
 
         do {
             try cacheURL.delete()

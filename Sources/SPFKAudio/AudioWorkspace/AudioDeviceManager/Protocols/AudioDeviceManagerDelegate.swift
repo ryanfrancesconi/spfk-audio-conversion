@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
 
-public protocol AudioDeviceManagerDelegate: AnyObject {
+public protocol AudioDeviceManagerDelegate: Sendable {
     var audioEngineOutputNode: AVAudioOutputNode { get }
     var audioEngineInputNode: AVAudioInputNode? { get async }
     

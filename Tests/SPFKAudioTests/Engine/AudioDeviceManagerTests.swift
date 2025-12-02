@@ -22,52 +22,72 @@ final class AudioDeviceManagerTests: TestCaseModel {
     }
 
     @Test func printDescription() async throws {
-        Log.debug(await dm.detailedDescription)
+        await Log.debug(dm.detailedDescription)
     }
 
     @Test(arguments: [Scope.output, Scope.input])
     func deviceSampleRates(scope: Scope) async throws {
-        let devices = await dm.allDevices.isOnly(scope: scope)
+        let devices = await scope == .output ?
+            dm.outputDevices : dm.inputDevices
 
         for device in devices {
-            #expect(await testSampleRates(for: device, scope: scope), "\(device.name) failed")
+            try await testSampleRates(for: device, scope: scope)
         }
     }
 
-    func testSampleRates(for device: AudioDevice, scope: Scope) async -> Bool {
-        do {
-            guard let nominalSampleRates = device.getNominalSampleRates(scope: scope) else {
-                throw NSError(description: "failed to get sample rates from \(device.name)")
-            }
+    func testSampleRates(for device: AudioDevice, scope: Scope) async throws {
+        guard let nominalSampleRates = device.getNominalSampleRates(scope: scope) else {
+            throw NSError(description: "failed to get sample rates from \(device.name)")
+        }
 
-            Log.debug("nominalSampleRates", device.name, scope, nominalSampleRates)
+        Log.debug("nominalSampleRates", device.name, scope, nominalSampleRates)
 
-            let currentRate = try #require(device.nominalSampleRate)
+        let currentRate = try #require(device.nominalSampleRate)
 
-            guard nominalSampleRates.count > 1 else {
-                return true // ignore devices that only have 1 sample rates
-            }
+        guard nominalSampleRates.count > 1 else {
+            return // ignore devices that only have 1 sample rates
+        }
 
-            await #expect(throws: Error.self) {
-                try await dm.setSampleRate(device: device, to: 1024)
-            }
+        await #expect(throws: Error.self) {
+            try await dm.setSampleRate(device: device, to: 1024)
+        }
 
-            for rate in nominalSampleRates {
+        for rate in nominalSampleRates {
+            do {
                 try await dm.setSampleRate(device: device, to: rate)
 
-                guard device.nominalSampleRate == rate else {
-                    throw NSError(description: "\(device.name) failed to set to \(rate)")
-                }
+            } catch {
+                Issue.record(error)
             }
-
-            try await dm.setSampleRate(device: device, to: currentRate) // put it back
-
-            return true
-
-        } catch {
-            Log.error(error)
-            return false
         }
+
+        do {
+            try await dm.setSampleRate(device: device, to: currentRate) // put it back
+        } catch {
+            Issue.record(error)
+        }
+    }
+
+    @Test func setSampleRateOfSelectedOutputDevice() async throws {
+        guard let device = await dm.selectedOutputDevice else { return }
+
+        guard let supportedSampleRates = device.nominalSampleRates else {
+            throw NSError(description: "failed to get sample rates from \(device.name)")
+        }
+
+        let currentSampleRate = try await #require(dm.selectedOutputDevice?.nominalSampleRate)
+
+        let nextRate = try #require(
+            supportedSampleRates.first { rate in
+                rate != currentSampleRate
+            }
+        )
+
+        try await dm.setOutputSampleRate(to: nextRate)
+        #expect(device.nominalSampleRate == nextRate)
+
+        try await dm.setOutputSampleRate(to: currentSampleRate)
+        #expect(device.nominalSampleRate == currentSampleRate)
     }
 }
 

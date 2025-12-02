@@ -9,6 +9,7 @@ public final class AudioWorkspace: @unchecked Sendable {
 
     public weak var delegate: AudioWorkspaceDelegate?
 
+    // Note: must call update(cacheURL:)
     public let cacheManager = AudioUnitCacheManager(cachesDirectory: BundleProperties.cachesDirectory)
 
     private var outputMixer: MixerWrapper?

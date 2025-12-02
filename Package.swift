@@ -66,7 +66,11 @@ private var testTargetDependencies: [PackageDescription.Target.Dependency] {
 private let testTarget: PackageDescription.Target = .testTarget(
     name: nameTests,
     dependencies: testTargetDependencies,
-    resources: nil
+    resources: nil,
+    swiftSettings: [
+        .swiftLanguageMode(.v5),
+        .unsafeFlags(["-strict-concurrency=complete"]),
+    ],
 )
 
 private var cTargetDependencies: [PackageDescription.Target.Dependency] {
@@ -91,14 +95,17 @@ private let targets: [PackageDescription.Target] = [
     swiftTarget, cTarget, testTarget,
 ]
 
-private let packageDependencies: [PackageDescription.Package.Dependency] = {
-    let value: [PackageDescription.Package.Dependency] =
-        dependencyNames.map {
-            .package(url: "\(githubBase)/\($0)", branch: dependencyBranch)
-        }
+let spfkDependencies: [RemoteDependency] =
+    dependencyNames.map {
+        RemoteDependency(
+            package: .package(url: "\(githubBase)/\($0)", branch: dependencyBranch),
+            product: .product(name: "$0", package: "$0")
+        )
+    }
 
-    return value + remoteDependencies.map(\.package)
-}()
+private var packageDependencies: [PackageDescription.Package.Dependency] {
+    spfkDependencies.map(\.package) + remoteDependencies.map(\.package)
+}
 
 let package = Package(
     name: name,

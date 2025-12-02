@@ -12,7 +12,7 @@ import SPFKBaseC
 /// the engine audioUnit output directly to the output device selection.
 /// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
 /// potentially other bluetooth I/O headsets as well.
-public final class AudioDeviceManager: AudioDeviceManagerModel {
+public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Sendable {
     public enum Event: Sendable {
         case sampleRateChanged(device: AudioDevice)
         case inputDeviceChanged(device: AudioDevice)
@@ -29,9 +29,9 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
         case inputDeviceChanged
     }
 
-    public weak var delegate: AudioDeviceManagerDelegate?
+    let delegate: (any AudioDeviceManagerDelegate)?
 
-    var hardwareObservers: [NSObjectProtocol] = []
+    var isObserving: Bool = false
 
     public let hardware: AudioHardwareManager = .shared
 
@@ -93,7 +93,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
     }
 
     public func setup(settings: AudioDeviceSettings = .init()) async throws {
-
         let defaultInputUID = await hardware.defaultInputDevice?.uid
         let defaultOutputUID = await hardware.defaultOutputDevice?.uid
 
@@ -116,11 +115,11 @@ public final class AudioDeviceManager: AudioDeviceManagerModel {
 
     private func registerNotifications() async throws {
         try await hardware.start()
-        addHardwareObservers()
+        await addObservers()
     }
 
     public func unregisterNotifications() async throws {
-        removeHardwareObservers()
+        await removeObservers()
         try await hardware.unregister()
     }
 }
@@ -195,7 +194,7 @@ extension AudioDeviceManager {
     }
 
     public func reconnect() async throws {
-        let allowInput = await self.allowInput
+        let allowInput = await allowInput
 
         if !allowInput {
             try await reconnectNodeOutput()

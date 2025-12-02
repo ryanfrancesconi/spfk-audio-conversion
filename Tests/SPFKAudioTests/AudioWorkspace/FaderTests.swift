@@ -1,8 +1,9 @@
 import AVFoundation
 import Foundation
-@testable import SPFKAudio
 import SPFKBase
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.serialized)
 final class FaderTests {

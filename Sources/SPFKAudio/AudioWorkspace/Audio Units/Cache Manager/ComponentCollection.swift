@@ -4,12 +4,12 @@ import SPFKAudioBase
 import SPFKAudioC
 import SPFKUtils
 
-public struct ComponentCollection {
+public struct ComponentCollection: Sendable {
     public var isEmpty: Bool {
         validationResults.isEmpty
     }
 
-    public private(set) var validationResults = [ComponentValidationResult]()
+    public var validationResults: [ComponentValidationResult]
 
     public var passedEffects: [ComponentValidationResult] {
         validationResults.filter {

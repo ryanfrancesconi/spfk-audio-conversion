@@ -18,6 +18,35 @@ public actor AudioUnitCacheManager {
         self.cachesDirectory = cachesDirectory
     }
 
+    var cacheURL: URL?
+    public func update(cacheURL: URL?) {
+        self.cacheURL = cacheURL ?? defaultCacheURL()
+    }
+
+    private func defaultCacheURL() -> URL? {
+        guard let folder = cachesDirectory else {
+            return nil
+        }
+
+        let filename = "AudioUnitCache.xml"
+
+        // the caches folder might not yet exist
+        if !folder.exists {
+            do {
+                try FileManager.default.createDirectory(
+                    at: folder,
+                    withIntermediateDirectories: true,
+                    attributes: nil
+                )
+            } catch {
+                Log.error("Unable to create folder at \(folder.path)")
+                return nil
+            }
+        }
+
+        return folder.appendingPathComponent(filename)
+    }
+
     var cachedComponentCount: Int?
 
     /// All results including effects that are incompatible
@@ -53,6 +82,7 @@ public actor AudioUnitCacheManager {
 
     public init(cachesDirectory: URL? = nil, eventHandler: ((AudioUnitCacheEvent) -> Void)? = nil) {
         self.cachesDirectory = cachesDirectory
+        self.eventHandler = eventHandler
     }
 
     public func dispose() {
@@ -84,10 +114,18 @@ public actor AudioUnitCacheManager {
         Log.debug("*AU Loading cached Audio Units...")
 
         let loadTask = Task<SystemComponentsResponse, Error> {
-            await loadCache()
+            try await loadCache()
         }
 
-        let systemComponentsResponse = try await loadTask.value
+        let result = await loadTask.result
+        let systemComponentsResponse: SystemComponentsResponse
+
+        switch result {
+        case let .success(value):
+            systemComponentsResponse = value
+        case let .failure(error):
+            throw error
+        }
 
         let componentCollection = ComponentCollection(results: systemComponentsResponse.results)
         self.componentCollection = componentCollection

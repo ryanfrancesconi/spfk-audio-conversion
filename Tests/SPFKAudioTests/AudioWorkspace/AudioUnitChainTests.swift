@@ -2,10 +2,11 @@
 
 import AVFoundation
 import Foundation
-@testable import SPFKAudio
 import SPFKBase
 import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.serialized, .tags(.realtime))
 final class AudioUnitChainTests: AudioPlayerTestCase {
@@ -47,7 +48,8 @@ final class AudioUnitChainTests: AudioPlayerTestCase {
         let audioUnitChain = try #require(audioUnitChain)
 
         await #expect(throws: (any Error).self) {
-            try await audioUnitChain.insertAudioUnit(componentDescription: self.auDelayDesc, at: audioUnitChain.insertCount + 1)
+            try await audioUnitChain.insertAudioUnit(
+                componentDescription: self.auDelayDesc, at: audioUnitChain.insertCount + 1)
         }
     }
 }

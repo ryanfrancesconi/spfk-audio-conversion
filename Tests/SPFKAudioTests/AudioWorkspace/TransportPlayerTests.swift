@@ -2,10 +2,11 @@
 
 import AVFoundation
 import Foundation
-@testable import SPFKAudio
 import SPFKBase
 import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.serialized, .tags(.realtime))
 final class TransportPlayerTests: TransportPlayerTestCase, @unchecked Sendable {
