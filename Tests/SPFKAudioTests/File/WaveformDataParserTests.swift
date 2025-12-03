@@ -29,9 +29,10 @@ class WaveformDataParserTests: BinTestCase {
 
     // parseBenchmark(loopCount:) (25 iterations) took 1.9919528333339258 seconds
     // parseBenchmark(loopCount:) (50 iterations) took 3.9790397083343123 seconds.
-    // (25 iterations) took 0.16357666666590376 seconds.
-    // (50 iterations) took 0.3170733750012005 seconds.
-    @Test(arguments: [25, 50]) func parseBenchmark(loopCount: Int) async throws {
+    // (25 iterations) took 0.09438795833557379 seconds.
+    // (50 iterations) took 0.18477883333252976 seconds.
+    // (1000 iterations) took 3.60180541666341 seconds.
+    @Test(arguments: [25, 50, 1000]) func parseBenchmark(loopCount: Int) async throws {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function) (\(loopCount) iterations)")
         defer { benchmark.stop() }
 

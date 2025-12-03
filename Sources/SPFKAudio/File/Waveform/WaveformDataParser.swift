@@ -96,25 +96,18 @@ extension WaveformDataParser {
         let url = audioFile.url
 
         var lastSentProgress: UnitInterval = 0
-
         func send(progress: UnitInterval) {
-            // don't send too many progress events
-            guard progress - lastSentProgress >= 0.06 else { return }
-
-            lastSentProgress = progress
-
-            // Log.debug(progress, url.lastPathComponent)
-
             eventHandler?(.loading(url: url, progress: progress))
         }
 
         let totalFrames = AVAudioFrameCount(audioFile.length)
+        let totalFramesDouble = Double(totalFrames)
 
         guard totalFrames > 0 else {
             throw NSError(description: "No audio was found in \(audioFile.url.path)")
         }
 
-        // >= 1
+        // will be >= 1
         let samplesPerPoint: Int = resolution.samplesPerPoint
 
         // analysis buffer size
@@ -131,6 +124,7 @@ extension WaveformDataParser {
         let channelCount = audioFile.fileFormat.channelCount.int
         var currentFrame: AVAudioFramePosition = 0
 
+        // allocates with all 0 values
         var outfloatChannelData = allocateFloatChannelData(length: chunkCount, channelCount: channelCount)
 
         var chunksSkipped: Set<Int> = .init()
@@ -157,10 +151,8 @@ extension WaveformDataParser {
 
             for n in 0 ..< channelCount {
                 let bufferPointer = UnsafeBufferPointer(start: rawData[n], count: frameCount)
-                let floatArray = [Float](bufferPointer)
-
-                let min = vDSP.minimum(floatArray)
-                let max = vDSP.maximum(floatArray)
+                let min: Float = vDSP.minimum(bufferPointer)
+                let max: Float = vDSP.maximum(bufferPointer)
                 let value = Float.maximumMagnitude(min, max)
 
                 if !value.isNaN {
@@ -177,9 +169,12 @@ extension WaveformDataParser {
                 guard framesPerBuffer > 0 else { break }
             }
 
-            send(progress: currentFrame.double / totalFrames.double)
+            let progress: UnitInterval = Double(currentFrame) / totalFramesDouble
 
-            await Task.yield()
+            if progress - lastSentProgress > 0.05 {
+                send(progress: progress)
+                lastSentProgress = progress
+            }
         }
 
         if chunksSkipped.isNotEmpty {
