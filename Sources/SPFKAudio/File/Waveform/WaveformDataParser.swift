@@ -24,10 +24,6 @@ public actor WaveformDataParser {
         self.eventHandler = eventHandler
     }
 
-    deinit {
-        Log.debug("- { WaveformDataParser }")
-    }
-
     public func parse(url: URL) async throws -> WaveformData {
         try await parse(audioFile: AVAudioFile(forReading: url))
     }
@@ -72,7 +68,9 @@ public actor WaveformDataParser {
             sampleRate: audioFile.fileFormat.sampleRate
         )
 
-        eventHandler?(.loaded(url: audioFile.url, waveformData: waveformData))
+        eventHandler?(
+            .loaded(url: audioFile.url, waveformData: waveformData)
+        )
 
         return waveformData
     }
@@ -91,8 +89,6 @@ public actor WaveformDataParser {
 
 extension WaveformDataParser {
     private func _parse(audioFile: AVAudioFile) async throws -> FloatChannelData {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
-
         guard resolution != .lossless else {
             return try await readEntire(audioFile: audioFile)
         }
@@ -102,12 +98,12 @@ extension WaveformDataParser {
         var lastSentProgress: UnitInterval = 0
 
         func send(progress: UnitInterval) {
+            // don't send too many progress events
             guard progress - lastSentProgress >= 0.06 else { return }
 
-            // don't send too many progress events
             lastSentProgress = progress
 
-            Log.debug(progress, url.lastPathComponent)
+            // Log.debug(progress, url.lastPathComponent)
 
             eventHandler?(.loading(url: url, progress: progress))
         }
@@ -118,17 +114,16 @@ extension WaveformDataParser {
             throw NSError(description: "No audio was found in \(audioFile.url.path)")
         }
 
+        // >= 1
         let samplesPerPoint: Int = resolution.samplesPerPoint
 
         // analysis buffer size
         var framesPerBuffer = AVAudioFrameCount(samplesPerPoint)
 
-        guard
-            let buffer = AVAudioPCMBuffer(
-                pcmFormat: audioFile.processingFormat,
-                frameCapacity: framesPerBuffer
-            ), buffer.frameCapacity > 0
-        else {
+        guard let buffer = AVAudioPCMBuffer(
+            pcmFormat: audioFile.processingFormat,
+            frameCapacity: framesPerBuffer
+        ) else {
             throw NSError(description: "Unable to create buffer")
         }
 
@@ -136,7 +131,7 @@ extension WaveformDataParser {
         let channelCount = audioFile.fileFormat.channelCount.int
         var currentFrame: AVAudioFramePosition = 0
 
-        var floatChannelData = newFloatChannelData(channelCount: channelCount, length: chunkCount)
+        var outfloatChannelData = allocateFloatChannelData(length: chunkCount, channelCount: channelCount)
 
         var chunksSkipped: Set<Int> = .init()
 
@@ -158,18 +153,18 @@ extension WaveformDataParser {
                 throw NSError(description: "Failed to read from buffer")
             }
 
-            for n in 0 ..< channelCount {
-                var value: Float = .nan
+            let frameCount = framesPerBuffer.int
 
-                let bufferPointer = UnsafeBufferPointer(start: rawData[n], count: framesPerBuffer.int)
+            for n in 0 ..< channelCount {
+                let bufferPointer = UnsafeBufferPointer(start: rawData[n], count: frameCount)
                 let floatArray = [Float](bufferPointer)
 
-                for item in floatArray {
-                    value = Float.maximumMagnitude(item, value)
-                }
+                let min = vDSP.minimum(floatArray)
+                let max = vDSP.maximum(floatArray)
+                let value = Float.maximumMagnitude(min, max)
 
                 if !value.isNaN {
-                    floatChannelData[n][i] = value
+                    outfloatChannelData[n][i] = value
                 }
             }
 
@@ -191,7 +186,7 @@ extension WaveformDataParser {
             Log.error("audioFile.read error skipped \(chunksSkipped.count)/\(chunkCount) chunks for \(url.path)")
         }
 
-        return floatChannelData
+        return outfloatChannelData
     }
 
     /// read the entire file into memory. should only be used on short files

@@ -60,7 +60,7 @@ public struct WaveformData: Hashable, Codable, Sendable {
         let endIndex = Int(endTime * samplesPerSecond)
         let editedCount = (endIndex - startIndex)
 
-        var subdata: FloatChannelData = newFloatChannelData(channelCount: channelCount, length: editedCount)
+        var subdata: FloatChannelData = allocateFloatChannelData(length: editedCount, channelCount: channelCount)
 
         var k = 0
 

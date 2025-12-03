@@ -10,9 +10,6 @@ import Testing
 @Suite(.tags(.file))
 class WaveformDataParserTests: BinTestCase {
     @Test func parse() async throws {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)")
-        defer { benchmark.stop() }
-
         let url = TestBundleResources.shared.tabla_6_channel
 
         let parser = WaveformDataParser(
@@ -27,6 +24,19 @@ class WaveformDataParserTests: BinTestCase {
 
         for channel in waveformData.floatChannelData {
             #expect(channel.count == 1315)
+        }
+    }
+
+    // parseBenchmark(loopCount:) (25 iterations) took 1.9919528333339258 seconds
+    // parseBenchmark(loopCount:) (50 iterations) took 3.9790397083343123 seconds.
+    // (25 iterations) took 0.16357666666590376 seconds.
+    // (50 iterations) took 0.3170733750012005 seconds.
+    @Test(arguments: [25, 50]) func parseBenchmark(loopCount: Int) async throws {
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function) (\(loopCount) iterations)")
+        defer { benchmark.stop() }
+
+        for _ in 0 ..< loopCount {
+            try await parse()
         }
     }
 
