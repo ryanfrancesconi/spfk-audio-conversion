@@ -38,13 +38,17 @@ let package = Package(
                 .product(name: "SPFKSoX", package: "spfk-sox"),
                 .product(name: "SPFKTime", package: "spfk-time"),
                 .product(name: "SPFKUtils", package: "spfk-utils"),
-            ]
+            ],
+            linkerSettings: [
+            ],
         ),
 
         .target(
             name: "SPFKAudioC",
             dependencies: [
+                .product(name: "SPFKLoudness", package: "spfk-loudness"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
+                .product(name: "SPFKSoX", package: "spfk-sox"),
             ],
             publicHeadersPath: "include",
             cSettings: [
@@ -52,7 +56,7 @@ let package = Package(
             ],
             cxxSettings: [
                 .headerSearchPath("include_private")
-            ]
+            ],
         ),
 
         .testTarget(
