@@ -1,8 +1,9 @@
 import AVFoundation
-@testable import SPFKAudio
-@testable import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 class LoopSchedulerTests {
     @Test func createSchedule() throws {
@@ -59,7 +60,7 @@ class LoopSchedulerTests {
             Log.debug(event)
 
             switch event {
-            case let .updated(times: times):
+            case .updated(times: let times):
                 #expect(times.count == count)
 
             case .complete:
@@ -68,13 +69,13 @@ class LoopSchedulerTests {
         }
 
         for i in 1 ... count {
-            guard let _ = scheduledLoop.next() else {
+            guard scheduledLoop.next() != nil else {
                 Issue.record("avTime is nil")
                 return
             }
 
             Log.debug(scheduledLoop.times.count)
-            
+
             let index = count - i
 
             // the times were reloaded with count more

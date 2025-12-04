@@ -1,8 +1,9 @@
 import AVFoundation
-@testable import SPFKAudio
-@testable import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.serialized, .tags(.file))
 class DynamicPCMBufferTests: BinTestCase {
@@ -11,7 +12,7 @@ class DynamicPCMBufferTests: BinTestCase {
         let buffer = try DynamicPCMBuffer(url: url)
 
         #expect(buffer.channelCount == 2)
-        #expect(buffer.frameLength == 210900)
+        #expect(buffer.frameLength == 210_900)
         #expect(buffer.format == AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2))
         #expect(buffer.rms == 0.05196464)
 
