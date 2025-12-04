@@ -6,19 +6,19 @@ import PackageDescription
 let name: String = "SPFKAudio" // Swift target + package name
 var localDependencies: [RemoteDependency] { [
     .init(package: .package(url: "\(githubBase)/SPFKAudioHardware", from: "0.0.1"),
-          product: .product(name: "SPFKAudioHardware", package: "SPFKAudioHardware")),
+          product: .product(name: "SPFKAudioHardware", package: "spfk-audio-hardware")),
     .init(package: .package(url: "\(githubBase)/SPFKLoudness", from: "0.0.1"),
-          product: .product(name: "SPFKLoudness", package: "SPFKLoudness")),
+          product: .product(name: "SPFKLoudness", package: "spfk-loudness")),
     .init(package: .package(url: "\(githubBase)/SPFKMetadata", from: "0.0.1"),
-          product: .product(name: "SPFKMetadata", package: "SPFKMetadata")),
+          product: .product(name: "SPFKMetadata", package: "spfk-metadata")),
     .init(package: .package(url: "\(githubBase)/SPFKSoX", from: "0.0.1"),
-          product: .product(name: "SPFKSoX", package: "SPFKSoX")),
+          product: .product(name: "SPFKSoX", package: "spfk-sox")),
     .init(package: .package(url: "\(githubBase)/SPFKTesting", from: "0.0.1"),
-          product: .product(name: "SPFKTesting", package: "SPFKTesting")),
+          product: .product(name: "SPFKTesting", package: "spfk-testing")),
     .init(package: .package(url: "\(githubBase)/SPFKTime", from: "0.0.1"),
-          product: .product(name: "SPFKTime", package: "SPFKTime")),
+          product: .product(name: "SPFKTime", package: "spfk-time")),
     .init(package: .package(url: "\(githubBase)/SPFKUtils", from: "0.0.1"),
-          product: .product(name: "SPFKUtils", package: "SPFKUtils")),
+          product: .product(name: "SPFKUtils", package: "spfk-utils")),
 ] }
 
 let remoteDependencies: [RemoteDependency] = []

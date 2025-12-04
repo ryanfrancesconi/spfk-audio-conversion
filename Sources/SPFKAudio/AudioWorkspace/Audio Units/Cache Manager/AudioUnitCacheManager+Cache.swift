@@ -11,7 +11,7 @@ extension AudioUnitCacheManager {
         AudioUnitCacheManager.compatibleComponents.count != cachedComponentCount
     }
 
-    func cacheDocument() throws -> AEXMLDocument {
+    private func cacheDocument() throws -> AEXMLDocument {
         guard let cacheURL else {
             throw NSError(description: "*AU nil cache URL")
         }

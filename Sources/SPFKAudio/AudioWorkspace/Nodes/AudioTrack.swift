@@ -39,7 +39,12 @@ extension AudioTrack: AudioUnitChainDelegate {
     }
 
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
-        delegate?.availableAudioUnitComponents
+        guard let delegate else {
+            assertionFailure("delegate is nil")
+            return []
+        }
+
+        return delegate.availableAudioUnitComponents
     }
 }
 

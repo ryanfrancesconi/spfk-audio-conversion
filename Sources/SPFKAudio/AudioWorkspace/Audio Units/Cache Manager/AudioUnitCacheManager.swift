@@ -112,10 +112,10 @@ public actor AudioUnitCacheManager {
     }
 
     /// load effects cache document
-    public func load() async throws -> ComponentCollection {
+    public func load() async throws {
         // already loaded
-        if let componentCollection {
-            return componentCollection
+        guard componentCollection == nil else {
+            return
         }
 
         // request plugins
@@ -131,7 +131,10 @@ public actor AudioUnitCacheManager {
         switch result {
         case let .success(value):
             systemComponentsResponse = value
+
         case let .failure(error):
+            Log.error(error)
+
             throw error
         }
 
@@ -143,8 +146,6 @@ public actor AudioUnitCacheManager {
         await send(event: .cacheLoaded(systemComponentsResponse))
 
         cacheObservation.start()
-
-        return componentCollection
     }
 
     func send(event: AudioUnitCacheEvent) async {
