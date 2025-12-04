@@ -9,7 +9,7 @@ import Testing
 @testable import SPFKAudio
 
 @Suite(.serialized, .tags(.realtime))
-final class AudioUnitChainTests: AudioPlayerTestCase {
+final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
     @Test func findEffects() async throws {
         let components = [
             AVAudioUnitComponent.component(matching: auDelayDesc),

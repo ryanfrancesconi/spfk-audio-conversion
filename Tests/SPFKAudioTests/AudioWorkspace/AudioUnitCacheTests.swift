@@ -10,10 +10,8 @@ import Testing
 @testable import SPFKAudio
 
 @Suite(.serialized, .tags(.realtime))
-final class AudioUnitCacheTests: BinTestCase {
-    lazy var manager = AudioUnitCacheManager(cachesDirectory: bin) { event in
-        Log.debug(event)
-    }
+final class AudioUnitCacheTests: BinTestCase, @unchecked Sendable {
+    lazy var manager = AudioUnitCacheManager(cachesDirectory: bin)
 
     override init() async {
         await super.init()
@@ -31,11 +29,11 @@ final class AudioUnitCacheTests: BinTestCase {
 
     let cacheDocument: AEXMLDocument? = {
         let string = """
-            <effects cachedComponentCount="339">
-                <au componentFlags="2" componentFlagsMask="0" componentManufacturer="1634758764" componentSubType="1752393830" componentType="1635083896" isEnabled="true" manufacturerName="Apple" name="AUHighShelfFilter" typeName="Effect" validation="Passed" version="1.6.0" />
-                <au componentFlags="2" componentFlagsMask="0" componentManufacturer="1634758764" componentSubType="1684368505" componentType="1635083896" isEnabled="true" manufacturerName="Apple" name="AUDelay" typeName="Effect" validation="Passed" version="1.6.0" />
-            </effects>
-            """
+        <effects cachedComponentCount="339">
+            <au componentFlags="2" componentFlagsMask="0" componentManufacturer="1634758764" componentSubType="1752393830" componentType="1635083896" isEnabled="true" manufacturerName="Apple" name="AUHighShelfFilter" typeName="Effect" validation="Passed" version="1.6.0" />
+            <au componentFlags="2" componentFlagsMask="0" componentManufacturer="1634758764" componentSubType="1684368505" componentType="1635083896" isEnabled="true" manufacturerName="Apple" name="AUDelay" typeName="Effect" validation="Passed" version="1.6.0" />
+        </effects>
+        """
 
         return try? AEXMLDocument(fromString: string)
     }()
@@ -60,4 +58,8 @@ final class AudioUnitCacheTests: BinTestCase {
     }
 }
 
-extension AudioUnitCacheTests {}
+extension AudioUnitCacheTests: AudioUnitCacheManagerDelegate {
+    func handleAudioUnitCacheManager(event: AudioUnitCacheEvent) async {
+        Log.debug(event)
+    }
+}

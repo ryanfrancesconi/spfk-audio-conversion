@@ -44,9 +44,7 @@ let package = Package(
         .target(
             name: "SPFKAudioC",
             dependencies: [
-                .product(name: "SPFKLoudness", package: "spfk-loudness"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
-                .product(name: "SPFKSox", package: "spfk-sox"),
             ],
             publicHeadersPath: "include",
             cSettings: [
