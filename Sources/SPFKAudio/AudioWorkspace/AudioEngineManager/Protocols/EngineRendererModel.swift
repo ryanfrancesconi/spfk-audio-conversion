@@ -26,7 +26,7 @@ extension EngineRendererModel {
         prerender: @escaping (@Sendable () throws -> Void),
         postrender: (@Sendable () throws -> Void)?,
         progressHandler: (@Sendable (UnitInterval) -> Void)?,
-        disableManualRenderingModeOnCompletion: Bool
+        disableManualRenderingModeOnCompletion: Bool = true
     ) async throws {
         let audioFile = try AVAudioFile(forWriting: url, settings: settings)
 

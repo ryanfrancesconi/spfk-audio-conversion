@@ -7,9 +7,9 @@ import SPFKBase
 import SwiftExtensions
 
 public actor AudioUnitCacheManager {
-    public var eventHandler: ((AudioUnitCacheEvent) -> Void)?
-    public func update(eventHandler: ((AudioUnitCacheEvent) -> Void)?) {
-        self.eventHandler = eventHandler
+    public weak var delegate: AudioUnitCacheManagerDelegate?
+    public func update(delegate: AudioUnitCacheManagerDelegate?) {
+        self.delegate = delegate
     }
 
     /// Where it writes its xml cache file. Can be set to an alternate directory for testing.
@@ -52,6 +52,14 @@ public actor AudioUnitCacheManager {
     /// All results including effects that are incompatible
     public var componentCollection: ComponentCollection?
 
+    public func update(componentCollectionResult result: ComponentValidationResult) {
+        componentCollection?.update(result: result)
+    }
+
+    public func update(audioComponentDescription: AudioComponentDescription, isEnabled: Bool) {
+        componentCollection?.update(audioComponentDescription: audioComponentDescription, isEnabled: isEnabled)
+    }
+
     /// Task to abort scanning
     var scanTask: Task<[ComponentValidationResult], Error>?
 
@@ -80,9 +88,9 @@ public actor AudioUnitCacheManager {
 
     var cacheObservation: AudioUnitCacheObservation = .init()
 
-    public init(cachesDirectory: URL? = nil, eventHandler: ((AudioUnitCacheEvent) -> Void)? = nil) {
+    public init(cachesDirectory: URL? = nil, delegate: AudioUnitCacheManagerDelegate? = nil) {
         self.cachesDirectory = cachesDirectory
-        self.eventHandler = eventHandler
+        self.delegate = delegate
     }
 
     public func dispose() {
@@ -140,6 +148,10 @@ public actor AudioUnitCacheManager {
     }
 
     func send(event: AudioUnitCacheEvent) async {
-        eventHandler?(event)
+        await delegate?.handleAudioUnitCacheManager(event: event)
     }
+}
+
+public protocol AudioUnitCacheManagerDelegate: AnyObject, Sendable {
+    func handleAudioUnitCacheManager(event: AudioUnitCacheEvent) async
 }

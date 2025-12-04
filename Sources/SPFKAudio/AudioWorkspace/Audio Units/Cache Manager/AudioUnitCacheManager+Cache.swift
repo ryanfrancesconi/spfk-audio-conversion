@@ -12,7 +12,7 @@ extension AudioUnitCacheManager {
     }
 
     func cacheDocument() throws -> AEXMLDocument {
-        guard let cacheURL, cacheURL.exists else {
+        guard let cacheURL else {
             throw NSError(description: "*AU nil cache URL")
         }
 

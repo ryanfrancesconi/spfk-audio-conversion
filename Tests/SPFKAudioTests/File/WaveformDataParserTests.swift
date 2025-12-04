@@ -9,12 +9,15 @@ import Testing
 
 @Suite(.tags(.file))
 class WaveformDataParserTests: BinTestCase {
+    let delegateContainer = DelegateContainer()
+
     @Test func parse() async throws {
         let url = TestBundleResources.shared.tabla_6_channel
 
         let parser = WaveformDataParser(
             resolution: .low,
-            priority: .medium
+            priority: .medium,
+            delegate: nil
         )
 
         let waveformData = try await parser.parse(url: url)
@@ -27,14 +30,11 @@ class WaveformDataParserTests: BinTestCase {
         }
     }
 
-    // parseBenchmark(loopCount:) (25 iterations) took 1.9919528333339258 seconds
-    // parseBenchmark(loopCount:) (50 iterations) took 3.9790397083343123 seconds.
-    // (25 iterations) took 0.09438795833557379 seconds.
-    // (50 iterations) took 0.18477883333252976 seconds.
-    // (1000 iterations) took 3.60180541666341 seconds.
-    @Test(arguments: [25, 50, 1000]) func parseBenchmark(loopCount: Int) async throws {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function) (\(loopCount) iterations)")
-        defer { benchmark.stop() }
+    // (25 iterations) took 0.09867474999919068 seconds.
+    // (50 iterations) took 0.19027300000016112 seconds.
+    // (1000 iterations) took 3.5749457916608662 seconds.
+    @Test(arguments: [25, 50, 1000]) func parseWithBenchmark(loopCount: Int) async throws {
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function) (\(loopCount) iterations)"); defer { benchmark.stop() }
 
         for _ in 0 ..< loopCount {
             try await parse()
@@ -54,7 +54,8 @@ class WaveformDataParserTests: BinTestCase {
 
         let parser = WaveformDataParser(
             resolution: .lossless,
-            priority: .medium
+            priority: .medium,
+            delegate: delegateContainer
         )
 
         let waveformData = try await parser.parse(url: url)
@@ -71,21 +72,13 @@ class WaveformDataParserTests: BinTestCase {
         let input = TestBundleResources.shared.tabla_6_channel
 
         let parser = WaveformDataParser(
-            resolution: .low,
-            priority: .low
-        ) { event in
-            switch event {
-            case .loading:
-                break
-
-            case .loaded(url: let url, waveformData: _):
-                Log.debug("complete", url.lastPathComponent)
-                Issue.record("shouldn't trigger")
-            }
-        }
+            resolution: .lossless,
+            priority: .low,
+            delegate: delegateContainer
+        )
 
         Task {
-            try await Task.sleep(seconds: 0.02)
+            try await Task.sleep(seconds: 0.005)
             await parser.cancel()
         }
 
@@ -114,64 +107,14 @@ class WaveformDataParserTests: BinTestCase {
     }
 }
 
-// MARK: - Experiments
+final class DelegateContainer: WaveformDataParserDelegate {
+    func waveformDataParser(event: WaveformDataLoadEvent) async {
+        switch event {
+        case let .loading(url: url, progress: progress):
+            Log.debug(url.path, progress)
 
-extension WaveformDataParserTests {
-    // The `getAudioSamples` function returns the naturtal time scale and
-    // an array of single-precision values that represent an audio resource.
-    static func getAssetSamples(url: URL) async throws -> [Float] {
-        let asset = AVAsset(url: url)
-
-        let reader = try AVAssetReader(asset: asset)
-
-        guard let track = try await asset.load(.tracks).first else {
-            throw NSError(description: "didn't find an asset track")
+        case .loaded(let url, waveformData: _):
+            Log.debug("complete", url.lastPathComponent)
         }
-
-        let outputSettings: [String: Int] = [
-            AVFormatIDKey: Int(kAudioFormatLinearPCM),
-            AVNumberOfChannelsKey: 1,
-            AVLinearPCMIsBigEndianKey: 0,
-            AVLinearPCMIsFloatKey: 1,
-            AVLinearPCMBitDepthKey: 32,
-            AVLinearPCMIsNonInterleaved: 1,
-        ]
-
-        let output = AVAssetReaderTrackOutput(
-            track: track,
-            outputSettings: outputSettings
-        )
-
-        reader.add(output)
-        reader.startReading()
-
-        var samplesData = [Float]()
-
-        while reader.status == .reading {
-            guard let sampleBuffer = output.copyNextSampleBuffer(),
-                  let dataBuffer = CMSampleBufferGetDataBuffer(sampleBuffer)
-            else {
-                throw NSError(description: "failed to copyNextSampleBuffer")
-            }
-
-            let bufferLength = CMBlockBufferGetDataLength(dataBuffer)
-            let count = bufferLength / 4
-
-            let data = [Float](unsafeUninitializedCapacity: count) { buffer, initializedCount in
-
-                CMBlockBufferCopyDataBytes(
-                    dataBuffer,
-                    atOffset: 0,
-                    dataLength: bufferLength,
-                    destination: buffer.baseAddress!
-                )
-
-                initializedCount = count
-            }
-
-            samplesData.append(contentsOf: data)
-        }
-
-        return samplesData
     }
 }

@@ -20,7 +20,7 @@ public struct WaveformData: Hashable, Codable, Sendable {
     }
 
     public init(
-        floatChannelData: FloatChannelData = [[]],
+        floatChannelData: FloatChannelData = .init(),
         samplesPerPoint: Int = 0,
         audioDuration: TimeInterval = 0,
         sampleRate: Double = 0
