@@ -34,8 +34,6 @@ let package = Package(
                 .product(name: "SPFKTime", package: "spfk-time"),
                 .product(name: "SPFKUtils", package: "spfk-utils"),
             ],
-            linkerSettings: [
-            ],
         ),
         .target(
             name: "SPFKAudioC",

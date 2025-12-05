@@ -69,8 +69,6 @@ public struct WaveformData: Hashable, Codable, Sendable {
                 subdata[n][k] = floatChannelData[n][i]
             }
 
-            try Task.checkCancellation()
-
             k += 1
         }
 
