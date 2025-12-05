@@ -1,9 +1,9 @@
-
 import AVFoundation
-@testable import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.tags(.file))
 class WaveformDataTests {
@@ -35,7 +35,8 @@ class WaveformDataTests {
     }
 
     @Test func subdata() throws {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)")
+        defer { benchmark.stop() }
 
         let subdata = try waveformData.subdata(in: 0.1 ... 0.2)
 
