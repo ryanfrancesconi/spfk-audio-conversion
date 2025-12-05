@@ -6,16 +6,11 @@ import PackageDescription
 let package = Package(
     name: "spfk-audio",
     defaultLocalization: "en",
-    platforms: [
-        .macOS(.v12),
-    ],
+    platforms: [.macOS(.v12),],
     products: [
         .library(
             name: "SPFKAudio",
-            targets: [
-                "SPFKAudio",
-                "SPFKAudioC",
-            ]
+            targets: ["SPFKAudio", "SPFKAudioC",]
         ),
     ],
     dependencies: [
@@ -31,7 +26,7 @@ let package = Package(
         .target(
             name: "SPFKAudio",
             dependencies: [
-                "SPFKAudioC",
+                .targetItem(name: "SPFKAudioC", condition: nil),
                 .product(name: "SPFKAudioHardware", package: "spfk-audio-hardware"),
                 .product(name: "SPFKLoudness", package: "spfk-loudness"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
@@ -42,7 +37,6 @@ let package = Package(
             linkerSettings: [
             ],
         ),
-
         .target(
             name: "SPFKAudioC",
             dependencies: [
@@ -58,12 +52,11 @@ let package = Package(
                 .headerSearchPath("include_private")
             ],
         ),
-
         .testTarget(
             name: "SPFKAudioTests",
             dependencies: [
-                "SPFKAudio",
-                "SPFKAudioC",
+                .targetItem(name: "SPFKAudio", condition: nil),
+                .targetItem(name: "SPFKAudioC", condition: nil),
                 .product(name: "SPFKTesting", package: "spfk-testing"),
             ],
             swiftSettings: [
