@@ -150,9 +150,12 @@ extension WaveformDataParser {
 
             for n in 0 ..< channelCount {
                 let bufferPointer = UnsafeBufferPointer(start: rawData[n], count: frameCount)
+
                 let min: Float = vDSP.minimum(bufferPointer)
                 let max: Float = vDSP.maximum(bufferPointer)
                 let value = Float.maximumMagnitude(min, max)
+
+                // let value = vDSP.rootMeanSquare(bufferPointer)
 
                 if !value.isNaN {
                     outfloatChannelData[n][i] = value
