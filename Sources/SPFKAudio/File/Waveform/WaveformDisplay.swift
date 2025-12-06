@@ -16,3 +16,26 @@ public enum WaveformDisplay: Sendable, Codable {
 
     public var maximum: Float { 1 }
 }
+
+public enum WaveformQuality: CGFloat, CaseIterable, Sendable, Codable {
+    case minimum = 1
+    case low = 2
+    case medium = 5
+    case high = 8
+    case maximum = 10
+
+    public var label: String {
+        switch self {
+        case .minimum:
+            "Minimum"
+        case .low:
+            "Low"
+        case .medium:
+            "Medium"
+        case .high:
+            "High"
+        case .maximum:
+            "Maximum"
+        }
+    }
+}
