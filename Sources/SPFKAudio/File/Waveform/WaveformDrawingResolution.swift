@@ -37,10 +37,13 @@ public enum WaveformDrawingResolution: CaseIterable, Equatable, Codable, Sendabl
         case 2 ..< 10:
             self = .veryHigh
 
-        case 10 ..< 20:
+        case 10 ..< 60:
             self = .high
 
-        case 20...:
+        case 60 ..< 120:
+            self = .high
+
+        case 120...:
             self = .medium
 
         default:
