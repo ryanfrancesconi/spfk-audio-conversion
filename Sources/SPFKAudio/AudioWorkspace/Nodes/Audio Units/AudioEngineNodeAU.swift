@@ -1,14 +1,15 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 // Inspired by AudioKit's implementation. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AudioToolbox
 import AVFoundation
+import SPFKAUHost
 
-public protocol EngineNodeAU: EngineNode {
+public protocol AudioEngineNodeAU: AudioEngineNode {
     var avAudioNode: AVAudioNode { get }
 }
 
-extension EngineNodeAU {
+extension AudioEngineNodeAU {
     /// All parameters on the Node
     public var parameters: [NodeParameter] {
         let mirror = Mirror(reflecting: self)

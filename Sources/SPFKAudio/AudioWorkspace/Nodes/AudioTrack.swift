@@ -1,6 +1,7 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import AVFoundation
+import SPFKAUHost
 import SPFKBase
 
 public final class AudioTrack: @unchecked Sendable {
@@ -34,7 +35,7 @@ extension AudioTrack: AudioUnitChainDelegate {
         try await delegate?.connectAndAttach(node1, to: node2, format: format)
     }
 
-    public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChain.Event) {
+    public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChainEvent) {
         Log.debug(event)
     }
 
@@ -48,7 +49,7 @@ extension AudioTrack: AudioUnitChainDelegate {
     }
 }
 
-extension AudioTrack: EngineNode {
+extension AudioTrack: AudioEngineNode {
     public var inputNode: AVAudioNode? { mixer.avAudioNode }
     public var outputNode: AVAudioNode? { fader.avAudioNode }
 }

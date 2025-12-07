@@ -1,12 +1,13 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 // Heavily based on the AudioKit version. All Rights Reserved. Revision History at http://github.com/AudioKit/AudioKit/
 
 import AVFoundation
 import SPFKAudioBase
 import SPFKAudioC
+import SPFKAUHost
 import SPFKBase
 
-extension Fader: EngineNode {
+extension Fader: AudioEngineNode {
     public var inputNode: AVAudioNode? { avAudioNode }
     public var outputNode: AVAudioNode? { avAudioNode }
 
@@ -17,7 +18,7 @@ extension Fader: EngineNode {
 }
 
 /// Stereo Fader.
-public class Fader: EngineNodeAU, TypeDescribable {
+public class Fader: AudioEngineNodeAU, TypeDescribable {
     public static let version: UInt32 = 1
 
     public private(set) var audioComponentDescription: AudioComponentDescription

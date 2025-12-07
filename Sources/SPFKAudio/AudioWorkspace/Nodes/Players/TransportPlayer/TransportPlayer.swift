@@ -1,8 +1,9 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import AppKit
 import AVFoundation
 import Foundation
+import SPFKAUHost
 import SPFKBase
 import SPFKTime
 
@@ -193,7 +194,7 @@ extension TransportPlayer {
     }
 }
 
-extension TransportPlayer: EngineNode {
+extension TransportPlayer: AudioEngineNode {
     public var inputNode: AVAudioNode? { mixer.inputNode }
     public var outputNode: AVAudioNode? { mixer.outputNode }
 }

@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import SPFKBase
+import SPFKAUHost
 
 public protocol AudioEngineManagerModel: AnyObject,
     AudioEngineConnection,

@@ -1,10 +1,11 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import AVFoundation
+import SPFKAUHost
 import SPFKBase
 
 /// An audio player which is associated with a single file
-open class FilePlayer: EngineNodeAU, Mixable, @unchecked Sendable {
+open class FilePlayer: AudioEngineNodeAU, Mixable, @unchecked Sendable {
     // MARK: - Node
 
     public var avAudioNode: AVAudioNode { playerNode }
@@ -29,7 +30,7 @@ open class FilePlayer: EngineNodeAU, Mixable, @unchecked Sendable {
     }
 
     public var sampleRate: Double? {
-        return audioFile?.fileFormat.sampleRate
+        audioFile?.fileFormat.sampleRate
     }
 
     /// - Returns: The current frame while playing. It will return 0 on error.
@@ -58,7 +59,7 @@ open class FilePlayer: EngineNodeAU, Mixable, @unchecked Sendable {
 
     /// The duration of the loaded audio file
     public var duration: TimeInterval? {
-        return audioFile?.duration
+        audioFile?.duration
     }
 
     public var editedDuration: TimeInterval? {
@@ -168,7 +169,7 @@ open class FilePlayer: EngineNodeAU, Mixable, @unchecked Sendable {
     }
 }
 
-extension FilePlayer: EngineNode {
+extension FilePlayer: AudioEngineNode {
     public var outputNode: AVAudioNode? { playerNode }
 
     public func detachNodes() throws {

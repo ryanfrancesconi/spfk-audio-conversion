@@ -1,13 +1,14 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import AVFoundation
+import SPFKAUHost
 
-extension MixerWrapper: EngineNode {
+extension MixerWrapper: AudioEngineNode {
     public var inputNode: AVAudioNode? { mixerNode }
     public var outputNode: AVAudioNode? { mixerNode }
 }
 
-extension MixerWrapper: EngineNodeAU {
+extension MixerWrapper: AudioEngineNodeAU {
     public var avAudioNode: AVAudioNode { mixerNode }
 }
 
@@ -58,6 +59,5 @@ public class MixerWrapper: Mixable {
         }
     }
 
-    public init() {
-    }
+    public init() {}
 }

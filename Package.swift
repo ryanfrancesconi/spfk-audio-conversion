@@ -14,6 +14,8 @@ let package = Package(
         ),
     ],
     dependencies: [
+        .package(url: "https://github.com/ryanfrancesconi/spfk-au-host", branch: "development"),
+
         .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", branch: "development"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-loudness", branch: "development"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", branch: "development"),
@@ -27,6 +29,8 @@ let package = Package(
             name: "SPFKAudio",
             dependencies: [
                 .targetItem(name: "SPFKAudioC", condition: nil),
+
+                .product(name: "SPFKAUHost", package: "spfk-au-host"),
                 .product(name: "SPFKAudioHardware", package: "spfk-audio-hardware"),
                 .product(name: "SPFKLoudness", package: "spfk-loudness"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),

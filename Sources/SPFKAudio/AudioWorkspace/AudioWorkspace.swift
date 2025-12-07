@@ -1,4 +1,5 @@
 import AVFoundation
+import SPFKAUHost
 import SPFKUtils
 
 public final class AudioWorkspace: @unchecked Sendable {
@@ -90,7 +91,7 @@ extension AudioWorkspace: AudioEngineConnection {
 }
 
 extension AudioWorkspace: AudioUnitChainDelegate {
-    public func audioUnitChain(_: AudioUnitChain, event: AudioUnitChain.Event) {
+    public func audioUnitChain(_: AudioUnitChain, event: AudioUnitChainEvent) {
         Log.debug(event)
     }
 
@@ -168,7 +169,7 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
 extension AudioWorkspace {
     func handleConfigurationChanged(options: Set<AudioDeviceManager.ConfigurationOption>) throws {
         guard let delegate else { return }
-        
+
         Task { @MainActor in
             if options.contains(.sampleRateChanged) {
                 await delegate.audioWorkspaceShouldRebuild(self)

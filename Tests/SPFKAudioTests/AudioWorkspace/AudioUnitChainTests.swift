@@ -1,7 +1,8 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import AVFoundation
 import Foundation
+import SPFKAUHost
 import SPFKBase
 import SPFKTesting
 import Testing
@@ -14,7 +15,7 @@ final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
         let components = [
             AVAudioUnitComponent.component(matching: auDelayDesc),
             AVAudioUnitComponent.component(matching: auMatrixReverbDesc),
-        ].compactMap { $0 }
+        ].compactMap(\.self)
 
         #expect(components.count == 2)
     }
@@ -49,7 +50,8 @@ final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
 
         await #expect(throws: (any Error).self) {
             try await audioUnitChain.insertAudioUnit(
-                componentDescription: self.auDelayDesc, at: audioUnitChain.insertCount + 1)
+                componentDescription: self.auDelayDesc, at: audioUnitChain.insertCount + 1
+            )
         }
     }
 }
