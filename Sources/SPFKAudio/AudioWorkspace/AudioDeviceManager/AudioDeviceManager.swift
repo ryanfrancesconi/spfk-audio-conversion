@@ -50,8 +50,12 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
 
         try await registerNotifications()
 
-        guard let deviceSampleRate = await selectedOutputDevice?.nominalSampleRate else {
-            throw NSError(description: "Failed to get device sample rate")
+        guard let selectedOutputDevice = await selectedOutputDevice else {
+            throw NSError(description: "Failed to get selectedOutputDevice")
+        }
+
+        guard let deviceSampleRate = selectedOutputDevice.nominalSampleRate else {
+            throw NSError(description: "\(selectedOutputDevice.nameAndID): Failed to get sample rate")
         }
 
         try await update(systemSampleRate: deviceSampleRate)

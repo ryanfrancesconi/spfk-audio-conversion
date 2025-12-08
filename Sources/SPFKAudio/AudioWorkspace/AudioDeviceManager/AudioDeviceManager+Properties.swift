@@ -8,7 +8,7 @@ import SPFKBaseC
 
 extension AudioDeviceManager {
     public var bufferSize: UInt32 {
-        256 //_bufferSize
+        256 // _bufferSize
     }
 
     public var systemFormat: AVAudioFormat {
@@ -27,17 +27,20 @@ extension AudioDeviceManager {
 
     public var selectedInputDevice: AudioDevice? {
         get async {
-            guard await deviceSettings.allowInput else { return nil }
-
-            return await hardware.defaultInputDevice
+            await hardware.defaultInputDevice
         }
     }
 
     public var selectedOutputDevice: AudioDevice? {
         get async {
-            await allowInput ?
-                await hardware.defaultOutputDevice :
-                deviceSettingsOutputDevice
+            let defaultDevice = await defaultOutputDevice
+            let preferenceDevice = await deviceSettingsOutputDevice
+
+            guard await !allowInput else {
+                return defaultDevice
+            }
+
+            return preferenceDevice ?? defaultDevice
         }
     }
 
