@@ -21,6 +21,8 @@ final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
     }
 
     @Test func insert() async throws {
+        try await wait(sec: 4)
+
         try await setup()
 
         let audioUnitChain = try #require(audioUnitChain)
@@ -42,6 +44,8 @@ final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
         try await wait(sec: 2)
 
         try audioWorkspace.stop()
+
+        try await wait(sec: 4)
     }
 
     @Test func insertOutOfBounds() async throws {

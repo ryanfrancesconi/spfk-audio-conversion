@@ -1,5 +1,5 @@
 import AVFoundation
-import OSLog
+import os.signpost
 import SPFKBase
 import SPFKTesting
 import Testing
@@ -8,8 +8,6 @@ import Testing
 
 @Suite(.tags(.file))
 class WaveformDataTests: TestCaseModel {
-    let log = OSLog(subsystem: "com.spongefork.*", category: "PointsOfInterest")
-
     let waveformData: WaveformData = {
         let duration: TimeInterval = 60 * 2 // 2 minutes
         let sampleRate: Double = 44100
@@ -68,11 +66,10 @@ extension WaveformDataTests {
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)")
         defer { benchmark.stop() }
 
-        //let url = TestBundleResources.shared.tabla_6_channel
+        // let url = TestBundleResources.shared.tabla_6_channel
         let url = URL(fileURLWithPath: "/Users/rf/Downloads/TestResources/Home Economics.wav")
 
-        os_signpost(.begin, log: log, name: "parse")
-
+        Log.signpost(.begin, name: "parse")
         let parser = WaveformDataParser(
             resolution: .medium,
             priority: .medium,
@@ -80,14 +77,13 @@ extension WaveformDataTests {
         )
 
         let waveformData = try await parser.parse(url: url)
-        os_signpost(.end, log: log, name: "parse")
-
         #expect(waveformData.channelCount == 2)
+        Log.signpost(.end, name: "parse")
 
-        os_signpost(.begin, log: log, name: "subdata")
+        Log.signpost(.begin, name: "subdata")
         let subdata = try waveformData.subdata(in: 0 ... waveformData.audioDuration / 2)
-        os_signpost(.end, log: log, name: "subdata")
-
         #expect(subdata.count == 2)
+        Log.signpost(.end, name: "subdata")
+
     }
 }

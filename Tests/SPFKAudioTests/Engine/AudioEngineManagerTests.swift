@@ -3,8 +3,8 @@
 import AVFoundation
 import Foundation
 import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @Suite(.serialized, .tags(.engine))
@@ -31,7 +31,7 @@ extension AudioEngineManagerTests: AudioEngineManagerDelegate {
     func audioEngineManagerAllowInputDevice() -> Bool {
         true
     }
-    
+
     func audioEngineManager(event: SPFKAudio.AudioEngineManager.Event) {
         Log.debug(event)
     }

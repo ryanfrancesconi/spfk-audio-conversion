@@ -42,8 +42,10 @@ extension AudioEngineManager: AudioEngineConnection {
             throw NSError(description: "Unable to determine systemFormat from deviceManager")
         }
 
-        try ExceptionTrap.withThrowing { [engine] in
-            engine.connectAndAttach(node1, to: node2, format: format)
+        try ExceptionTrap.withThrowing { [weak self] in
+            self?.engine.connectAndAttach(node1, to: node2, format: format)
         }
+
+//        engine.connectAndAttach(node1, to: node2, format: format)
     }
 }

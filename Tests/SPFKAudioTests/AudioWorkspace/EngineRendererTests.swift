@@ -71,16 +71,21 @@ final class EngineRendererTests: AudioPlayerTestCase {
 
     @Test(arguments: [TestFormat.pcmFormatFloat32, TestFormat.pcmFormatInt24])
     func renderUntilSilent(format: TestFormat) async throws {
+        try await wait(sec: 4)
+
         deleteBinOnExit = false
         try await setup()
         guard let player else { return }
         try player.load(url: TestBundleResources.shared.tabla_wav)
         let url = try createFile(name: #function, format: format)
+
+        Log.signpost(.begin, name: "render")
         let audioFile = try await render(player: player, to: url, format: format, duration: 2, renderUntilSilent: true)
 
         Log.debug("rendered duration is", audioFile.duration)
 
         #expect(audioFile.duration.isApproximatelyEqual(to: 2.3, absoluteTolerance: 0.1))
+        Log.signpost(.end, name: "render")
     }
 
     @Test(arguments: [TestFormat.pcmFormatFloat32, TestFormat.pcmFormatInt24])
