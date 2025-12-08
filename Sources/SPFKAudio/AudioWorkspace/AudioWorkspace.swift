@@ -91,11 +91,15 @@ extension AudioWorkspace: AudioEngineConnection {
 }
 
 extension AudioWorkspace: AudioUnitChainDelegate {
-    public func audioUnitChain(_: AudioUnitChain, event: AudioUnitChainEvent) {
+    public func audioUnitChain(_ audioUnitChain: AudioUnitChain, event: AudioUnitChainEvent) {
         Log.debug(event)
     }
 
     public var availableAudioUnitComponents: [AVAudioUnitComponent]? {
+        [] // TODO: AudioUnitCacheManager
+    }
+
+    public var audioUnitManufactererCollection: [AudioUnitManufacturerCollection] {
         [] // TODO: AudioUnitCacheManager
     }
 }

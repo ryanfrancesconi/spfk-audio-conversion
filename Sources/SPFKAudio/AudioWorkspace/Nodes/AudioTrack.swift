@@ -47,6 +47,15 @@ extension AudioTrack: AudioUnitChainDelegate {
 
         return delegate.availableAudioUnitComponents
     }
+    
+    public var audioUnitManufactererCollection: [AudioUnitManufacturerCollection] {
+        guard let delegate else {
+            assertionFailure("delegate is nil")
+            return []
+        }
+
+        return delegate.audioUnitManufactererCollection
+    }
 }
 
 extension AudioTrack: AudioEngineNode {
