@@ -15,7 +15,7 @@ class AudioPlayerTestCase: AudioWorkspaceTestCase {
     override func setup() async throws {
         try await super.setup()
 
-        let masterMixer = try #require(audioWorkspace.master?.mixer)
+        let masterMixer = try #require(audioWorkspace.masterTrack?.mixer)
 
         let player = FilePlayer()
         self.player = player

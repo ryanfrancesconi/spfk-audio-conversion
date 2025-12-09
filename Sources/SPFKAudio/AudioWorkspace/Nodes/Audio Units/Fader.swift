@@ -86,6 +86,12 @@ public class Fader: AudioEngineNodeAU, TypeDescribable {
         flipStereo = false
         mixToMono = false
     }
+
+    deinit {
+        try? detachNodes()
+
+        Log.debug("- { \(typeName) }")
+    }
 }
 
 extension Fader {

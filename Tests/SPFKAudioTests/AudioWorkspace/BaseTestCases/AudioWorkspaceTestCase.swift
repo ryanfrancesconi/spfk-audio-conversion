@@ -17,24 +17,8 @@ public class AudioWorkspaceTestCase: BinTestCase {
     var engineManager: AudioEngineManager { audioWorkspace.engineManager }
 
     var audioUnitChain: AudioUnitChain? {
-        audioWorkspace.master?.audioUnitChain
+        audioWorkspace.masterTrack?.audioUnitChain
     }
-
-    let auDelayDesc = AudioComponentDescription(
-        componentType: 1_635_083_896,
-        componentSubType: 1_684_368_505,
-        componentManufacturer: 1_634_758_764,
-        componentFlags: 2,
-        componentFlagsMask: 0
-    )
-
-    let auMatrixReverbDesc = AudioComponentDescription(
-        componentType: 1_635_083_896,
-        componentSubType: 1_836_213_622,
-        componentManufacturer: 1_634_758_764,
-        componentFlags: 2,
-        componentFlagsMask: 0
-    )
 
     override public init() async {
         do {

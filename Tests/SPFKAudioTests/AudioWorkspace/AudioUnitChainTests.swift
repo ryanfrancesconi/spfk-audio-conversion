@@ -13,8 +13,8 @@ import Testing
 final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
     @Test func findEffects() async throws {
         let components = [
-            AVAudioUnitComponent.component(matching: auDelayDesc),
-            AVAudioUnitComponent.component(matching: auMatrixReverbDesc),
+            AVAudioUnitComponent.component(matching: TestAudioUnitContent.auDelayDesc),
+            AVAudioUnitComponent.component(matching: TestAudioUnitContent.auMatrixReverbDesc),
         ].compactMap(\.self)
 
         #expect(components.count == 2)
@@ -28,11 +28,13 @@ final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
         let audioUnitChain = try #require(audioUnitChain)
         let player = try #require(player)
 
-        try await audioUnitChain.insertAudioUnit(componentDescription: auDelayDesc, at: 0)
-        try await audioUnitChain.insertAudioUnit(componentDescription: auMatrixReverbDesc, at: 1)
+        try await audioUnitChain.insertAudioUnit(componentDescription: TestAudioUnitContent.auDelayDesc, at: 0)
+        try await audioUnitChain.insertAudioUnit(componentDescription: TestAudioUnitContent.auMatrixReverbDesc, at: 1)
+        try await audioUnitChain.insertAudioUnit(componentDescription: TestAudioUnitContent.auFilterDesc, at: 2)
+
         try await audioUnitChain.connect()
 
-        await #expect(audioUnitChain.data.unbypassedEffects.count == 2)
+        await #expect(audioUnitChain.data.unbypassedEffects.count == 3)
 
         player.volume = 1
         try player.load(url: TestBundleResources.shared.tabla_wav)
@@ -41,6 +43,7 @@ final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
 
         try await wait(sec: 1)
         player.stop()
+        
         try await wait(sec: 2)
 
         try audioWorkspace.stop()
@@ -54,7 +57,7 @@ final class AudioUnitChainTests: AudioPlayerTestCase, @unchecked Sendable {
 
         await #expect(throws: (any Error).self) {
             try await audioUnitChain.insertAudioUnit(
-                componentDescription: self.auDelayDesc, at: audioUnitChain.insertCount + 1
+                componentDescription: TestAudioUnitContent.auDelayDesc, at: audioUnitChain.insertCount + 1
             )
         }
     }

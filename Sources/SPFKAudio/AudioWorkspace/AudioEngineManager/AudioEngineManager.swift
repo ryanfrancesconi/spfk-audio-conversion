@@ -25,5 +25,7 @@ public final class AudioEngineManager: Sendable {
 
     deinit {
         removeEngineObserver()
+
+        Log.debug("- { \(self) }")
     }
 }

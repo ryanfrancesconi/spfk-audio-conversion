@@ -16,7 +16,7 @@ public final class AudioWorkspace: @unchecked Sendable {
     private var outputMixer: MixerWrapper?
 
     // All tracks will be connected to this master
-    public private(set) var master: AudioTrack?
+    public private(set) var masterTrack: AudioTrack?
 
     public init() {}
 
@@ -27,14 +27,14 @@ public final class AudioWorkspace: @unchecked Sendable {
         await engineManager.rebuildEngine()
 
         self.outputMixer = MixerWrapper()
-        self.master = try await AudioTrack(delegate: self)
+        self.masterTrack = try await AudioTrack(delegate: self)
 
-        guard let outputMixer, let master else {
+        guard let outputMixer, let masterTrack else {
             throw NSError(description: "Failed to create mixers on rebuild")
         }
 
         try await engineManager.setEngineOutput(to: outputMixer.avAudioNode)
-        try await engineManager.connectAndAttach(master, to: outputMixer)
+        try await engineManager.connectAndAttach(masterTrack, to: outputMixer)
 
         try await deviceManager.reconnect()
     }
@@ -43,8 +43,8 @@ public final class AudioWorkspace: @unchecked Sendable {
         try stop()
         engineManager.removeEngineObserver()
 
-        try master?.detachNodes()
-        try await master?.audioUnitChain.dispose()
+        try masterTrack?.detachNodes()
+        try await masterTrack?.audioUnitChain.dispose()
 
         try outputMixer?.detachNodes()
     }
@@ -57,7 +57,7 @@ public final class AudioWorkspace: @unchecked Sendable {
             Log.error(error)
         }
 
-        master = nil
+        masterTrack = nil
         outputMixer = nil
 
         do {

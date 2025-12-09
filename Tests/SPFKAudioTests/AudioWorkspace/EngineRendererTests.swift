@@ -4,6 +4,7 @@ import AVFAudio
 import AVFoundation
 import Foundation
 import SPFKAudioBase
+import SPFKAUHost
 import SPFKBase
 import SPFKTesting
 import Testing
@@ -94,7 +95,7 @@ final class EngineRendererTests: AudioPlayerTestCase {
         try await setup()
         let audioUnitChain = try #require(audioUnitChain)
         let player = try #require(player)
-        try await audioUnitChain.insertAudioUnit(componentDescription: auDelayDesc, at: 0)
+        try await audioUnitChain.insertAudioUnit(componentDescription: TestAudioUnitContent.auDelayDesc, at: 0)
         try await audioUnitChain.connect()
         try player.load(url: TestBundleResources.shared.tabla_wav)
         let url = try createFile(name: #function, format: format)

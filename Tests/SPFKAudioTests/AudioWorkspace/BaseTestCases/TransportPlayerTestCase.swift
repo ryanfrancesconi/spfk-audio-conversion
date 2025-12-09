@@ -15,7 +15,7 @@ class TransportPlayerTestCase: AudioWorkspaceTestCase, @unchecked Sendable {
     override func setup() async throws {
         try await super.setup()
 
-        let masterMixer = try #require(audioWorkspace.master?.mixer)
+        let masterMixer = try #require(audioWorkspace.masterTrack?.mixer)
 
         let player = try await TransportPlayer(delegate: self)
         self.player = player

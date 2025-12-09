@@ -7,8 +7,7 @@ import SPFKBase
 
 /// NodeParameter wraps AUParameter in a user-friendly interface and adds some AudioKit-specific functionality.
 public class NodeParameter {
-    // force unwrapped is bad
-    public private(set) var avAudioNode: AVAudioNode?
+    public private(set) weak var avAudioNode: AVAudioNode?
 
     /// AU Parameter that this wraps
     public private(set) var parameter: AUParameter!

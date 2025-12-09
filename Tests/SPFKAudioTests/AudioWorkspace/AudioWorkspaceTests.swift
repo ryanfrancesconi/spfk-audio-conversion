@@ -19,7 +19,7 @@ final class AudioWorkspaceTests: AudioWorkspaceTestCase {
 
         try await setup()
 
-        let master = try #require(audioWorkspace.master)
+        let master = try #require(audioWorkspace.masterTrack)
 
         var nodes: [AVAudioNode] = .init()
 

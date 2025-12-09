@@ -8,22 +8,43 @@ import SPFKTesting
 import Testing
 
 @Suite(.serialized, .tags(.engine))
-final class AudioEngineManagerTests {
+final class AudioEngineManagerTests: TestCaseModel, @unchecked Sendable {
+    lazy var engineManager: AudioEngineManager? = AudioEngineManager(delegate: self)
+
     @Test func state() async throws {
-        let engineManager = AudioEngineManager(delegate: self)
+        try await wait(sec: 4)
 
-        try engineManager.startEngine()
-        #expect(engineManager.engineIsRunning)
+        if let engine = engineManager {
+            try engine.startEngine()
+            #expect(engine.engineIsRunning)
 
-        Log.debug(engineManager.debugDescription)
+            Log.debug(engine.debugDescription)
 
-        await engineManager.rebuildEngine()
-        #expect(!engineManager.engineIsRunning)
+            await engine.rebuildEngine()
+            #expect(!engine.engineIsRunning)
 
-        try engineManager.startEngine()
-        #expect(engineManager.engineIsRunning)
+            try engine.startEngine()
+            #expect(engine.engineIsRunning)
 
-        engineManager.stopEngine()
+            engine.stopEngine()
+        }
+
+        engineManager = nil
+        try await wait(sec: 4)
+    }
+
+    @Test func connectAndAttach() async throws {
+        try await wait(sec: 4)
+
+        guard let engine = engineManager else { return }
+
+        var fader: Fader? = try await Fader()
+
+        try await engine.connectAndAttach(fader!.avAudioNode, to: engine.outputNode)
+
+        fader = nil
+        
+        try await wait(sec: 4)
     }
 }
 
