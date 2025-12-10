@@ -13,7 +13,7 @@ extension FilePlayer {
         let hostTime = hostTime ?? mach_absolute_time()
 
         guard let audioTime: AVAudioTime = audioTime(scheduledTime: scheduledTime, hostTime: hostTime) else {
-            throw NSError(description: "Failed to create scheduled time")
+            throw NSError(file: #file, function: #function, description: "Failed to create scheduled time")
         }
 
         try schedule(from: startingTime, to: endingTime, audioTime: audioTime)
@@ -31,11 +31,11 @@ extension FilePlayer {
     /// a segment must be scheduled before you can play
     private func scheduleSegment(at audioTime: AVAudioTime?) throws {
         guard let audioFile else {
-            throw NSError(description: "No audio file is loaded")
+            throw NSError(file: #file, function: #function, description: "No audio file is loaded")
         }
 
         guard let playbackRange else {
-            throw NSError(description: "invalid edit range")
+            throw NSError(file: #file, function: #function, description: "invalid edit range")
         }
 
         lastScheduledTime = audioTime
@@ -46,7 +46,7 @@ extension FilePlayer {
         let totalFrames = endFrame - startFrame
 
         guard totalFrames > 0 else {
-            throw NSError(description: "Unable to schedule file. totalFrames to play: \(totalFrames). audioFile.length: \(audioFile.length)")
+            throw NSError(file: #file, function: #function, description: "Unable to schedule file. totalFrames to play: \(totalFrames). audioFile.length: \(audioFile.length)")
         }
 
         let frameCount = AVAudioFrameCount(totalFrames)

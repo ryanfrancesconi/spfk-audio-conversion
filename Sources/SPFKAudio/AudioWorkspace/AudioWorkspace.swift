@@ -20,11 +20,19 @@ public final class AudioWorkspace: @unchecked Sendable {
 
     public init() {}
 
+    public func setup() async throws {
+        try await rebuild()
+    }
+
     /// Rebuild the engine graph. Neceessary on startup and sample rate changes
-    public func rebuild() async throws {
+    private func rebuild() async throws {
         Log.debug("Rebuilding engine and workspace...")
 
-        try await shutdown()
+        do {
+            try await shutdown()
+        } catch {
+            Log.error(error)
+        }
 
         await engineManager.rebuildEngine()
 
@@ -37,17 +45,13 @@ public final class AudioWorkspace: @unchecked Sendable {
 
         try await engineManager.setEngineOutput(to: outputMixer.avAudioNode)
         try await engineManager.connectAndAttach(masterTrack, to: outputMixer)
-
         try await deviceManager.reconnect()
     }
 
     private func shutdown() async throws {
         try stop()
-        // engineManager.removeEngineObserver()
-
         try masterTrack?.detachNodes()
         try await masterTrack?.audioUnitChain.dispose()
-
         try outputMixer?.detachNodes()
     }
 
@@ -120,18 +124,20 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
     }
 
     public func audioEngineManager(event: AudioEngineManager.Event) async {
-        Log.debug(event)
+        Log.debug("🔊", event)
 
         switch event {
-        case let .error(error):
-            Log.error(error)
-
-        case .rebuild:
-            break
-
         case .configurationChanged:
+            // The AudioEngine has changed - tell the device manager to see what has
+            // changed in terms of sample rates or devices. The device manager will
+            // then issue its own configurationChanged eventt with an option set
+            // of the changes
             await deviceManager.handleEngineConfigurationChanged()
+        default:
+            break
         }
+
+        // AudioWorkspace consumes this event then reissues its own in handleConfigurationChanged
     }
 }
 
@@ -148,53 +154,53 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
 
     public func audioDeviceManager(event: AudioDeviceManager.Event) async {
         Log.debug("🔊", event)
-        do {
-            switch event {
-            case let .sampleRateChanged(sampleRate):
-                _ = sampleRate
-            case let .inputDeviceChanged(device: device):
-                _ = device
-            case let .outputDeviceChanged(device: device):
-                _ = device
-            case let .deviceListChanged(event: event):
-                _ = event
-                return
-            case .deviceProcessorOverload:
-                break
-            case let .error(error):
-                _ = error
-            case let .configurationChanged(options):
-                try handleConfigurationChanged(options: options)
-                
-            case .stopAudio:
-                try? await rebuild()
-                await delegate?.audioWorkspaceShouldRestart(self)
-            }
 
-        } catch {
-            Log.error(error)
+        switch event {
+        case let .sampleRateChanged(sampleRate):
+            _ = sampleRate
+        case let .inputDeviceChanged(device: device):
+            _ = device
+        case let .outputDeviceChanged(device: device):
+            _ = device
+        case let .deviceListChanged(event: event):
+            _ = event
+            return
+        case .deviceProcessorOverload:
+            break
+        case let .error(error):
+            _ = error
+        case let .configurationChanged(options):
+            await handleConfigurationChanged(options: options)
         }
+
+        await delegate?.audioWorkspace(deviceEvent: event)
     }
 }
 
 extension AudioWorkspace {
-    func handleConfigurationChanged(options: Set<AudioDeviceManager.ConfigurationOption>) throws {
+    @MainActor private func handleConfigurationChanged(options: Set<AudioDeviceManager.ConfigurationOption>) async {
         guard let delegate else { return }
 
-        Task { @MainActor in
-            if options.contains(.sampleRateChanged) {
-                await delegate.audioWorkspaceShouldRebuild(self)
+        let rebuildRequired = options.contains(.sampleRateChanged)
 
-            } else {
-                await delegate.audioWorkspaceShouldRestart(self)
+        if rebuildRequired {
+            do {
+                await delegate.audioWorkspace(engineEvent: .willRebuild)
+                try await rebuild()
+                await delegate.audioWorkspace(engineEvent: .didRebuild)
+            } catch {
+                Log.error(error)
+
+                assertionFailure(error.localizedDescription)
             }
         }
+
+        await delegate.audioWorkspace(engineEvent: .configurationChanged)
     }
 }
 
+@MainActor
 public protocol AudioWorkspaceDelegate: AnyObject {
-    func audioWorkspaceWillRebuild(_ audioWorkspace: AudioWorkspace) async
-
-    func audioWorkspaceShouldRebuild(_ audioWorkspace: AudioWorkspace) async
-    func audioWorkspaceShouldRestart(_ audioWorkspace: AudioWorkspace) async
+    func audioWorkspace(deviceEvent: AudioDeviceManager.Event) async
+    func audioWorkspace(engineEvent: AudioEngineManager.Event) async
 }

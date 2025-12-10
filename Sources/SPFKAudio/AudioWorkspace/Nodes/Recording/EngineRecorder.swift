@@ -43,7 +43,7 @@ public final class EngineRecorder: Sendable {
     }
 
     deinit {
-        Log.debug("* { EngineRecorder }")
+        Log.debug("- { \(self) }")
     }
 
     public func update(ioLatency: AVAudioFrameCount) async {

@@ -23,9 +23,9 @@ extension AudioEngineManager {
             forName: .AVAudioEngineConfigurationChange,
             object: nil,
             queue: .main
-        ) { notification in
-            Task { @MainActor [weak self] in
-                await self?.send(event: .configurationChanged)
+        ) { [delegate] notification in
+            Task { @MainActor in
+                await delegate.audioEngineManager(event: .configurationChanged)
             }
         }
     }

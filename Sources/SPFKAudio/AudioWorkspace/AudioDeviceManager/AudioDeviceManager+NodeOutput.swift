@@ -11,7 +11,7 @@ extension AudioDeviceManager {
         }
 
         guard let engineDevice = try await engineDevice() else {
-            throw NSError(description: "engineDevice is nil")
+            throw NSError(description: "engineDevice is nil, no need to set channel map")
         }
 
         let allowInput = await allowInput

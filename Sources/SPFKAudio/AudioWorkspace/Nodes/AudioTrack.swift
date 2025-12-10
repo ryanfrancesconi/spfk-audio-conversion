@@ -26,7 +26,7 @@ public final class AudioTrack: @unchecked Sendable {
     }
 
     deinit {
-        Log.debug("* { \(self) }")
+        Log.debug("- { \(self) }")
     }
 }
 

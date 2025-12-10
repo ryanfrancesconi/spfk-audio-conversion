@@ -128,9 +128,6 @@ extension AudioDeviceManager {
             )
 
             await send(event: .deviceListChanged(event: filteredEvent))
-
-        case .prun:
-            await send(event: .stopAudio)
         }
     }
 

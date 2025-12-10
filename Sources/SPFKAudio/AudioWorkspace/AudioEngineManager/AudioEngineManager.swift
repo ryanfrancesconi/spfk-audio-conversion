@@ -3,22 +3,20 @@ import SPFKBase
 
 public final class AudioEngineManager: @unchecked Sendable {
     public enum Event: Sendable {
-        case rebuild
+        case willRebuild
+        case didRebuild
         case configurationChanged
         case error(Error)
     }
 
-    func send(event: Event) async {
-        await delegate.audioEngineManager(event: event)
-    }
+    public internal(set) var engine: AVAudioEngine?
 
-    public var engine: AVAudioEngine?
     var renderer: EngineRenderer?
 
     let delegate: AudioEngineManagerDelegate
 
     var engineConfigurationObserver: NSObjectProtocol?
-    
+
     /// Note: must call rebuildEngine before using
     public init(delegate: AudioEngineManagerDelegate) {
         self.delegate = delegate

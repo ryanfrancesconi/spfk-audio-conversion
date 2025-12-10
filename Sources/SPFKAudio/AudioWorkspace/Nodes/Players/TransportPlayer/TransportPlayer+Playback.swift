@@ -12,19 +12,19 @@ extension TransportPlayer {
 
     public func play(time: TimeInterval?, hostTime: UInt64? = nil) throws {
         guard let engine = mixer.engine else {
-            throw NSError(description: "Engine is nil")
+            throw NSError(file: #file, function: #function, description: "mixer.engine is nil")
         }
 
         guard engine.isRunning else {
-            throw NSError(description: "Engine isn't running")
+            throw NSError(file: #file, function: #function, description: "TransportPlayer: Engine isn't running")
         }
 
         guard let currentPlayer else {
-            throw NSError(description: "play: currentPlayer is nil")
+            throw NSError(file: #file, function: #function, description: "TransportPlayer: play: currentPlayer is nil")
         }
 
         guard isLoaded else {
-            throw NSError(description: "No audio file is loaded")
+            throw NSError(file: #file, function: #function, description: "TransportPlayer: No audio file is loaded")
         }
 
         var time = time ?? currentTime
@@ -54,7 +54,7 @@ extension TransportPlayer {
 
     private func playAndCatchException() throws {
         guard let currentPlayer else {
-            throw NSError(description: "Player is nil")
+            throw NSError(file: #file, function: #function, description: "Player is nil")
         }
 
         try ExceptionTrap.withThrowing { [currentPlayer] in
@@ -69,11 +69,11 @@ extension TransportPlayer {
         }
 
         guard let currentPlayer else {
-            throw NSError(description: "Player is nil")
+            throw NSError(file: #file, function: #function, description: "Player is nil")
         }
 
         guard isLoaded else {
-            throw NSError(description: "No audio file is loaded")
+            throw NSError(file: #file, function: #function, description: "No audio file is loaded")
         }
 
         guard isPlaying else {
@@ -87,7 +87,7 @@ extension TransportPlayer {
 extension TransportPlayer {
     private func scheduleLoops(at time: TimeInterval, hostTime: UInt64) throws {
         guard let currentPlayer else {
-            throw NSError(description: "scheduleLoops: currentPlayer is nil")
+            throw NSError(file: #file, function: #function, description: "scheduleLoops: currentPlayer is nil")
         }
 
         let playbackRange = playbackRange
@@ -115,7 +115,7 @@ extension TransportPlayer {
 
     private func scheduleAudio(times: [AVAudioTime]) throws {
         guard let currentPlayer else {
-            throw NSError(description: ": currentPlayer is nil")
+            throw NSError(file: #file, function: #function, description: ": currentPlayer is nil")
         }
 
         let loopDuration = playbackRange.duration

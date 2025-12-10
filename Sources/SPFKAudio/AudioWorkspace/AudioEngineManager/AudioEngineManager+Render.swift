@@ -15,8 +15,13 @@ extension AudioEngineManager: EngineRendererModel {
         progressHandler: (@Sendable (UnitInterval) -> Void)?,
         disableManualRenderingModeOnCompletion: Bool
     ) async throws {
-        guard let renderer else { return }
-
+        guard let engine else {
+            throw NSError(description: "engine is nil")
+        }
+        
+        let renderer = EngineRenderer(engine: engine)
+        self.renderer = renderer
+        
         try await renderer.render(
             to: audioFile,
             duration: duration,
@@ -28,6 +33,7 @@ extension AudioEngineManager: EngineRendererModel {
         )
 
         try startEngine()
+        self.renderer = nil
     }
 
     public func cancelRender() async {

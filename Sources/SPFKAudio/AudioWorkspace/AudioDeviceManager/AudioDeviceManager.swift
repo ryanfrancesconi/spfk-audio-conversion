@@ -21,7 +21,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
         case deviceProcessorOverload
         case error(Error)
         case configurationChanged(Set<ConfigurationOption>)
-        case stopAudio
     }
 
     public enum ConfigurationOption: Hashable, Sendable {
@@ -33,13 +32,13 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
     let delegate: (any AudioDeviceManagerDelegate)?
 
     public let hardware: AudioHardwareManager = .shared
-    
+
     public var hardwareObservers: [NSObjectProtocol] = .init()
 
     public let deviceSettings = AudioDeviceSettings()
 
     var notificationTask: Task<Void, Error>?
-    
+
     public init(delegate: AudioDeviceManagerDelegate? = nil) {
         self.delegate = delegate
     }
@@ -65,9 +64,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
 
         try await update(systemSampleRate: deviceSampleRate)
 
-        if await !allowInput {
-            try await setOutput(device: selectedOutputDevice)
-        }
+        try await reconnect()
     }
 
     @MainActor private func registerNotifications() async throws {
@@ -135,6 +132,8 @@ extension AudioDeviceManager {
         await deviceSettings.update(outputUID: device.uid)
 
         guard await deviceSettings.allowInput else {
+            // No Input
+
             try await setEngineNodeOutput(to: device)
             // will call updatePreferredOutputChannels
             return
@@ -149,10 +148,8 @@ extension AudioDeviceManager {
     public func reconnect() async throws {
         let allowInput = await allowInput
 
-        if !allowInput {
-            try await reconnectNodeOutput()
-        }
+        guard !allowInput else { return }
 
-        try await updatePreferredOutputChannels()
+        try await reconnectNodeOutput()
     }
 }

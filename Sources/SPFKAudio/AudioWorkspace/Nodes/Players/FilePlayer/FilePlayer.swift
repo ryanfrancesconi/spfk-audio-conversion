@@ -75,7 +75,7 @@ open class FilePlayer: AudioEngineNodeAU, Mixable, @unchecked Sendable {
         to endingTime: TimeInterval? = nil
     ) throws {
         guard let duration else {
-            throw NSError(description: "No audio file is loaded")
+            throw NSError(file: #file, function: #function, description: "No audio file is loaded")
         }
 
         let startingTime = startingTime ?? 0
@@ -85,7 +85,7 @@ open class FilePlayer: AudioEngineNodeAU, Mixable, @unchecked Sendable {
         let upperBound = min(duration, endingTime)
 
         guard lowerBound < upperBound else {
-            throw NSError(description: "invalid edit range \(lowerBound)...\(upperBound)")
+            throw NSError(file: #file, function: #function, description: "invalid edit range \(lowerBound)...\(upperBound)")
         }
 
         playbackRange = lowerBound ... upperBound
@@ -150,7 +150,7 @@ open class FilePlayer: AudioEngineNodeAU, Mixable, @unchecked Sendable {
             let message = "Warning: Processing format doesn't match. This file is a different format than the previously loaded one. " +
                 "You should make a new Player instance and reconnect. " +
                 "load() is only available for files that are the same format."
-            throw NSError(description: message)
+            throw NSError(file: #file, function: #function, description: message)
         }
 
         self.audioFile = audioFile

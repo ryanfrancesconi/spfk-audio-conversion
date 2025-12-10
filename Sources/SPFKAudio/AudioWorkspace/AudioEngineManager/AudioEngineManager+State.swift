@@ -57,6 +57,8 @@ extension AudioEngineManager {
     }
 
     public func rebuildEngine() async {
+        await delegate.audioEngineManager(event: .willRebuild)
+
         stopEngine()
         removeEngineObserver()
 
@@ -65,16 +67,13 @@ extension AudioEngineManager {
         let engine = AVAudioEngine()
         engine.isAutoShutdownEnabled = false
 
-        // renderer = EngineRenderer(engine: engine)
-
         self.engine = engine
 
         // The engine creates a singleton on demand when this property is first accessed.
-        _ = outputNode
-
-        await send(event: .rebuild)
-        // eventHandler?(.rebuild)
+        _ = engine.outputNode
 
         addEngineObserver()
+
+        await delegate.audioEngineManager(event: .didRebuild)
     }
 }

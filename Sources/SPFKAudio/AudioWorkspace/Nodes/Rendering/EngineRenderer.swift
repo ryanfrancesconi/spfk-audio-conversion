@@ -31,6 +31,10 @@ public actor EngineRenderer {
     public init(engine: AVAudioEngine) {
         self.engine = engine
     }
+
+    deinit {
+        Log.debug("- { \(self) }")
+    }
 }
 
 extension EngineRenderer: EngineRendererModel {

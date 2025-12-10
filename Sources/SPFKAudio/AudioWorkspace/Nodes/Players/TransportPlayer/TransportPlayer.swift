@@ -85,6 +85,12 @@ public final class TransportPlayer: @unchecked Sendable {
         initialize()
     }
 
+    deinit {
+        Log.debug("- { \(self) }")
+
+        try? mixer.detachNodes()
+    }
+
     /// Will use a view for the display link
     /// - Parameters:
     ///   - timerView: A NSView to use to sync the timer against
@@ -108,20 +114,21 @@ public final class TransportPlayer: @unchecked Sendable {
     // MARK: -
 
     /// To be called on sample rate changes
-    public func rebuild() throws {
+    public func rebuild() async throws {
         outputTap?.dispose()
         outputTap = nil
 
         for player in players {
             player.value.stop()
-            try player.value.detachNodes()
+            // ignore errors here as the engine may be nil
+            try? player.value.detachNodes()
         }
 
         currentPlayer = nil
-
         players.removeAll()
-
-        try mixer.detachNodes()
+        
+        // ignore errors here as the engine may be nil
+        try? mixer.detachNodes()
 
         mixer = MixerWrapper()
         outputTap = AmplitudeTap(mixer.mixerNode, eventHandler: handleAmplitudeEvent)

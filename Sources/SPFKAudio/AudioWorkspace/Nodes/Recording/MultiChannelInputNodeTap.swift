@@ -206,7 +206,7 @@ public actor MultiChannelInputNodeTap {
     }
 
     deinit {
-        Log.debug("* { MultiChannelInputNodeTap }")
+        Log.debug("- { \(self) }")
     }
 
     public func dispose() {
