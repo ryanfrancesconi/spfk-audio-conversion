@@ -46,7 +46,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
         await deviceSettings.update(inputUID: settings.inputUID ?? defaultInputUID)
         await deviceSettings.update(outputUID: settings.outputUID ?? defaultOutputUID)
 
-        Log.debug(deviceSettings)
+        await Log.debug(deviceSettings.description)
 
         try await registerNotifications()
 
@@ -59,6 +59,8 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
         }
 
         try await update(systemSampleRate: deviceSampleRate)
+
+        try await setOutput(device: selectedOutputDevice)
     }
 
     @MainActor private func registerNotifications() async throws {

@@ -11,8 +11,11 @@ public actor AudioDeviceSettings {
 
     public var allowInput: Bool {
         guard let inputUID else { return false }
-
         return inputUID != Self.inputDeviceDisabledUID
+    }
+
+    public var description: String {
+        "AudioDeviceSettings(inputUID: \(inputUID ?? "nil"), outputUID: \(outputUID ?? "nil"))"
     }
 
     public init(
@@ -28,7 +31,7 @@ public actor AudioDeviceSettings {
     }
 
     public func update(outputUID: String?) {
-        self.outputUID = inputUID
+        self.outputUID = outputUID
     }
 
     public func disableInput() {

@@ -33,10 +33,11 @@ extension AudioDeviceManager {
 
     public var selectedOutputDevice: AudioDevice? {
         get async {
+            let allowInput = await allowInput
             let defaultDevice = await defaultOutputDevice
             let preferenceDevice = await deviceSettingsOutputDevice
 
-            guard await !allowInput else {
+            guard !allowInput else {
                 return defaultDevice
             }
 

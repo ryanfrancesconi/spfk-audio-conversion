@@ -75,7 +75,7 @@ extension AudioDeviceManager {
                 &size,
             )
 
-            guard status == noErr else {
+            guard noErr == status else {
                 Log.error("Failed to get engine output node device ID, error: \(status.fourCC)")
                 return nil
             }
@@ -138,7 +138,7 @@ extension AudioDeviceManager {
             UInt32(MemoryLayout<AudioDeviceID>.size),
         )
 
-        guard status == noErr else {
+        guard noErr == status else {
             throw NSError(description: "Unable to set output audio unit to device \(name), error: \(status.fourCC)")
         }
 

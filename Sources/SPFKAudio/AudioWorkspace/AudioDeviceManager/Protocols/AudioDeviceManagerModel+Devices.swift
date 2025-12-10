@@ -74,8 +74,7 @@ extension AudioDeviceManagerModel {
     /// is disabled. Otherwise return nil.
     public var deviceSettingsOutputDevice: AudioDevice? {
         get async {
-            guard await !allowInput,
-                  let uid = await deviceSettings.outputUID,
+            guard let uid = await deviceSettings.outputUID,
                   let device = await AudioDevice.lookup(uid: uid)
             else {
                 return nil
@@ -144,7 +143,7 @@ extension SplitAudioDevice {
     }
 
     private func check(rates: [Double]) async -> Bool {
-        return await rates.async.contains { sampleRate in
+        await rates.async.contains { sampleRate in
             await AudioDefaults.shared.isSupported(sampleRate: sampleRate)
         }
     }
