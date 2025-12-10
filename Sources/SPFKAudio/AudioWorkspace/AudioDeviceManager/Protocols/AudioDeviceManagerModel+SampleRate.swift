@@ -13,9 +13,13 @@ extension AudioDeviceManagerModel {
     public func isSupported(uid: String) async -> Bool {
         guard uid != AudioDeviceSettings.inputDeviceDisabledUID else { return true }
 
-        guard let device = await AudioDevice.lookup(uid: uid) else { return false }
-
-        return await isSupported(device: device)
+        do {
+            let device = try await AudioDevice.lookup(uid: uid)
+            return await isSupported(device: device)
+        } catch {
+            Log.error(error)
+            return false
+        }
     }
 
     public func setNominalSampleRate(to sampleRate: Double) async throws {

@@ -13,12 +13,8 @@ public protocol AudioDeviceManagerModel: Sendable {
 
     var hardware: AudioHardwareManager { get }
 
-    var allDevices: [AudioDevice] { get async }
-
     var selectedInputDevice: AudioDevice? { get async }
     var selectedOutputDevice: AudioDevice? { get async }
-    var defaultInputDevice: AudioDevice? { get async }
-    var defaultOutputDevice: AudioDevice? { get async }
 
     func updateBufferSize(newValue: UInt32) async
 

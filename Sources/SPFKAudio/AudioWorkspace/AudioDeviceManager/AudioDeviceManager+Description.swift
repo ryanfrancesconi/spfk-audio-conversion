@@ -2,34 +2,35 @@ import Foundation
 import SPFKAudioHardware
 
 extension AudioDeviceManager {
-    public var detailedDescription: String {
-        get async {
-            var string = ""
+    public func detailedDescription() async throws -> String {
+        let inputDevices = try await hardware.inputDevices()
+        let outputDevices = try await hardware.outputDevices()
 
-            await string += "↑ Selected Output Device: \(selectedOutputDevice?.name ?? "No Output") @ \(selectedOutputDevice?.actualSampleRate ?? 0) Hz, \(numberOfOutputChannels) Channel\n"
+        var string = ""
 
-            if let selectedInputDevice = await selectedInputDevice {
-                await string += "↓ Selected Input Device: \(selectedInputDevice.name) @ \(selectedInputDevice.actualSampleRate ?? 0) Hz, \(numberOfInputChannels) Channel\n\n"
-            } else {
-                string += "↓ Input Device: Disabled or no device detected on this system. ⚠️\n\n"
-            }
+        await string += "↑ Selected Output Device: \(selectedOutputDevice?.name ?? "No Output") @ \(selectedOutputDevice?.actualSampleRate ?? 0) Hz, \(numberOfOutputChannels) Channel\n"
 
-            if let engineDevice = await engineDevice {
-                await string += deviceDescription(engineDevice) + "\n"
-            }
-
-            string += "\n"
-
-            let outputDevices = await outputDevices.map(\.name).sorted()
-            string += "↑ Output Devices: " + outputDevices.joined(separator: ", ")
-            string += "\n"
-
-            let inputDevices = await inputDevices.map(\.name).sorted()
-            string += "↓ Input Devices: " + inputDevices.joined(separator: ", ")
-            string += "\n\n"
-
-            return string
+        if let selectedInputDevice = await selectedInputDevice {
+            await string += "↓ Selected Input Device: \(selectedInputDevice.name) @ \(selectedInputDevice.actualSampleRate ?? 0) Hz, \(numberOfInputChannels) Channel\n\n"
+        } else {
+            string += "↓ Input Device: Disabled or no device detected on this system. ⚠️\n\n"
         }
+
+        if let engineDevice = try await engineDevice() {
+            await string += deviceDescription(engineDevice) + "\n"
+        }
+
+        string += "\n"
+
+        let outputDeviceNames = outputDevices.map(\.name).sorted()
+        string += "↑ Output Devices: " + outputDeviceNames.joined(separator: ", ")
+        string += "\n"
+
+        let inputDeviceNames = inputDevices.map(\.name).sorted()
+        string += "↓ Input Devices: " + inputDeviceNames.joined(separator: ", ")
+        string += "\n\n"
+
+        return string
     }
 
     public func deviceDescription(_ device: AudioDevice) async -> String {

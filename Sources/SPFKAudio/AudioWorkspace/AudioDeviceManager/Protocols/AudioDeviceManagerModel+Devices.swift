@@ -5,83 +5,31 @@ import SPFKAudioHardware
 import SPFKBase
 
 extension AudioDeviceManagerModel {
-    public var nonAggregateDevices: [AudioDevice] {
-        get async {
-            await hardware.nonAggregateDevices
-        }
+    public func compatibleInputDevices() async throws -> [AudioDevice] {
+        try await hardware.inputDevices().async.filter {
+            guard let nominalSampleRates = $0.nominalSampleRates else {
+                return false
+            }
+
+            return await nominalSampleRates.async.contains { sampleRate in
+                await AudioDefaults.shared.isSupported(
+                    sampleRate: sampleRate
+                )
+            }
+        }.toArray()
     }
 
-    public var nonAggregateOutputDevices: [AudioDevice] { // unused spfk
-        get async {
-            let devices = await nonAggregateDevices
-
-            return await devices.async.filter {
-                await $0.physicalChannels(scope: .output) > 0
-            }.toArray()
-        }
-    }
-
-    public var aggregateDevices: [AudioDevice] {
-        get async {
-            await hardware.aggregateDevices
-        }
-    }
-
-    public var inputDevices: [AudioDevice] {
-        get async {
-            await hardware.inputDevices
-        }
-    }
-
-    public var compatibleInputDevices: [AudioDevice] { // unused spfk
-        get async {
-            await inputDevices.async.filter {
-                guard let nominalSampleRates = $0.nominalSampleRates else {
-                    return false
-                }
-
-                return await nominalSampleRates.async.contains { sampleRate in
-                    await AudioDefaults.shared.isSupported(
-                        sampleRate: sampleRate
-                    )
-                }
-            }.toArray()
-        }
-    }
-
-    public var outputDevices: [AudioDevice] {
-        get async {
-            await hardware.outputDevices
-        }
-    }
-
-    public var bluetoothDevices: [AudioDevice] {
-        get async {
-            await hardware.bluetoothDevices
-        }
-    }
-
-    public var splitDevices: [SplitAudioDevice] {
-        get async {
-            await hardware.splitDevices
-        }
-    }
-}
-
-extension AudioDeviceManagerModel {
     /// This is a lookup based on the preference UID
     /// Device can be different than the system if inputNode
     /// is disabled. Otherwise return nil.
-    public var deviceSettingsOutputDevice: AudioDevice? {
-        get async {
-            guard let uid = await deviceSettings.outputUID,
-                  let device = await AudioDevice.lookup(uid: uid)
-            else {
-                return nil
-            }
-
-            return device
+    public func deviceSettingsOutputDevice() async throws -> AudioDevice? {
+        guard let uid = await deviceSettings.outputUID else {
+            return nil
         }
+
+        let device = try await AudioDevice.lookup(uid: uid)
+
+        return device
     }
 
     public var selectedOutputDeviceName: String {

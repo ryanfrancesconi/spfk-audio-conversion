@@ -92,7 +92,7 @@ extension AudioDeviceManager {
                 return
             }
 
-            guard let defaultInputDevice = await defaultInputDevice else { return }
+            guard let defaultInputDevice = await hardware.defaultInputDevice else { return }
 
             let currentInputUID = await deviceSettings.inputUID
 
@@ -109,7 +109,7 @@ extension AudioDeviceManager {
                 return
             }
 
-            guard let defaultOutputDevice = await defaultOutputDevice else {
+            guard let defaultOutputDevice = await hardware.defaultOutputDevice else {
                 assertionFailure()
                 return
             }

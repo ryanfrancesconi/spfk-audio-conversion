@@ -10,7 +10,7 @@ extension AudioDeviceManager {
             throw NSError(description: "selectedOutputDevice is nil")
         }
 
-        guard let engineDevice = await engineDevice else {
+        guard let engineDevice = try await engineDevice() else {
             throw NSError(description: "engineDevice is nil")
         }
 
@@ -56,32 +56,30 @@ extension AudioDeviceManager {
 }
 
 extension AudioDeviceManager {
-    private var currentNodeOutputDevice: AudioDevice? {
-        get async {
-            guard let audioUnit = engineOutputNode?.audioUnit else {
-                Log.error("Failed to get audioUnit reference from engine.outputNode")
-                return nil
-            }
-
-            var id: AudioDeviceID = 0
-            var size = UInt32(MemoryLayout<AudioDeviceID>.size)
-
-            let status = AudioUnitGetProperty(
-                audioUnit,
-                kAudioOutputUnitProperty_CurrentDevice,
-                kAudioUnitScope_Global,
-                0,
-                &id,
-                &size,
-            )
-
-            guard noErr == status else {
-                Log.error("Failed to get engine output node device ID, error: \(status.fourCC)")
-                return nil
-            }
-
-            return await AudioObjectPool.shared.lookup(id: id)
+    private func currentNodeOutputDevice() async throws -> AudioDevice? {
+        guard let audioUnit = engineOutputNode?.audioUnit else {
+            Log.error("Failed to get audioUnit reference from engine.outputNode")
+            return nil
         }
+
+        var id: AudioDeviceID = 0
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+
+        let status = AudioUnitGetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &id,
+            &size,
+        )
+
+        guard noErr == status else {
+            Log.error("Failed to get engine output node device ID, error: \(status.fourCC)")
+            return nil
+        }
+
+        return try await AudioObjectPool.shared.lookup(id: id)
     }
 
     func reconnectNodeOutput() async throws {
@@ -90,8 +88,8 @@ extension AudioDeviceManager {
             return
         }
 
-        let deviceSettingsOutputDevice = await deviceSettingsOutputDevice
-        let currentNodeOutputDevice = await currentNodeOutputDevice
+        let deviceSettingsOutputDevice = try await deviceSettingsOutputDevice()
+        let currentNodeOutputDevice = try await currentNodeOutputDevice()
 
         guard let deviceSettingsOutputDevice else {
             Log.debug("selectedEngineOutputDevice is nil")
@@ -111,7 +109,7 @@ extension AudioDeviceManager {
     /// doesn't work with airpods -
     /// potentially other blue tooth headsets as well.
     func setEngineNodeOutput(to device: AudioDevice) async throws {
-        if let currentNodeOutputDevice = await currentNodeOutputDevice,
+        if let currentNodeOutputDevice = try await currentNodeOutputDevice(),
            currentNodeOutputDevice == device
         {
             Log.debug(device, "is already set as the engine's output")

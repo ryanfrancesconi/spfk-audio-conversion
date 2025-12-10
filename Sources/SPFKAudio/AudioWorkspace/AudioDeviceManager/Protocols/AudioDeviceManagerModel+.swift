@@ -7,8 +7,8 @@ import SPFKBase
 extension AudioDeviceManagerModel {
     public var matchesSystemSettings: Bool {
         get async {
-            let defaultInputUID = await defaultInputDevice?.uid
-            let defaultOutputUID = await defaultOutputDevice?.uid
+            let defaultInputUID = await hardware.defaultInputDevice?.uid
+            let defaultOutputUID = await hardware.defaultOutputDevice?.uid
             let currentInputUID = await deviceSettings.inputUID
             let currentOutputUID = await deviceSettings.outputUID
 
@@ -77,10 +77,10 @@ extension AudioDeviceManagerModel {
         }
     }
 
-    public var engineDevice: AudioDevice? {
-        get async {
-            await allDevices.first { Self.isEngineDefaultAggregate(device: $0) }
-        }
+    public func engineDevice() async throws -> AudioDevice? {
+        let all = try await hardware.allDevices()
+
+        return all.first { Self.isEngineDefaultAggregate(device: $0) }
     }
 
     public var allowInput: Bool {

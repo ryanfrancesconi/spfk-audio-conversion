@@ -17,14 +17,6 @@ extension AudioDeviceManager {
         }
     }
 
-    // MARK: - Device convenience
-
-    public var allDevices: [AudioDevice] {
-        get async {
-            await hardware.allDevices
-        }
-    }
-
     public var selectedInputDevice: AudioDevice? {
         get async {
             await hardware.defaultInputDevice
@@ -34,26 +26,14 @@ extension AudioDeviceManager {
     public var selectedOutputDevice: AudioDevice? {
         get async {
             let allowInput = await allowInput
-            let defaultDevice = await defaultOutputDevice
-            let preferenceDevice = await deviceSettingsOutputDevice
+            let defaultDevice = await hardware.defaultOutputDevice
+            let preferenceDevice = try? await deviceSettingsOutputDevice()
 
             guard !allowInput else {
                 return defaultDevice
             }
 
             return preferenceDevice ?? defaultDevice
-        }
-    }
-
-    public var defaultInputDevice: AudioDevice? {
-        get async {
-            await hardware.defaultInputDevice
-        }
-    }
-
-    public var defaultOutputDevice: AudioDevice? {
-        get async {
-            await hardware.defaultOutputDevice
         }
     }
 
