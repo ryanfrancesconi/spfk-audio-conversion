@@ -157,9 +157,11 @@ extension EngineRendererTests {
             disableManualRenderingModeOnCompletion: true
         )
 
-        guard let audioFile = await audioWorkspace.engineManager.renderer?.audioFile else {
-            throw NSError(description: "audioFile is nil")
+        guard url.exists else {
+            throw NSError(file: #file, function: #function, description: "no file was created")
         }
+
+        let audioFile = try AVAudioFile(forReading: url)
 
         return audioFile
     }
