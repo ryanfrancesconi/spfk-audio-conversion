@@ -36,14 +36,14 @@ final class AudioEngineManagerTests: TestCaseModel, @unchecked Sendable {
     @Test func connectAndAttach() async throws {
         try await wait(sec: 4)
 
-        guard let engine = engineManager else { return }
+        guard let engineManager, let outputNode = engineManager.outputNode else { return }
 
         var fader: Fader? = try await Fader()
 
-        try await engine.connectAndAttach(fader!.avAudioNode, to: engine.outputNode)
+        try await engineManager.connectAndAttach(fader!.avAudioNode, to: outputNode)
 
         fader = nil
-        
+
         try await wait(sec: 4)
     }
 }

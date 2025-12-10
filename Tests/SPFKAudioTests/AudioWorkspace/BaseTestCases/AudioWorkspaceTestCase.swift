@@ -30,7 +30,7 @@ public class AudioWorkspaceTestCase: BinTestCase {
     }
 
     public func setup() async throws {
-        try await audioWorkspace.rebuild()
+        try await audioWorkspace.setup()
         try audioWorkspace.start()
     }
 

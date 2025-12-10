@@ -117,7 +117,7 @@ final class EngineRendererTests: AudioPlayerTestCase {
 
         Task { @MainActor in
             try await Task.sleep(seconds: 0.001)
-            await self.audioWorkspace.engineManager.renderer.cancelRender()
+            await self.audioWorkspace.engineManager.renderer?.cancelRender()
         }
 
         await #expect(throws: CancellationError.self) {
@@ -157,7 +157,7 @@ extension EngineRendererTests {
             disableManualRenderingModeOnCompletion: true
         )
 
-        guard let audioFile = await audioWorkspace.engineManager.renderer.audioFile else {
+        guard let audioFile = await audioWorkspace.engineManager.renderer?.audioFile else {
             throw NSError(description: "audioFile is nil")
         }
 

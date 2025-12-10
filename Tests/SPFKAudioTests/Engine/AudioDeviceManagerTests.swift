@@ -22,13 +22,14 @@ final class AudioDeviceManagerTests: TestCaseModel {
     }
 
     @Test func printDescription() async throws {
-        await Log.debug(dm.detailedDescription)
+        try await Log.debug(dm.detailedDescription())
     }
 
     @Test(arguments: [Scope.output, Scope.input])
     func deviceSampleRates(scope: Scope) async throws {
-        let devices = await scope == .output ?
-            dm.outputDevices : dm.inputDevices
+        let devices = scope == .output ?
+            try await dm.hardware.outputDevices() :
+            try await dm.hardware.inputDevices()
 
         for device in devices {
             try await testSampleRates(for: device, scope: scope)
@@ -94,7 +95,7 @@ final class AudioDeviceManagerTests: TestCaseModel {
 extension AudioDeviceManagerTests {
     @Test(arguments: [Scope.output])
     func preferredChannelsForStereoAllDevices(scope: Scope) async throws {
-        let devices = await dm.allDevices
+        let devices = try await dm.hardware.allDevices()
 
         for device in devices {
             let preferredChannels = device.preferredChannelsForStereo(scope: scope)

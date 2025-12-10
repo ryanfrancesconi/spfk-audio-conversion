@@ -22,6 +22,6 @@ final class AudioDeviceManagerSetupTests: TestCaseModel {
 
         #expect(selectedOutputDevice?.uid == outputUID)
 
-        let defaultOutputDevice = await dm.defaultOutputDevice
+        let defaultOutputDevice = await dm.hardware.defaultOutputDevice
     }
 }
