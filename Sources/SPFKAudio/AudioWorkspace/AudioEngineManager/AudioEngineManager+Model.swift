@@ -23,11 +23,11 @@ extension AudioEngineManager: AudioEngineManagerModel {
         get async {
             guard await allowInput else { return nil }
 
-            return engine.inputNode
+            return engine?.inputNode
         }
     }
 
-    public var outputNode: AVAudioOutputNode { engine.outputNode }
+    public var outputNode: AVAudioOutputNode? { engine?.outputNode }
 }
 
 extension AudioEngineManager: AudioEngineConnection {
@@ -36,6 +36,8 @@ extension AudioEngineManager: AudioEngineConnection {
         to node2: AVAudioNode,
         format: AVAudioFormat? = nil
     ) async throws {
+        guard let engine else { return }
+
         let systemFormat = await systemFormat
 
         guard let format = format ?? systemFormat else {

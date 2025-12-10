@@ -9,6 +9,8 @@ extension AudioEngineManagerModel {
         guard let systemFormat = await systemFormat else {
             throw NSError(description: "Unable to determine System format")
         }
+        
+        guard let outputNode else { return }
 
         if engineIsRunning { stopEngine() }
 
@@ -45,11 +47,11 @@ extension AudioEngineManagerModel {
         }
     }
 
-    public var outputFormat: AVAudioFormat {
-        outputNode.outputFormat(forBus: 0)
+    public var outputFormat: AVAudioFormat? {
+        outputNode?.outputFormat(forBus: 0)
     }
 
     public var engineIsRunning: Bool {
-        engine.isRunning
+        engine?.isRunning == true
     }
 }

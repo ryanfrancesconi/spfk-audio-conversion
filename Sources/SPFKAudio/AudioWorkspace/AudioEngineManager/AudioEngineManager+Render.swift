@@ -15,6 +15,8 @@ extension AudioEngineManager: EngineRendererModel {
         progressHandler: (@Sendable (UnitInterval) -> Void)?,
         disableManualRenderingModeOnCompletion: Bool
     ) async throws {
+        guard let renderer else { return }
+
         try await renderer.render(
             to: audioFile,
             duration: duration,
@@ -29,6 +31,6 @@ extension AudioEngineManager: EngineRendererModel {
     }
 
     public func cancelRender() async {
-        await renderer.cancelRender()
+        await renderer?.cancelRender()
     }
 }

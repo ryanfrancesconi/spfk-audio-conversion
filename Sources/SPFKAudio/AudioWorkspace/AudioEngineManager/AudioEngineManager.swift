@@ -1,7 +1,7 @@
 @preconcurrency import AVFoundation
 import SPFKBase
 
-public final class AudioEngineManager: Sendable {
+public final class AudioEngineManager: @unchecked Sendable {
     public enum Event: Sendable {
         case rebuild
         case configurationChanged
@@ -12,15 +12,16 @@ public final class AudioEngineManager: Sendable {
         await delegate.audioEngineManager(event: event)
     }
 
-    public let engine = AVAudioEngine()
+    public var engine: AVAudioEngine?
+    var renderer: EngineRenderer?
 
     let delegate: AudioEngineManagerDelegate
-    let renderer: EngineRenderer
 
+    var engineConfigurationObserver: NSObjectProtocol?
+    
     /// Note: must call rebuildEngine before using
     public init(delegate: AudioEngineManagerDelegate) {
         self.delegate = delegate
-        renderer = EngineRenderer(engine: engine)
     }
 
     deinit {

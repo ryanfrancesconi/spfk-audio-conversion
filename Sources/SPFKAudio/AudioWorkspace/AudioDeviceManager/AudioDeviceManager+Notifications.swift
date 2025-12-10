@@ -14,68 +14,61 @@ extension AudioDeviceManager {
 
     @MainActor
     func addObservers() {
-        // guard !isObserving else { return }
-
         removeObservers()
 
-        // Use selector-based observers to avoid @Sendable closure captures of `self`.
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .deviceListChanged,
-            object: nil
-        )
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .defaultInputDeviceChanged,
-            object: nil
-        )
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .defaultOutputDeviceChanged,
-            object: nil
-        )
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .deviceNominalSampleRateDidChange,
-            object: nil
-        )
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .deviceProcessorOverload,
-            object: nil
-        )
+        hardwareObservers = [
+            NotificationCenter.default.addObserver(
+                forName: .deviceListChanged, object: nil, queue: .main,
+                using: { [weak self] notification in
+                    self?.parse(notification: SendableNotification(notification))
+                }
+            ),
+            NotificationCenter.default.addObserver(
+                forName: .defaultInputDeviceChanged, object: nil, queue: .main,
+                using: { [weak self] notification in
+                    self?.parse(notification: SendableNotification(notification))
+                }
+            ),
+            NotificationCenter.default.addObserver(
+                forName: .defaultOutputDeviceChanged, object: nil, queue: .main,
+                using: { [weak self] notification in
+                    self?.parse(notification: SendableNotification(notification))
+                }
+            ),
+            NotificationCenter.default.addObserver(
+                forName: .deviceNominalSampleRateDidChange, object: nil, queue: .main,
+                using: { [weak self] notification in
+                    self?.parse(notification: SendableNotification(notification))
+                }
+            ),
+            NotificationCenter.default.addObserver(
+                forName: .deviceProcessorOverload, object: nil, queue: .main,
+                using: { [weak self] notification in
+                    self?.parse(notification: SendableNotification(notification))
+                }
+            ),
+        ]
     }
 
     @MainActor
     func removeObservers() {
-        // guard isObserving else { return }
+        for hardwareObserver in hardwareObservers {
+            NotificationCenter.default.removeObserver(hardwareObserver)
+        }
 
-        // Also remove selector-based observers registered on self.
-        NotificationCenter.default.removeObserver(self, name: .deviceListChanged, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .defaultInputDeviceChanged, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .defaultOutputDeviceChanged, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .deviceNominalSampleRateDidChange, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .deviceProcessorOverload, object: nil)
+        hardwareObservers.removeAll()
     }
 
-    @MainActor
-    @objc private func parse(notification: Notification) {
-        // Extract a Sendable payload first to avoid capturing Notification/self in a concurrent context.
-        if let hardwareNotification = notification.object as? AudioHardwareNotification {
-            Task {
+    private func parse(notification sendable: SendableNotification) {
+        guard let notification = sendable.notification else { return }
+
+        notificationTask?.cancel()
+        notificationTask = Task<Void, Error> {
+            // Extract a Sendable payload first to avoid capturing Notification/self in a concurrent context.
+            if let hardwareNotification = notification.object as? AudioHardwareNotification {
                 await parse(hardwareNotification: hardwareNotification)
-            }
-        } else if let deviceNotification = notification.object as? AudioDeviceNotification {
-            Task {
+
+            } else if let deviceNotification = notification.object as? AudioDeviceNotification {
                 await parse(deviceNotification: deviceNotification)
             }
         }
@@ -123,7 +116,7 @@ extension AudioDeviceManager {
 
             await send(event: .outputDeviceChanged(device: defaultOutputDevice))
 
-        case .deviceListChanged(objectID: _, event: let event):
+        case .deviceListChanged(objectID: _, let event):
             let added = event.addedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
             let removed = event.removedDevices.filter { !Self.isEngineDefaultAggregate(device: $0) }
 
@@ -135,6 +128,9 @@ extension AudioDeviceManager {
             )
 
             await send(event: .deviceListChanged(event: filteredEvent))
+
+        case .prun:
+            await send(event: .stopAudio)
         }
     }
 

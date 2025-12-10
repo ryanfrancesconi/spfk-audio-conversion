@@ -19,29 +19,19 @@ extension AudioEngineManager {
     func addEngineObserver() {
         removeEngineObserver()
 
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(parse(notification:)),
-            name: .AVAudioEngineConfigurationChange,
-            object: nil
-        )
+        engineConfigurationObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: nil,
+            queue: .main
+        ) { notification in
+            Task { @MainActor [weak self] in
+                await self?.send(event: .configurationChanged)
+            }
+        }
     }
 
     func removeEngineObserver() {
-        NotificationCenter.default.removeObserver(
-            self,
-            name: .AVAudioEngineConfigurationChange,
-            object: nil
-        )
-    }
-}
-
-extension AudioEngineManager {
-    @MainActor @objc private func parse(notification: Notification) {
-        Log.debug(notification)
-
-        Task {
-            await send(event: .configurationChanged)
-        }
+        guard let engineConfigurationObserver else { return }
+        NotificationCenter.default.removeObserver(engineConfigurationObserver)
     }
 }

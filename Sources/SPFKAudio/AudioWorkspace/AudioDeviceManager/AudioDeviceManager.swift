@@ -12,7 +12,7 @@ import SPFKBaseC
 /// the engine audioUnit output directly to the output device selection.
 /// NOTE: this method of direct setting of the device with no input doesn't work with airpods and
 /// potentially other bluetooth I/O headsets as well.
-public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
+public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Sendable {
     public enum Event: Sendable {
         case sampleRateChanged(device: AudioDevice)
         case inputDeviceChanged(device: AudioDevice)
@@ -21,6 +21,7 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
         case deviceProcessorOverload
         case error(Error)
         case configurationChanged(Set<ConfigurationOption>)
+        case stopAudio
     }
 
     public enum ConfigurationOption: Hashable, Sendable {
@@ -32,9 +33,13 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
     let delegate: (any AudioDeviceManagerDelegate)?
 
     public let hardware: AudioHardwareManager = .shared
+    
+    public var hardwareObservers: [NSObjectProtocol] = .init()
 
     public let deviceSettings = AudioDeviceSettings()
 
+    var notificationTask: Task<Void, Error>?
+    
     public init(delegate: AudioDeviceManagerDelegate? = nil) {
         self.delegate = delegate
     }
@@ -60,7 +65,9 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, Sendable {
 
         try await update(systemSampleRate: deviceSampleRate)
 
-        try await setOutput(device: selectedOutputDevice)
+        if await !allowInput {
+            try await setOutput(device: selectedOutputDevice)
+        }
     }
 
     @MainActor private func registerNotifications() async throws {

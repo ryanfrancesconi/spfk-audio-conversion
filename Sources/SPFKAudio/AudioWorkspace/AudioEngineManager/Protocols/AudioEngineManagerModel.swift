@@ -10,10 +10,10 @@ public protocol AudioEngineManagerModel: AnyObject,
     // MARK: - Properties
 
     var systemFormat: AVAudioFormat? { get async }
-    var engine: AVAudioEngine { get }
+    var engine: AVAudioEngine? { get }
     var allowInput: Bool { get async }
     var inputNode: AVAudioInputNode? { get async }
-    var outputNode: AVAudioOutputNode { get }
+    var outputNode: AVAudioOutputNode? { get }
 
     // MARK: - Engine State
 

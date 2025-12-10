@@ -6,6 +6,8 @@ extension AudioEngineManager {
     public func prepareEngine() throws {
         guard !engineIsRunning else { return }
 
+        guard let engine else { return }
+
         Log.debug("🔈 engine.prepare()")
 
         try ExceptionTrap.withThrowing { [engine] in
@@ -19,6 +21,8 @@ extension AudioEngineManager {
     /// immediately if it is already running
     /// - Parameter completionHandler: handler to call on start
     public func startEngine() throws {
+        guard let engine else { return }
+
         guard !engineIsRunning else { return }
 
         Log.debug("🔈 Attempting to start engine with outputFormat", outputFormat)
@@ -31,6 +35,8 @@ extension AudioEngineManager {
     }
 
     public func stopEngine() {
+        guard let engine else { return }
+
         guard engineIsRunning else { return }
 
         engine.stop()
@@ -38,11 +44,15 @@ extension AudioEngineManager {
     }
 
     public func pauseEngine() {
+        guard let engine else { return }
+
         engine.pause()
         Log.debug("🔈 Engine is paused")
     }
 
     public func resetEngine() {
+        guard let engine else { return }
+
         engine.reset()
     }
 
@@ -52,8 +62,12 @@ extension AudioEngineManager {
 
         Log.debug("🔈 Creating new Engine...")
 
-        // engine = AVAudioEngine()
+        let engine = AVAudioEngine()
         engine.isAutoShutdownEnabled = false
+
+        // renderer = EngineRenderer(engine: engine)
+
+        self.engine = engine
 
         // The engine creates a singleton on demand when this property is first accessed.
         _ = outputNode

@@ -8,6 +8,8 @@ import SPFKBase
 extension AudioEngineManager {
     public var detailedDescription: String {
         get async {
+            guard let engine else { return "engine is nil" }
+
             var string = ""
             string += "Engine isRunning: \(engineIsRunning)\n"
 

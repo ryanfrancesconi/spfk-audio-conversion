@@ -22,6 +22,8 @@ public final class AudioWorkspace: @unchecked Sendable {
 
     /// Rebuild the engine graph. Neceessary on startup and sample rate changes
     public func rebuild() async throws {
+        Log.debug("Rebuilding engine and workspace...")
+
         try await shutdown()
 
         await engineManager.rebuildEngine()
@@ -41,7 +43,7 @@ public final class AudioWorkspace: @unchecked Sendable {
 
     private func shutdown() async throws {
         try stop()
-        engineManager.removeEngineObserver()
+        // engineManager.removeEngineObserver()
 
         try masterTrack?.detachNodes()
         try await masterTrack?.audioUnitChain.dispose()
@@ -134,8 +136,8 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
 }
 
 extension AudioWorkspace: AudioDeviceManagerDelegate {
-    public var audioEngineOutputNode: AVAudioOutputNode {
-        engineManager.engine.outputNode
+    public var audioEngineOutputNode: AVAudioOutputNode? {
+        engineManager.engine?.outputNode
     }
 
     public var audioEngineInputNode: AVAudioInputNode? {
@@ -156,12 +158,17 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
                 _ = device
             case let .deviceListChanged(event: event):
                 _ = event
+                return
             case .deviceProcessorOverload:
                 break
             case let .error(error):
                 _ = error
             case let .configurationChanged(options):
                 try handleConfigurationChanged(options: options)
+                
+            case .stopAudio:
+                try? await rebuild()
+                await delegate?.audioWorkspaceShouldRestart(self)
             }
 
         } catch {
@@ -186,6 +193,8 @@ extension AudioWorkspace {
 }
 
 public protocol AudioWorkspaceDelegate: AnyObject {
+    func audioWorkspaceWillRebuild(_ audioWorkspace: AudioWorkspace) async
+
     func audioWorkspaceShouldRebuild(_ audioWorkspace: AudioWorkspace) async
     func audioWorkspaceShouldRestart(_ audioWorkspace: AudioWorkspace) async
 }
