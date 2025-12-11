@@ -10,9 +10,9 @@ public actor WaveformDataParser {
     public let resolution: WaveformDrawingResolution
     private let priority: TaskPriority
 
-    public weak var delegate: WaveformDataParserDelegate?
-    public func update(delegate: WaveformDataParserDelegate?) {
-        self.delegate = delegate
+    public var eventHandler: ((WaveformDataLoadEvent) -> Void)?
+    public func update(eventHandler: ((WaveformDataLoadEvent) -> Void)?) {
+        self.eventHandler = eventHandler
     }
 
     private var task: Task<FloatChannelData, Error>?
@@ -20,11 +20,11 @@ public actor WaveformDataParser {
     public init(
         resolution: WaveformDrawingResolution = .medium,
         priority: TaskPriority = .medium,
-        delegate: WaveformDataParserDelegate? = nil
+        eventHandler: ((WaveformDataLoadEvent) -> Void)? = nil
     ) {
         self.resolution = resolution
         self.priority = priority
-        self.delegate = delegate
+        self.eventHandler = eventHandler
     }
 
     public func parse(url: URL) async throws -> WaveformData {
@@ -69,7 +69,7 @@ public actor WaveformDataParser {
             sampleRate: audioFile.fileFormat.sampleRate
         )
 
-        await delegate?.waveformDataParser(event:
+        eventHandler?(
             .loaded(url: audioFile.url, waveformData: waveformData)
         )
 
@@ -96,7 +96,7 @@ extension WaveformDataParser {
 
         var lastSentProgress: UnitInterval = 0
         func send(progress: UnitInterval) async {
-            await delegate?.waveformDataParser(event: .loading(url: url, progress: progress))
+            eventHandler?(.loading(url: url, progress: progress))
         }
 
         let totalFrames = AVAudioFrameCount(audioFile.length)
@@ -154,8 +154,6 @@ extension WaveformDataParser {
                 let min: Float = vDSP.minimum(bufferPointer)
                 let max: Float = vDSP.maximum(bufferPointer)
                 let value = Float.maximumMagnitude(min, max)
-
-                // let value = vDSP.rootMeanSquare(bufferPointer)
 
                 if !value.isNaN {
                     outfloatChannelData[n][i] = value

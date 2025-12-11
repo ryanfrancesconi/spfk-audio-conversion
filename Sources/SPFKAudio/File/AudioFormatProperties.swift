@@ -31,10 +31,10 @@ public struct AudioFormatProperties: Hashable, Codable, Sendable {
     }
 
     public init(audioFile: AVAudioFile) {
-        self.channelCount = audioFile.fileFormat.channelCount
-        self.sampleRate = audioFile.fileFormat.sampleRate
-        self.bitsPerChannel = audioFile.fileFormat.bitsPerChannel.int
-        self.duration = audioFile.duration
+        channelCount = audioFile.fileFormat.channelCount
+        sampleRate = audioFile.fileFormat.sampleRate
+        bitsPerChannel = audioFile.fileFormat.bitsPerChannel.int
+        duration = audioFile.duration
 
         update()
     }
@@ -76,10 +76,6 @@ public struct AudioFormatProperties: Hashable, Codable, Sendable {
         if let bitsPerChannel {
             out += bitsPerChannel > 0 ? ", \(bitsPerChannel) bit" : ""
         }
-
-//        if let dataRate {
-//            out += dataRate > 0 ? ", \(dataRate) kbit/s" : ""
-//        }
 
         if channelsDescription != "" {
             out += ", \(channelsDescription)"
