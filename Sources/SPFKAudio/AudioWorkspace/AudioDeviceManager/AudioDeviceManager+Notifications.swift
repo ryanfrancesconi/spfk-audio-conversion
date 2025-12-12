@@ -5,7 +5,7 @@ import SPFKBase
 
 extension AudioDeviceManager {
     func send(event: Event) async {
-        Log.debug("🔊 \(event)")
+        // Log.debug("🔊 \(event)")
 
         guard let delegate else { return }
 

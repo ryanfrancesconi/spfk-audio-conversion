@@ -124,7 +124,7 @@ extension AudioWorkspace: AudioEngineManagerDelegate {
     }
 
     public func audioEngineManager(event: AudioEngineManager.Event) async {
-        Log.debug("🔊", event)
+        // Log.debug("🔊", event)
 
         switch event {
         case .configurationChanged:
@@ -153,7 +153,7 @@ extension AudioWorkspace: AudioDeviceManagerDelegate {
     }
 
     public func audioDeviceManager(event: AudioDeviceManager.Event) async {
-        Log.debug("🔊", event)
+        // Log.debug("🔊", event)
 
         switch event {
         case let .sampleRateChanged(sampleRate):
