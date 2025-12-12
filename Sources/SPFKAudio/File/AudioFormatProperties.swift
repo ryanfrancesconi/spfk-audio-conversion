@@ -4,13 +4,13 @@ import AVFoundation
 import Foundation
 import SPFKTime
 
-public struct AudioFormatProperties: Hashable, Codable, Sendable {
+public struct AudioFormatProperties: Hashable, Sendable {
     public private(set) var channelCount: AVAudioChannelCount
     public private(set) var sampleRate: Double
     public private(set) var bitsPerChannel: Int?
     public private(set) var duration: TimeInterval = 0
 
-    // MARK: cached descriptions for displaying in the UI
+    // MARK: Transients, cached descriptions for displaying in the UI
 
     public private(set) var durationDescription: String = ""
     public private(set) var formatDescription: String = ""
@@ -27,7 +27,7 @@ public struct AudioFormatProperties: Hashable, Codable, Sendable {
         self.bitsPerChannel = bitsPerChannel
         self.duration = duration
 
-        update()
+        initialize()
     }
 
     public init(audioFile: AVAudioFile) {
@@ -36,10 +36,10 @@ public struct AudioFormatProperties: Hashable, Codable, Sendable {
         bitsPerChannel = audioFile.fileFormat.bitsPerChannel.int
         duration = audioFile.duration
 
-        update()
+        initialize()
     }
 
-    private mutating func update() {
+    private mutating func initialize() {
         updateChannelsDescription()
         updateFormatDescription()
         updateDurationDescription()
@@ -90,5 +90,33 @@ public struct AudioFormatProperties: Hashable, Codable, Sendable {
             showHours: .auto,
             showMilliseconds: true
         )
+    }
+}
+
+extension AudioFormatProperties: Codable {
+    enum CodingKeys: String, CodingKey {
+        case channelCount
+        case sampleRate
+        case bitsPerChannel
+        case duration
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        channelCount = try container.decode(AVAudioChannelCount.self, forKey: .channelCount)
+        sampleRate = try container.decode(Double.self, forKey: .sampleRate)
+        bitsPerChannel = try? container.decodeIfPresent(Int.self, forKey: .bitsPerChannel)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+
+        initialize()
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(channelCount, forKey: .channelCount)
+        try container.encode(sampleRate, forKey: .sampleRate)
+        try? container.encodeIfPresent(bitsPerChannel, forKey: .bitsPerChannel)
+        try container.encode(duration, forKey: .duration)
     }
 }
