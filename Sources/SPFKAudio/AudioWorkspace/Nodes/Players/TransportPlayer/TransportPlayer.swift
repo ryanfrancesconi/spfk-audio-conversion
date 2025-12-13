@@ -126,7 +126,7 @@ public final class TransportPlayer: @unchecked Sendable {
 
         currentPlayer = nil
         players.removeAll()
-        
+
         // ignore errors here as the engine may be nil
         try? mixer.detachNodes()
 
@@ -177,8 +177,7 @@ extension TransportPlayer {
             }
 
             currentTime = 0
-
-            // delegate.transportPlayer(timerEvent: .time(0))
+            await delegate.transportPlayer(timerEvent: .time(0))
 
             currentPlayer.unload()
         }
