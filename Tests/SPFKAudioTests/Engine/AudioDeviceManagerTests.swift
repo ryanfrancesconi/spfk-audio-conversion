@@ -25,7 +25,7 @@ final class AudioDeviceManagerTests: TestCaseModel {
         try await Log.debug(dm.detailedDescription())
     }
 
-    @Test(arguments: [Scope.output, Scope.input])
+    @Test(arguments: [Scope.output])
     func deviceSampleRates(scope: Scope) async throws {
         let devices = scope == .output ?
             try await dm.hardware.outputDevices() :

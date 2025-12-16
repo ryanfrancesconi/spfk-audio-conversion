@@ -73,7 +73,6 @@ extension WaveformDataTests {
         let parser = WaveformDataParser(
             resolution: .medium,
             priority: .medium,
-            delegate: nil
         )
 
         let waveformData = try await parser.parse(url: url)
@@ -84,6 +83,5 @@ extension WaveformDataTests {
         let subdata = try waveformData.subdata(in: 0 ... waveformData.audioDuration / 2)
         #expect(subdata.count == 2)
         Log.signpost(.end, name: "subdata")
-
     }
 }

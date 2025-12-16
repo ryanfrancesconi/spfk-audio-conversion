@@ -9,15 +9,12 @@ import Testing
 
 @Suite(.tags(.file))
 class WaveformDataParserTests: BinTestCase {
-    let delegateContainer = DelegateContainer()
-
     @Test func parse() async throws {
         let url = TestBundleResources.shared.tabla_6_channel
 
         let parser = WaveformDataParser(
             resolution: .low,
             priority: .medium,
-            delegate: nil
         )
 
         let waveformData = try await parser.parse(url: url)
@@ -55,7 +52,6 @@ class WaveformDataParserTests: BinTestCase {
         let parser = WaveformDataParser(
             resolution: .lossless,
             priority: .medium,
-            delegate: delegateContainer
         )
 
         let waveformData = try await parser.parse(url: url)
@@ -74,7 +70,6 @@ class WaveformDataParserTests: BinTestCase {
         let parser = WaveformDataParser(
             resolution: .lossless,
             priority: .low,
-            delegate: delegateContainer
         )
 
         Task {
@@ -103,18 +98,6 @@ class WaveformDataParserTests: BinTestCase {
 
                 throw error
             }
-        }
-    }
-}
-
-final class DelegateContainer: WaveformDataParserDelegate {
-    func waveformDataParser(event: WaveformDataLoadEvent) async {
-        switch event {
-        case let .loading(url: url, progress: progress):
-            Log.debug(url.path, progress)
-
-        case .loaded(let url, waveformData: _):
-            Log.debug("complete", url.lastPathComponent)
         }
     }
 }
