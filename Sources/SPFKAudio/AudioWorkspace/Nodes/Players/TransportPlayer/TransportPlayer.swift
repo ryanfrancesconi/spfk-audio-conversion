@@ -177,8 +177,6 @@ extension TransportPlayer {
             }
 
             currentTime = 0
-            await delegate.transportPlayer(timerEvent: .time(0))
-
             currentPlayer.unload()
         }
 
