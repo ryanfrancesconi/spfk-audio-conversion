@@ -5,13 +5,15 @@ import AVFAudio
 import AVFoundation
 import SPFKBase
 
+public typealias WaveformDataLoadEventHandler = (@Sendable (WaveformDataLoadEvent) async -> Void)
+
 /// Get audio data from a file suitable for waveform visualization
 public actor WaveformDataParser {
     public let resolution: WaveformDrawingResolution
     private let priority: TaskPriority
 
-    public var eventHandler: ((WaveformDataLoadEvent) -> Void)?
-    public func update(eventHandler: ((WaveformDataLoadEvent) -> Void)?) {
+    public var eventHandler: WaveformDataLoadEventHandler?
+    public func update(eventHandler: WaveformDataLoadEventHandler?) {
         self.eventHandler = eventHandler
     }
 
@@ -20,7 +22,7 @@ public actor WaveformDataParser {
     public init(
         resolution: WaveformDrawingResolution = .medium,
         priority: TaskPriority = .medium,
-        eventHandler: ((WaveformDataLoadEvent) -> Void)? = nil
+        eventHandler: WaveformDataLoadEventHandler? = nil
     ) {
         self.resolution = resolution
         self.priority = priority
@@ -69,7 +71,7 @@ public actor WaveformDataParser {
             sampleRate: audioFile.fileFormat.sampleRate
         )
 
-        eventHandler?(
+        await eventHandler?(
             .loaded(url: audioFile.url, waveformData: waveformData)
         )
 
@@ -96,7 +98,7 @@ extension WaveformDataParser {
 
         var lastSentProgress: UnitInterval = 0
         func send(progress: UnitInterval) async {
-            eventHandler?(.loading(url: url, progress: progress))
+            await eventHandler?(.loading(url: url, progress: progress))
         }
 
         let totalFrames = AVAudioFrameCount(audioFile.length)
