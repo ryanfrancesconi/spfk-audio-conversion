@@ -12,31 +12,33 @@ final class AudioEngineManagerTests: TestCaseModel, @unchecked Sendable {
     lazy var engineManager: AudioEngineManager? = AudioEngineManager(delegate: self)
 
     @Test func state() async throws {
-        try await wait(sec: 4)
+        let engineManager = engineManager!
 
-        if let engine = engineManager {
-            try engine.startEngine()
-            #expect(engine.engineIsRunning)
+        await engineManager.rebuildEngine()
 
-            Log.debug(engine.debugDescription)
+        try engineManager.startEngine()
 
-            await engine.rebuildEngine()
-            #expect(!engine.engineIsRunning)
+        #expect(engineManager.engineIsRunning)
 
-            try engine.startEngine()
-            #expect(engine.engineIsRunning)
+        Log.debug(engineManager.debugDescription)
 
-            engine.stopEngine()
-        }
+        await engineManager.rebuildEngine()
+        #expect(!engineManager.engineIsRunning)
 
-        engineManager = nil
-        try await wait(sec: 4)
+        try engineManager.startEngine()
+        #expect(engineManager.engineIsRunning)
+
+        engineManager.stopEngine()
+
+        self.engineManager = nil
+        // try await wait(sec: 4)
     }
 
     @Test func connectAndAttach() async throws {
-        try await wait(sec: 4)
+        // try await wait(sec: 4)
 
         guard let engineManager, let outputNode = engineManager.outputNode else { return }
+        await engineManager.rebuildEngine()
 
         var fader: Fader? = try await Fader()
 
@@ -44,7 +46,7 @@ final class AudioEngineManagerTests: TestCaseModel, @unchecked Sendable {
 
         fader = nil
 
-        try await wait(sec: 4)
+        // try await wait(sec: 4)
     }
 }
 

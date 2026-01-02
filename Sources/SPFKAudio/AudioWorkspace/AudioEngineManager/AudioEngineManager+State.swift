@@ -21,7 +21,9 @@ extension AudioEngineManager {
     /// immediately if it is already running
     /// - Parameter completionHandler: handler to call on start
     public func startEngine() throws {
-        guard let engine else { return }
+        guard let engine else {
+            throw NSError(description: "engine is nil")
+        }
 
         guard !engineIsRunning else { return }
 
