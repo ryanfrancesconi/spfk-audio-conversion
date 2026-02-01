@@ -1,8 +1,9 @@
 import AVFoundation
-@testable import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.tags(.file))
 struct AudioFormatPropertiesTests {
@@ -11,9 +12,9 @@ struct AudioFormatPropertiesTests {
             let audioFile = try AVAudioFile(forReading: url)
 
             let properties = AudioFormatProperties(audioFile: audioFile)
-            
+
             Log.debug(url.lastPathComponent, properties.formatDescription)
-            
+
         }
     }
 }
