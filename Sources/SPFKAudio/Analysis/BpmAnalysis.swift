@@ -1,20 +1,37 @@
 import AVFoundation
 import Foundation
+import SoundTouchC
 import SPFKAudioBase
 import SPFKAudioC
 import SPFKBase
 
+public typealias BpmAnalysisEventHandler = @Sendable (BpmAnalysisEvent) async -> Void
+
+public enum BpmAnalysisEvent: Sendable {
+    case loading(url: URL, progress: UnitInterval)
+}
+
 public actor BpmAnalysis: Sendable {
     private var task: Task<Bpm, Error>?
 
-    public init() {}
+    let bufferDuration: TimeInterval
+
+    public var eventHandler: WaveformDataLoadEventHandler?
+    public func update(eventHandler: WaveformDataLoadEventHandler?) {
+        self.eventHandler = eventHandler
+    }
+
+    public init(bufferDuration: TimeInterval = 0.2) {
+        self.bufferDuration = max(0.1, bufferDuration)
+    }
 
     public func process(url: URL) async throws -> Bpm {
         try await process(audioFile: AVAudioFile(forReading: url))
     }
 
     public func process(audioFile: AVAudioFile) async throws -> Bpm {
-        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)"); defer { benchmark.stop() }
+        let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)")
+        defer { benchmark.stop() }
 
         // store the current frame before scanning the file
         let currentFrame = audioFile.framePosition
@@ -57,16 +74,21 @@ public actor BpmAnalysis: Sendable {
 
     private func _process(audioFile: AVAudioFile) async throws -> Bpm {
         let totalFrames = AVAudioFrameCount(audioFile.length)
+        let totalFramesDouble = Double(totalFrames)
         let sampleRate = audioFile.fileFormat.sampleRate
 
         guard totalFrames > 0 else {
             throw NSError(description: "No audio was found in \(audioFile.url.path)")
         }
 
+        func send(progress: UnitInterval) async {
+            await eventHandler?(.loading(url: audioFile.url, progress: progress))
+        }
+
         Log.debug(audioFile.url.lastPathComponent, audioFile.duration, "seconds")
 
         // analysis buffer size
-        var framesPerBuffer = AVAudioFrameCount(8 * sampleRate) // x seconds
+        var framesPerBuffer = AVAudioFrameCount(bufferDuration * sampleRate) // x seconds
 
         if framesPerBuffer > totalFrames {
             framesPerBuffer = totalFrames
@@ -74,35 +96,38 @@ public actor BpmAnalysis: Sendable {
 
         let pcmFormat = audioFile.processingFormat
 
-        guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: pcmFormat,
-            frameCapacity: framesPerBuffer
-        )
+        guard
+            let buffer = AVAudioPCMBuffer(
+                pcmFormat: pcmFormat,
+                frameCapacity: framesPerBuffer
+            )
         else {
             throw NSError(description: "Unable to create buffer")
         }
 
         var currentFrame: AVAudioFramePosition = 0
 
+        var sinceLastMark: AVAudioFrameCount = 0
+        let checkBpmAt: AVAudioFrameCount = AVAudioFrameCount(sampleRate) * 4
         var bpms: [Bpm] = []
+
+        let bpmDetect: BPMDetectC = .init(
+            sampleRate: sampleRate.int32, numberOfChannels: buffer.format.channelCount.int32
+        )
 
         while currentFrame < totalFrames {
             audioFile.framePosition = currentFrame
 
+            let progress: UnitInterval = Double(currentFrame) / totalFramesDouble
+            await send(progress: progress)
+
             try audioFile.read(into: buffer, frameCount: framesPerBuffer)
 
-            do {
-                let average = try evaluateBpm(buffer: buffer)
-
-                if bpms.count(of: average) >= 3 {
-                    Log.debug("Returning early found \(bpms) enough multiples of", average)
-                    return average
-                }
-
-                bpms.append(average)
-
-            } catch {
-                Log.error(error)
+            if let rawData = buffer.floatChannelData {
+                bpmDetect.process(
+                    rawData.pointee,
+                    numberOfSamples: buffer.frameLength.int32
+                )
             }
 
             currentFrame += AVAudioFramePosition(framesPerBuffer)
@@ -113,7 +138,27 @@ public actor BpmAnalysis: Sendable {
 
                 guard framesPerBuffer > 0 else { break }
             }
+
+            sinceLastMark += framesPerBuffer
+
+            if sinceLastMark > checkBpmAt {
+                let value = bpmDetect.getBpm().double.rounded(.toNearestOrAwayFromZero)
+
+                if let bpm = try? Bpm(value) {
+                    bpms.append(bpm)
+
+                    Log.debug("\(audioFile.url.lastPathComponent) BPM @ \(currentFrame)", bpm)
+
+                    if bpms.count(of: bpm) >= 4 {
+                        Log.debug("Returning early found \(bpms) enough multiples of", bpm)
+                        return bpm
+                    }
+                }
+                sinceLastMark = 0
+            }
         }
+
+        await send(progress: 1)
 
         return try chooseMostLikelyBpm(from: bpms)
     }
@@ -133,43 +178,9 @@ public actor BpmAnalysis: Sendable {
             return bpms[0] // unideal, but pick first
         }
 
-        Log.debug("elements which have more than one entry:", multiples)
+        Log.debug("elements which have more than one entry:", multiples, "all:", bpms)
 
         return value
-    }
-
-    func evaluateBpm(buffer: AVAudioPCMBuffer) throws -> Bpm {
-//        let monoBuffer = try buffer.convertToMono()
-//        guard monoBuffer.format.channelCount == 1, let rawData = monoBuffer.floatChannelData else {
-//            throw NSError(description: "Failed to read from buffer")
-//        }
-
-        guard let rawData = buffer.floatChannelData else {
-            throw NSError(description: "Failed to get data from buffer")
-        }
-
-        let channelCount = buffer.format.channelCount.int
-        let sampleRate = buffer.format.sampleRate
-        let framesPerBuffer = buffer.frameLength
-
-        var channelBpms = [Double](repeating: Double.nan, count: channelCount)
-
-        for n in 0 ..< channelCount {
-            channelBpms[n] = BpmEstimation.processMbpm(rawData[n], numberOfSamples: Int32(framesPerBuffer), sampleRate: sampleRate)
-        }
-
-        let average: Double = channelBpms.averaged.rounded(.down)
-
-        // let average: Double = BpmEstimation.processMbpm(rawData[0], numberOfSamples: Int32(framesPerBuffer), sampleRate: sampleRate)
-        // Log.debug("average", average)
-
-        return try Bpm(average)
-    }
-}
-
-extension [Double] {
-    public var averaged: Double {
-        reduce(0, +) / Double(count)
     }
 }
 
@@ -177,19 +188,23 @@ extension AVAudioPCMBuffer {
     func convertToMono() throws -> AVAudioPCMBuffer {
         let buffer = self
 
-        guard let monoFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: buffer.format.sampleRate,
-            channels: 1,
-            interleaved: false
-        ) else {
+        guard
+            let monoFormat = AVAudioFormat(
+                commonFormat: .pcmFormatFloat32,
+                sampleRate: buffer.format.sampleRate,
+                channels: 1,
+                interleaved: false
+            )
+        else {
             throw NSError(description: "failed to create mono format")
         }
 
-        guard let monoBuffer = AVAudioPCMBuffer(
-            pcmFormat: monoFormat,
-            frameCapacity: buffer.frameCapacity
-        ) else {
+        guard
+            let monoBuffer = AVAudioPCMBuffer(
+                pcmFormat: monoFormat,
+                frameCapacity: buffer.frameCapacity
+            )
+        else {
             throw NSError(description: "failed to create mono buffer")
         }
 

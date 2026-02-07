@@ -186,7 +186,7 @@ void usage(FILE *f) {
 }
 
 int main_bpm(int argc, char *argv[]) {
-    float *nrg = NULL;
+    float *data = NULL;
     size_t len = 0, buf = 0;
     off_t n = 0;
     double bpm, min = LOWER, max = UPPER, v = 0.0;
@@ -282,9 +282,9 @@ int main_bpm(int argc, char *argv[]) {
             size_t n;
 
             n = buf + BLOCK;
-            nrg = realloc(nrg, n * sizeof(*nrg));
+            data = realloc(data, n * sizeof(*data));
 
-            if (nrg == NULL) {
+            if (data == NULL) {
                 perror("realloc");
                 return -1;
             }
@@ -297,15 +297,15 @@ int main_bpm(int argc, char *argv[]) {
                     (double)len * INTERVAL / sample_rate, v);
         }
 
-        nrg[len++] = v;
+        data[len++] = v;
     }
 
-    bpm = scan_for_bpm(nrg, sample_rate, len, 1024, 1024);
+    bpm = scan_for_bpm(data, sample_rate, len, 1024, 1024);
 
     printf(format, bpm);
     putc('\n', stdout);
 
-    free(nrg);
+    free(data);
 
     if (fdiff != NULL) {
         if (fclose(fdiff) != 0) {

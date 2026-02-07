@@ -10,6 +10,7 @@
            sampleRate:(double)sampleRate {
     //
     breakfastquay::MiniBPM mbpm((float)sampleRate);
+
     mbpm.setBPMRange(30, 400);
     mbpm.process(data, numberOfSamples);
 
