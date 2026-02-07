@@ -18,7 +18,7 @@ public actor WaveformDataParser {
     }
 
     private var task: Task<FloatChannelData, Error>?
-
+    
     public init(
         resolution: WaveformDrawingResolution = .medium,
         priority: TaskPriority = .medium,
