@@ -7,6 +7,8 @@ import SPFKBase
 public actor BpmAnalysis: Sendable {
     private var task: Task<Bpm, Error>?
 
+    public init() {}
+
     public func process(url: URL) async throws -> Bpm {
         try await process(audioFile: AVAudioFile(forReading: url))
     }
