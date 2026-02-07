@@ -222,20 +222,24 @@ extension AVAudioPCMBuffer {
         let newFrameCapacity = (convertToFormat.sampleRate / format.sampleRate) * frameCapacity.double
 
         guard let outBuffer = AVAudioPCMBuffer(pcmFormat: convertToFormat,
-                                               frameCapacity: AVAudioFrameCount(newFrameCapacity)) else {
+                                               frameCapacity: AVAudioFrameCount(newFrameCapacity))
+        else {
             throw NSError(description: "Failed to create buffer with format \(convertToFormat.readableDescription)")
         }
 
         Log.debug("Creating buffer with format", convertToFormat, "frameCapacity", newFrameCapacity)
 
         var error: NSError?
-        let status: AVAudioConverterOutputStatus = converter.convert(to: outBuffer,
-                                                                     error: &error,
-                                                                     withInputFrom: inputBlock)
+        let status: AVAudioConverterOutputStatus = converter.convert(
+            to: outBuffer,
+            error: &error,
+            withInputFrom: inputBlock
+        )
         switch status {
         case .haveData:
             /// All of the requested data was returned.
             return outBuffer
+
         case .inputRanDry:
             /// contains as much as could be converted.
             Log.error("inputRanDry")

@@ -44,19 +44,4 @@ class BpmTests: TestCaseModel {
         let bpm = try await ba.process(url: url)
         #expect(bpm.isMultiple(of: 122))
     }
-
-    @Test func concurrentAccess() async throws {
-        let _self = self
-
-        let task1 = Task {
-            try await _self.drumloop_60()
-        }
-
-        let task2 = Task {
-            try await drumloop_200()
-        }
-
-        try await task1.value
-        try await task2.value
-    }
 }

@@ -13,13 +13,13 @@ extension AVAudioFile {
 
 extension AVAudioFile {
     public func normalize() throws {
-        guard let buffer = try AVAudioPCMBuffer(url: self.url) else {
+        guard let buffer = try AVAudioPCMBuffer(url: url) else {
             throw NSError(description: "failed to read into buffer")
         }
 
         let normalized = try buffer.normalize()
 
-        _ = try AVAudioFile(url: self.url, fromBuffer: normalized)
+        _ = try AVAudioFile(url: url, fromBuffer: normalized)
     }
 }
 

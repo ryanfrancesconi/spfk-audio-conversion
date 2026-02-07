@@ -1,3 +1,5 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
+
 import AVFoundation
 import Foundation
 import SoundTouchC
@@ -181,41 +183,5 @@ public actor BpmAnalysis: Sendable {
         Log.debug("elements which have more than one entry:", multiples, "all:", bpms)
 
         return value
-    }
-}
-
-extension AVAudioPCMBuffer {
-    func convertToMono() throws -> AVAudioPCMBuffer {
-        let buffer = self
-
-        guard
-            let monoFormat = AVAudioFormat(
-                commonFormat: .pcmFormatFloat32,
-                sampleRate: buffer.format.sampleRate,
-                channels: 1,
-                interleaved: false
-            )
-        else {
-            throw NSError(description: "failed to create mono format")
-        }
-
-        guard
-            let monoBuffer = AVAudioPCMBuffer(
-                pcmFormat: monoFormat,
-                frameCapacity: buffer.frameCapacity
-            )
-        else {
-            throw NSError(description: "failed to create mono buffer")
-        }
-
-        guard let converter = AVAudioConverter(from: buffer.format, to: monoFormat) else {
-            throw NSError(description: "failed to create converter")
-        }
-
-        try converter.convert(to: monoBuffer, from: buffer)
-
-        monoBuffer.frameLength = buffer.frameLength
-
-        return monoBuffer
     }
 }
