@@ -14,8 +14,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/ryanfrancesconi/CXXSoundTouch", branch: "development"), //from: ""
-
+        .package(url: "https://github.com/ryanfrancesconi/spfk-tempo", branch: "development"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-au-host", branch: "development"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", branch: "development"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-loudness", branch: "development"),
@@ -31,8 +30,7 @@ let package = Package(
             dependencies: [
                 .targetItem(name: "SPFKAudioC", condition: nil),
 
-//                .product(name: "SoundTouchC", package: "CXXSoundTouch"),
-
+                .product(name: "SPFKTempo", package: "spfk-tempo"),
                 .product(name: "SPFKAUHost", package: "spfk-au-host"),
                 .product(name: "SPFKAudioHardware", package: "spfk-audio-hardware"),
                 .product(name: "SPFKLoudness", package: "spfk-loudness"),
@@ -45,7 +43,6 @@ let package = Package(
         .target(
             name: "SPFKAudioC",
             dependencies: [
-                .product(name: "SoundTouch", package: "CXXSoundTouch"),
                 .product(name: "SPFKLoudness", package: "spfk-loudness"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
                 .product(name: "SPFKSoX", package: "spfk-sox"),
