@@ -72,7 +72,6 @@ extension WaveformDataTests {
         Log.signpost(.begin, name: "parse")
         let parser = WaveformDataParser(
             resolution: .medium,
-            priority: .medium,
         )
 
         let waveformData = try await parser.parse(url: url)

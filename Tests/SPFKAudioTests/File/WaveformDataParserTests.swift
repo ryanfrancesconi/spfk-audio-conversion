@@ -14,7 +14,6 @@ class WaveformDataParserTests: BinTestCase {
 
         let parser = WaveformDataParser(
             resolution: .low,
-            priority: .medium,
         )
 
         let waveformData = try await parser.parse(url: url)
@@ -51,7 +50,6 @@ class WaveformDataParserTests: BinTestCase {
 
         let parser = WaveformDataParser(
             resolution: .lossless,
-            priority: .medium,
         )
 
         let waveformData = try await parser.parse(url: url)
@@ -64,27 +62,31 @@ class WaveformDataParserTests: BinTestCase {
         }
     }
 
-    @Test func cancel() async throws {
+    @Test func cancelTask() async throws {
         let input = TestBundleResources.shared.tabla_6_channel
 
-        let parser = WaveformDataParser(
-            resolution: .lossless,
-            priority: .low,
-        )
+        let task = Task<WaveformData, Error>(priority: .high) {
+            let parser = WaveformDataParser(resolution: .veryHigh, eventHandler: { event in
+                Log.debug(event.progress)
+            })
 
-        Task {
-            try await Task.sleep(seconds: 0.005)
-            await parser.cancel()
+            return try await parser.parse(url: input)
         }
 
-        await #expect(throws: CancellationError.self) {
-            _ = try await parser.parse(url: input)
+        Task { @MainActor in
+            try await Task.sleep(seconds: 0.009)
+            task.cancel()
         }
+
+        let result = await task.result
+        Log.debug(result)
+        #expect(!result.isSuccess)
+        #expect(result.failureValue as? CancellationError != nil)
     }
 
     @Test func noDataChunk() async throws {
         let url = TestBundleResources.shared.no_data_chunk
-        let request = WaveformDataParser(resolution: .low, priority: .low)
+        let request = WaveformDataParser(resolution: .low)
 
         await #expect(throws: (any Error).self) {
             do {

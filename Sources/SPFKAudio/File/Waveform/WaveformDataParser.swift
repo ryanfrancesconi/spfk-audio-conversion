@@ -5,27 +5,16 @@ import AVFAudio
 import AVFoundation
 import SPFKBase
 
-public typealias WaveformDataLoadEventHandler = (@Sendable (WaveformDataLoadEvent) async -> Void)
-
 /// Get audio data from a file suitable for waveform visualization
-public actor WaveformDataParser {
+public struct WaveformDataParser {
     public let resolution: WaveformDrawingResolution
-    private let priority: TaskPriority
+    public let eventHandler: WaveformDataLoadEventHandler?
 
-    public var eventHandler: WaveformDataLoadEventHandler?
-    public func update(eventHandler: WaveformDataLoadEventHandler?) {
-        self.eventHandler = eventHandler
-    }
-
-    private var task: Task<FloatChannelData, Error>?
-    
     public init(
         resolution: WaveformDrawingResolution = .medium,
-        priority: TaskPriority = .medium,
         eventHandler: WaveformDataLoadEventHandler? = nil
     ) {
         self.resolution = resolution
-        self.priority = priority
         self.eventHandler = eventHandler
     }
 
@@ -42,27 +31,7 @@ public actor WaveformDataParser {
             audioFile.framePosition = currentFrame
         }
 
-        let task = Task<FloatChannelData, Error>(priority: priority) {
-            try await _parse(audioFile: audioFile)
-        }
-        self.task = task
-
-        let result = await task.result
-
-        guard !task.isCancelled else {
-            throw CancellationError()
-        }
-
-        var floatChannelData: FloatChannelData
-
-        switch result {
-        case let .success(value):
-            floatChannelData = value
-
-        case let .failure(error):
-            Log.error("Failed parsing \(audioFile.url)", error)
-            throw error
-        }
+        let floatChannelData: FloatChannelData = try await _parse(audioFile: audioFile)
 
         let waveformData = WaveformData(
             floatChannelData: floatChannelData,
@@ -72,19 +41,10 @@ public actor WaveformDataParser {
         )
 
         await eventHandler?(
-            .loaded(url: audioFile.url, waveformData: waveformData)
+            .complete(url: audioFile.url, value: waveformData)
         )
 
         return waveformData
-    }
-
-    public func cancel() {
-        guard let task else {
-            Log.error("task is nil")
-            return
-        }
-
-        task.cancel()
     }
 }
 
@@ -98,7 +58,7 @@ extension WaveformDataParser {
 
         var lastSentProgress: UnitInterval = 0
         func send(progress: UnitInterval) async {
-            await eventHandler?(.loading(url: url, progress: progress))
+            await eventHandler?(.progress(url: url, value: progress))
         }
 
         let totalFrames = AVAudioFrameCount(audioFile.length)
