@@ -53,7 +53,7 @@ public final class TransportPlayer: @unchecked Sendable {
     var scheduler = LoopScheduler()
 
     // TODO: the source of truth for all other components rather than copying it everywhere
-    public var measure = MusicalMeasureDescription(tempo: 60)
+    public var measure = MusicalMeasureDescription(tempo: ._60bpm)
 
     public var isPlaying: Bool { currentPlayer?.isPlaying == true }
 

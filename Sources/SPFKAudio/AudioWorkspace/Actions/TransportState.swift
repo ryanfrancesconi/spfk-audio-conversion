@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import Foundation
+import SPFKAudioBase
 import SPFKTime
 
 public struct TransportState {
@@ -17,7 +18,7 @@ public struct TransportState {
         currentTime: TimeInterval = 0,
         currentURL: URL? = nil,
         duration: TimeInterval = 0,
-        measure: MusicalMeasureDescription = .init(timeSignature: ._4_4, tempo: 60)
+        measure: MusicalMeasureDescription = .init(timeSignature: ._4_4, tempo: ._60bpm)
     ) {
         self.isPlaying = isPlaying
         self.isLooping = isLooping
