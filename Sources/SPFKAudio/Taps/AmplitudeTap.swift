@@ -7,7 +7,7 @@ import SwiftExtensions
 
 /// Tap to do amplitude analysis on any node. Limited to 2 channels.
 /// start() will add the tap, and stop() will remove it.
-public class AmplitudeTap {
+public final class AmplitudeTap {
     /// Determines if the returned amplitude value is the rms or peak value
     public var analysisMode: AnalysisMode = .peak
 

@@ -4,7 +4,7 @@ import AVFoundation
 import Foundation
 
 /// Local maximum containing the time, frame position and  amplitude
-public struct Transient: Comparable {
+public struct Transient: Comparable, Sendable {
     public static func > (lhs: Self, rhs: Self) -> Bool {
         lhs.amplitude > rhs.amplitude
     }
