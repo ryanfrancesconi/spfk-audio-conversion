@@ -14,15 +14,15 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/ryanfrancesconi/spfk-tempo", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-au-host", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-loudness", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-sox", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-testing", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-time", branch: "development"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-utils", branch: "development"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-tempo", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-au-host", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-loudness", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-sox", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-time", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-utils", from: "0.0.1"),
     ],
     targets: [
         .target(
