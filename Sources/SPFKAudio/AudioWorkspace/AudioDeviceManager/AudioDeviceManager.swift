@@ -50,8 +50,6 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
         await deviceSettings.update(inputUID: settings.inputUID ?? defaultInputUID)
         await deviceSettings.update(outputUID: settings.outputUID ?? defaultOutputUID)
 
-        await Log.debug(deviceSettings.description)
-
         try await registerNotifications()
 
         guard let selectedOutputDevice = await selectedOutputDevice else {
@@ -61,6 +59,8 @@ public final class AudioDeviceManager: AudioDeviceManagerModel, @unchecked Senda
         guard let deviceSampleRate = selectedOutputDevice.nominalSampleRate else {
             throw NSError(description: "\(selectedOutputDevice.nameAndID): Failed to get sample rate")
         }
+
+        await Log.debug("deviceSettings:", deviceSettings.description, deviceSampleRate)
 
         try await update(systemSampleRate: deviceSampleRate)
 

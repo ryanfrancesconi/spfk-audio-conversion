@@ -37,5 +37,7 @@ extension AudioDeviceManager {
         }
     }
 
-    public var engineOutputNode: AVAudioOutputNode? { delegate?.audioEngineOutputNode }
+    public var engineOutputNode: AVAudioOutputNode? {
+        delegate?.audioEngineOutputNode
+    }
 }

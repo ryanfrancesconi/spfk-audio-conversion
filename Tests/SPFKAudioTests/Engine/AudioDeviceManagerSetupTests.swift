@@ -1,6 +1,6 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 @testable import SPFKAudio
 import SPFKAudioHardware
@@ -9,11 +9,25 @@ import SPFKTesting
 import Testing
 
 @Suite(.serialized, .tags(.realtime, .engine))
-final class AudioDeviceManagerSetupTests: TestCaseModel {
-    @Test func customSettings() async throws {
-        let dm = AudioDeviceManager()
+final class AudioDeviceManagerSetupTests: TestCaseModel, AudioDeviceManagerDelegate {
+    let engine = AVAudioEngine()
 
-        let settings = AudioDeviceSettings(inputUID: "inputDeviceDisabledUID", outputUID: "com_uaudio_driver_UAD2AudioEngine:0")
+    var audioEngineOutputNode: AVAudioOutputNode? {
+        engine.outputNode
+    }
+
+    var audioEngineInputNode: AVAudioInputNode? {
+        get async { engine.inputNode }
+    }
+
+    func audioDeviceManager(event: SPFKAudio.AudioDeviceManager.Event) async {
+        Log.debug(event)
+    }
+
+    @Test func customSettings() async throws {
+        let dm = AudioDeviceManager(delegate: self)
+
+        let settings = AudioDeviceSettings(inputUID: "inputDeviceDisabledUID", outputUID: "BuiltInSpeakerDevice")
 
         try await dm.setup(settings: settings)
 
@@ -23,5 +37,7 @@ final class AudioDeviceManagerSetupTests: TestCaseModel {
         #expect(selectedOutputDevice?.uid == outputUID)
 
         let defaultOutputDevice = await dm.hardware.defaultOutputDevice
+
+        Log.debug("defaultOutputDevice", defaultOutputDevice)
     }
 }

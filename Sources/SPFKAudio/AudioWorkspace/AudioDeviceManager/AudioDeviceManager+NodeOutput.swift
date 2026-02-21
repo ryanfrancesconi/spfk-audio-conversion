@@ -116,7 +116,11 @@ extension AudioDeviceManager {
             return
         }
 
-        guard let audioUnit = engineOutputNode?.audioUnit else {
+        guard let engineOutputNode else {
+            throw NSError(description: "engineOutputNode is nil")
+        }
+
+        guard let audioUnit = engineOutputNode.audioUnit else {
             throw NSError(description: "Failed to get audioUnit reference from engine.outputNode")
         }
 
