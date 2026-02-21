@@ -33,10 +33,10 @@ class BatchAudioFormatConverterTests: BinTestCase {
 
         let errors = results.compactMap(\.error)
 
-        #expect(sources.count == 7) // could change when files are added to tests
+        #expect(sources.count == 8) // could change when files are added to tests
         #expect(errors.count == 2) // could change, two name collisions
 
-        #expect(bin.directoryContents?.count == 5)
+        #expect(bin.directoryContents?.count == 6)
 
         for result in results {
             switch result {
