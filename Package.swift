@@ -16,7 +16,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-tempo", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-au-host", from: "0.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", from: "5.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-loudness", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-sox", from: "0.0.1"),
