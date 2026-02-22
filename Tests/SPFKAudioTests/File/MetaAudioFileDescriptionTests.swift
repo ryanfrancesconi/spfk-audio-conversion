@@ -54,11 +54,5 @@ class MetaAudioFileDescriptionTests: BinTestCase {
         let bext = try #require(maf.bextDescription)
 
         Log.debug(bext)
-
-        let max = Int16.max
-
-        Log.debug(max)
-
-        // let invalid =
     }
 }
