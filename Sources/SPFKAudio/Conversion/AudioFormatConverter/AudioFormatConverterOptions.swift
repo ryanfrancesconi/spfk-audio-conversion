@@ -9,7 +9,7 @@ import SPFKUtils
 /// bitRate assumes a stereo bit rate and the converter will half it for mono
 public struct AudioFormatConverterOptions: Sendable {
     public static let bitsPerChannelRange: ClosedRange<UInt32> = 16 ... 32
-    public static let bitRange: ClosedRange<UInt32> = 64000 ... 320000
+    public static let bitRange: ClosedRange<UInt32> = 64000 ... 320_000
 
     /// An option to block upsampling to a higher bit depth than the source.
     /// For example, converting to 24bit from 16 doesn't have much benefit
@@ -32,7 +32,8 @@ public struct AudioFormatConverterOptions: Sendable {
         set {
             // enforce format to be a file extension
             guard let newValue,
-                  AudioFormatConverter.outputFormats.contains(newValue) else {
+                  AudioFormatConverter.outputFormats.contains(newValue)
+            else {
                 _format = nil
                 return
             }
@@ -58,7 +59,7 @@ public struct AudioFormatConverterOptions: Sendable {
     }
 
     /// bytes per second: used only when outputting compressed audio
-    public var bitRate: UInt32 = 256000 {
+    public var bitRate: UInt32 = 256_000 {
         didSet {
             if bitRate < Self.bitRange.lowerBound {
                 assertionFailure("bitRate is too low \(bitRate) and will be clamped to \(Self.bitRange). Did you *= 1000?")
@@ -131,11 +132,7 @@ public struct AudioFormatConverterOptions: Sendable {
     }
 }
 
-extension AudioFormatConverterOptions: Serializable {
-    public init(data: Data) throws {
-        self = try PropertyListDecoder().decode(AudioFormatConverterOptions.self, from: data)
-    }
-}
+extension AudioFormatConverterOptions: Serializable {}
 
 extension AudioFormatConverterOptions {
     public static var waveStereo48k16bit: AudioFormatConverterOptions {
