@@ -106,6 +106,8 @@ extension MetaAudioFileDescription: Codable {
     }
 }
 
+// MARK: Convenience functions
+
 extension MetaAudioFileDescription {
     public func tag(for tagKey: TagKey) -> String? {
         tagProperties.tag(for: tagKey)
@@ -123,11 +125,13 @@ extension MetaAudioFileDescription {
         tagProperties.set(customTag: key, value: value)
     }
 
-    public mutating func set(bextKey key: BEXTDescription.Key, value: Any) {
+    public mutating func merge(bext dictionary: BEXTKeyDictionary) {
         if bextDescription == nil {
             bextDescription = BEXTDescription()
         }
 
-        bextDescription?.update(key: key, value: value)
+        for item in dictionary {
+            bextDescription?[item.key] = item.value
+        }
     }
 }
