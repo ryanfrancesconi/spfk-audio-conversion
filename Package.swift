@@ -23,6 +23,7 @@ let package = Package(
         .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-time", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-utils", from: "0.0.3"),
+
     ],
     targets: [
         .target(
@@ -46,6 +47,7 @@ let package = Package(
                 .product(name: "SPFKLoudness", package: "spfk-loudness"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
                 .product(name: "SPFKSoX", package: "spfk-sox"),
+
             ],
             publicHeadersPath: "include",
             cSettings: [
