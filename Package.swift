@@ -15,6 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-tempo", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-content-analysis", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-au-host", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", from: "5.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-loudness", from: "0.0.1"),
@@ -32,6 +33,7 @@ let package = Package(
                 .targetItem(name: "SPFKAudioC", condition: nil),
 
                 .product(name: "SPFKTempo", package: "spfk-tempo"),
+                .product(name: "SPFKAudioContentAnalysis", package: "spfk-audio-content-analysis"),
                 .product(name: "SPFKAUHost", package: "spfk-au-host"),
                 .product(name: "SPFKAudioHardware", package: "spfk-audio-hardware"),
                 .product(name: "SPFKLoudness", package: "spfk-loudness"),

@@ -6,7 +6,7 @@ import AVFoundation
 import SPFKBase
 
 /// Get audio data from a file suitable for waveform visualization
-public struct WaveformDataParser {
+public struct WaveformDataParser: Sendable {
     public let resolution: WaveformDrawingResolution
     public let eventHandler: WaveformDataLoadEventHandler?
 
@@ -81,6 +81,7 @@ extension WaveformDataParser {
             throw NSError(description: "Unable to create buffer")
         }
 
+        // divide the file into this amount of chunks, it will take the peak of each chunk
         let chunkCount = totalFrames.int / samplesPerPoint
         let channelCount = audioFile.fileFormat.channelCount.int
         var currentFrame: AVAudioFramePosition = 0
