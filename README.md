@@ -1,3 +1,3 @@
-# SPFKAudio
+# SPFKAudioConversion
 
-An audio API specifically made for macOS - not iOS.
+Audio file conversion.

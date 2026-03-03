@@ -108,7 +108,7 @@ extension AudioFormatConverter {
 
         switch mFormatID {
         case kAudioFormatLinearPCM,
-            kAudioFormatAppleLossless:
+             kAudioFormatAppleLossless:
             return false
         default:
             // basically all other format IDs are compressed

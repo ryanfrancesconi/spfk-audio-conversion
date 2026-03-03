@@ -4,68 +4,41 @@
 import PackageDescription
 
 let package = Package(
-    name: "spfk-audio",
+    name: "spfk-audio-conversion",
     defaultLocalization: "en",
     platforms: [.macOS(.v12)],
     products: [
         .library(
-            name: "SPFKAudio",
-            targets: ["SPFKAudio", "SPFKAudioC"]
+            name: "SPFKAudioConversion",
+            targets: ["SPFKAudioConversion"]
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-workspace", from: "0.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-tempo", from: "0.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-content-analysis", from: "0.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-au-host", from: "0.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-hardware", from: "5.0.0"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-loudness", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "0.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-audio-base", from: "0.0.1"),
+
         .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-sox", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "0.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-time", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-utils", from: "0.0.3"),
 
     ],
     targets: [
         .target(
-            name: "SPFKAudio",
+            name: "SPFKAudioConversion",
             dependencies: [
-                .targetItem(name: "SPFKAudioC", condition: nil),
-
-                .product(name: "SPFKAudioWorkspace", package: "spfk-audio-workspace"),
-                .product(name: "SPFKTempo", package: "spfk-tempo"),
-                .product(name: "SPFKAudioContentAnalysis", package: "spfk-audio-content-analysis"),
-                .product(name: "SPFKAUHost", package: "spfk-au-host"),
-                .product(name: "SPFKAudioHardware", package: "spfk-audio-hardware"),
-                .product(name: "SPFKLoudness", package: "spfk-loudness"),
+                .product(name: "SPFKBase", package: "spfk-base"),
+                .product(name: "SPFKAudioBase", package: "spfk-audio-base"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
                 .product(name: "SPFKSoX", package: "spfk-sox"),
-                .product(name: "SPFKTime", package: "spfk-time"),
                 .product(name: "SPFKUtils", package: "spfk-utils"),
             ],
         ),
-        .target(
-            name: "SPFKAudioC",
-            dependencies: [
-                .product(name: "SPFKLoudness", package: "spfk-loudness"),
-                .product(name: "SPFKMetadata", package: "spfk-metadata"),
-                .product(name: "SPFKSoX", package: "spfk-sox"),
-
-            ],
-            publicHeadersPath: "include",
-            cSettings: [
-                .headerSearchPath("include_private")
-            ],
-            cxxSettings: [
-                .headerSearchPath("include_private")
-            ],
-        ),
+        
         .testTarget(
-            name: "SPFKAudioTests",
+            name: "SPFKAudioConversionTests",
             dependencies: [
-                .targetItem(name: "SPFKAudio", condition: nil),
-                .targetItem(name: "SPFKAudioC", condition: nil),
+                .targetItem(name: "SPFKAudioConversion", condition: nil),
                 .product(name: "SPFKTesting", package: "spfk-testing"),
             ],
             swiftSettings: [

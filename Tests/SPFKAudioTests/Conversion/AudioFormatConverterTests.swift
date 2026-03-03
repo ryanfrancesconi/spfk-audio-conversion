@@ -4,7 +4,7 @@ import SPFKBase
 import SPFKTesting
 import Testing
 
-@testable import SPFKAudio
+@testable import SPFKAudioConversion
 
 @Suite(.serialized, .tags(.file))
 class AudioFormatConverterTests: BinTestCase {

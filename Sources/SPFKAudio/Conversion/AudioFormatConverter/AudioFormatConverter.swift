@@ -4,15 +4,10 @@ import AVFoundation
 import Foundation
 import SPFKAudioBase
 import SPFKBase
-import SPFKMetadata
 
 /// AudioFormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
 public class AudioFormatConverter {
     public var source: AudioFormatConverterSource
-
-    // MARK: - private properties
-
-    // MARK: - initialization
 
     public convenience init(inputURL: URL, outputURL: URL, options: AudioFormatConverterOptions? = nil) {
         let options = options ?? AudioFormatConverterOptions()

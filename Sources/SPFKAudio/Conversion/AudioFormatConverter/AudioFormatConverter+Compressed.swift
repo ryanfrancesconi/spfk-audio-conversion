@@ -2,7 +2,6 @@
 
 import AVFoundation
 import SPFKAudioBase
-import SPFKMetadata
 import SPFKSoX
 import SPFKUtils
 
