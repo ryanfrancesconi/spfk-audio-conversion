@@ -21,7 +21,7 @@ public class DynamicPCMBuffer {
 
     public lazy var rms: Float = internalBuffer.rmsValue
 
-    public lazy var peak: Peak? = try? internalBuffer.peak()
+    public lazy var peak: BufferPeak? = try? internalBuffer.peak()
 
     public internal(set) var _abortFlag: Bool = false
     public internal(set) var _isProcessing: Bool = false

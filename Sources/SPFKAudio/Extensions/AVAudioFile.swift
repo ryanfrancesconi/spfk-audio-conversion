@@ -6,7 +6,7 @@ import SPFKMetadata
 
 extension AVAudioFile {
     /// the max level in the file as a Peak struct
-    public var peak: Peak? {
+    public var peak: BufferPeak? {
         try? toAVAudioPCMBuffer().peak()
     }
 }

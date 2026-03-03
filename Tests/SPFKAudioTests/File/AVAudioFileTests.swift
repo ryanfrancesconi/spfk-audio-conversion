@@ -1,9 +1,9 @@
-
 import AVFoundation
-@testable import SPFKAudio
-import SPFKTesting
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.serialized, .tags(.file))
 class AVAudioFileTests: BinTestCase {
@@ -13,7 +13,7 @@ class AVAudioFileTests: BinTestCase {
 
         let peak = try #require(avFile.peak)
 
-        let expected = Peak(sampleRate: 48000, framePosition: 105472, amplitude: 0.98115706)
+        let expected = BufferPeak(sampleRate: 48000, framePosition: 105472, amplitude: 0.98115706)
 
         #expect(peak == expected)
     }

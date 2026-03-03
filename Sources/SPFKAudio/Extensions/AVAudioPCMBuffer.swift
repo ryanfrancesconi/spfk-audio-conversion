@@ -8,7 +8,7 @@ import SPFKBase
 extension AVAudioPCMBuffer {
     /// Find peak in the buffer
     /// - Returns: A Peak struct containing the time, frame position and peak amplitude
-    public func peak() throws -> Peak {
+    public func peak() throws -> BufferPeak {
         guard frameLength > 0 else {
             throw NSError(description: "buffer is empty")
         }
@@ -17,9 +17,9 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Failed to create floatChannelData")
         }
 
-        var value = Peak()
+        var value = BufferPeak()
         var position = 0
-        var peakValue: Float = Peak.min
+        var peakValue: Float = BufferPeak.min
         let chunkLength = 512
         let channelCount = Int(format.channelCount)
 
@@ -61,7 +61,7 @@ extension AVAudioPCMBuffer {
     // Returns the highest level in the given array
     private func getPeakAmplitude(from buffer: [Float]) -> Float {
         // create variable with very small value to hold the peak value
-        var peak: Float = Peak.min
+        var peak: Float = BufferPeak.min
 
         for i in 0 ..< buffer.count {
             // store the absolute value of the sample
@@ -87,7 +87,7 @@ extension AVAudioPCMBuffer {
         let length: AVAudioFrameCount = frameLength
         let channelCount = Int(format.channelCount)
 
-        let peak: Peak = try peak()
+        let peak: BufferPeak = try peak()
 
         let gainFactor: Float = 1 / peak.amplitude
 

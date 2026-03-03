@@ -2,7 +2,7 @@ import AVFoundation
 import Foundation
 import SPFKBase
 
-public struct Peak: Equatable {
+public struct BufferPeak: Equatable {
     internal static let min: Float = -10000.0
 
     /// Time of the peak

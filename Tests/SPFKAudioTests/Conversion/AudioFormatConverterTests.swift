@@ -1,13 +1,16 @@
-
 import AVFoundation
-@testable import SPFKAudio
-import SPFKTesting
+import Numerics
 import SPFKBase
+import SPFKTesting
 import Testing
+
+@testable import SPFKAudio
 
 @Suite(.serialized, .tags(.file))
 class AudioFormatConverterTests: BinTestCase {
-    func convert(input: URL, output: URL, options: AudioFormatConverterOptions?, expectedDuration: TimeInterval) async throws {
+    func convert(input: URL, output: URL, options: AudioFormatConverterOptions?, expectedDuration: TimeInterval)
+        async throws
+    {
         let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
         try await converter.start()
 
@@ -67,7 +70,8 @@ class AudioFormatConverterTests: BinTestCase {
         for preset in AVAssetExportSession.allExportPresets() {
             let output = bin.appending(component: "\(preset).mp4", directoryHint: .notDirectory)
 
-            guard await AVAssetExportSession.compatibility(ofExportPreset: preset, with: asset, outputFileType: .mp4) else {
+            guard await AVAssetExportSession.compatibility(ofExportPreset: preset, with: asset, outputFileType: .mp4)
+            else {
                 Log.error("Incompatible preset", preset)
                 continue
             }
