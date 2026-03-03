@@ -74,10 +74,12 @@ extension AudioFormatConverter {
             closeFiles()
         }
 
-        if noErr != ExtAudioFileOpenURL(
-            url as CFURL,
-            &inputFile,
-        ) {
+        if noErr
+            != ExtAudioFileOpenURL(
+                url as CFURL,
+                &inputFile,
+            )
+        {
             Log.error("Unable to open", url.lastPathComponent)
             return nil
         }
@@ -89,12 +91,14 @@ extension AudioFormatConverter {
         var inputDescription = AudioStreamBasicDescription()
         var inputDescriptionSize = UInt32(MemoryLayout.stride(ofValue: inputDescription))
 
-        if noErr != ExtAudioFileGetProperty(
-            strongInputFile,
-            kExtAudioFileProperty_FileDataFormat,
-            &inputDescriptionSize,
-            &inputDescription,
-        ) {
+        if noErr
+            != ExtAudioFileGetProperty(
+                strongInputFile,
+                kExtAudioFileProperty_FileDataFormat,
+                &inputDescriptionSize,
+                &inputDescription,
+            )
+        {
             //
             Log.error("Unable to get kExtAudioFileProperty_FileDataFormat", url.lastPathComponent)
             return nil
@@ -104,7 +108,8 @@ extension AudioFormatConverter {
 
         switch mFormatID {
         case kAudioFormatLinearPCM,
-             kAudioFormatAppleLossless: return false
+            kAudioFormatAppleLossless:
+            return false
         default:
             // basically all other format IDs are compressed
             return true

@@ -13,13 +13,15 @@ extension AudioFormatConverter {
         let outputURL = source.output
 
         guard outputFormat == .aiff || outputFormat == .wav || outputFormat == .caf,
-              var format = outputFormat.audioFileTypeID else {
+            var format = outputFormat.audioFileTypeID
+        else {
             throw NSError(description: "Output file must be caf, wav or aif but it is \(outputFormat)")
         }
 
         // This might want to be an option or throw an error
         if format != kAudioFileCAFType,
-           let fileSize = inputURL.regularFileAllocatedSize {
+            let fileSize = inputURL.regularFileAllocatedSize
+        {
             let gb = fileSize / ByteCount.gigabyte.rawValue
 
             if gb >= 2 {
@@ -65,12 +67,14 @@ extension AudioFormatConverter {
         var inputDescription = AudioStreamBasicDescription()
         var inputDescriptionSize = UInt32(MemoryLayout.stride(ofValue: inputDescription))
 
-        if noErr != ExtAudioFileGetProperty(
-            strongInputFile,
-            kExtAudioFileProperty_FileDataFormat,
-            &inputDescriptionSize,
-            &inputDescription
-        ) {
+        if noErr
+            != ExtAudioFileGetProperty(
+                strongInputFile,
+                kExtAudioFileProperty_FileDataFormat,
+                &inputDescriptionSize,
+                &inputDescription
+            )
+        {
             throw NSError(description: "Unable to get the input file data format.")
         }
 
@@ -82,10 +86,11 @@ extension AudioFormatConverter {
 
         let inputFormat = inputURL.pathExtension.lowercased()
 
-        guard inputFormat != outputFormat.pathExtension ||
-            outputDescription.mSampleRate != inputDescription.mSampleRate ||
-            outputDescription.mChannelsPerFrame != inputDescription.mChannelsPerFrame ||
-            outputDescription.mBitsPerChannel != inputDescription.mBitsPerChannel else {
+        guard
+            inputFormat != outputFormat.pathExtension || outputDescription.mSampleRate != inputDescription.mSampleRate
+                || outputDescription.mChannelsPerFrame != inputDescription.mChannelsPerFrame
+                || outputDescription.mBitsPerChannel != inputDescription.mBitsPerChannel
+        else {
             Log.error("No conversion is needed, formats are the same. Copying to", outputURL)
 
             try FileManager.default.copyItem(at: inputURL, to: outputURL)
@@ -103,7 +108,8 @@ extension AudioFormatConverter {
         )
 
         if status != noErr {
-            let message = "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(status.string) (\(status.fourCC)"
+            let message =
+                "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(status.string) (\(status.fourCC)"
 
             throw NSError(description: message)
         }
@@ -116,21 +122,25 @@ extension AudioFormatConverter {
         // You must set this in order to encode or decode a non-PCM file data format.
         // You may set this on PCM files to specify the data format used in your calls
         // to read/write.
-        if noErr != ExtAudioFileSetProperty(
-            strongInputFile,
-            kExtAudioFileProperty_ClientDataFormat,
-            inputDescriptionSize,
-            &outputDescription
-        ) {
+        if noErr
+            != ExtAudioFileSetProperty(
+                strongInputFile,
+                kExtAudioFileProperty_ClientDataFormat,
+                inputDescriptionSize,
+                &outputDescription
+            )
+        {
             throw NSError(description: "Unable to set data format on input file.")
         }
 
-        if noErr != ExtAudioFileSetProperty(
-            strongOutputFile,
-            kExtAudioFileProperty_ClientDataFormat,
-            inputDescriptionSize,
-            &outputDescription
-        ) {
+        if noErr
+            != ExtAudioFileSetProperty(
+                strongOutputFile,
+                kExtAudioFileProperty_ClientDataFormat,
+                inputDescriptionSize,
+                &outputDescription
+            )
+        {
             throw NSError(description: "Unable to set the output file data format.")
         }
 
@@ -148,8 +158,9 @@ extension AudioFormatConverter {
                     mData: srcBufferPtr.baseAddress
                 )
 
-                var fillBufList = AudioBufferList(mNumberBuffers: 1,
-                                                  mBuffers: mBuffer)
+                var fillBufList = AudioBufferList(
+                    mNumberBuffers: 1,
+                    mBuffers: mBuffer)
                 var frameCount: UInt32 = 0
 
                 if outputDescription.mBytesPerFrame > 0 {

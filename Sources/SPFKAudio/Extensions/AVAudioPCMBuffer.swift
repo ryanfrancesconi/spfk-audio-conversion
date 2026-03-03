@@ -1,7 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
-import Accelerate
 @preconcurrency import AVFoundation
+import Accelerate
 import Foundation
 import SPFKBase
 
@@ -77,10 +77,12 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Failed to create floatChannelData")
         }
 
-        guard let normalizedBuffer = AVAudioPCMBuffer(
-            pcmFormat: format,
-            frameCapacity: frameCapacity
-        ) else {
+        guard
+            let normalizedBuffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: frameCapacity
+            )
+        else {
             throw NSError(description: "Failed to create buffer")
         }
 
@@ -107,10 +109,12 @@ extension AVAudioPCMBuffer {
 
     /// - Returns: A reversed buffer
     public func reverse() throws -> AVAudioPCMBuffer {
-        guard let reversedBuffer = AVAudioPCMBuffer(
-            pcmFormat: format,
-            frameCapacity: frameCapacity
-        ) else {
+        guard
+            let reversedBuffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: frameCapacity
+            )
+        else {
             throw NSError(description: "Failed to create buffer")
         }
 
@@ -151,10 +155,12 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "floatChannelData is nil")
         }
 
-        guard let fadeBuffer = AVAudioPCMBuffer(
-            pcmFormat: format,
-            frameCapacity: frameCapacity
-        ) else {
+        guard
+            let fadeBuffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: frameCapacity
+            )
+        else {
             throw NSError(description: "Failed to create buffer")
         }
 
@@ -221,8 +227,10 @@ extension AVAudioPCMBuffer {
         // the frame capacity will be different if the sample rate is different
         let newFrameCapacity = (convertToFormat.sampleRate / format.sampleRate) * frameCapacity.double
 
-        guard let outBuffer = AVAudioPCMBuffer(pcmFormat: convertToFormat,
-                                               frameCapacity: AVAudioFrameCount(newFrameCapacity))
+        guard
+            let outBuffer = AVAudioPCMBuffer(
+                pcmFormat: convertToFormat,
+                frameCapacity: AVAudioFrameCount(newFrameCapacity))
         else {
             throw NSError(description: "Failed to create buffer with format \(convertToFormat.readableDescription)")
         }

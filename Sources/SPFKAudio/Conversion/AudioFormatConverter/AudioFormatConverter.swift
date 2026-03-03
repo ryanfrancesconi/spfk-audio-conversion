@@ -31,7 +31,8 @@ public class AudioFormatConverter {
     public func start() async throws {
         let inputFormat: AudioFileType? =
             if source.input.pathExtension == "",
-            let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
+                let ext = (try? AudioFileType.getExtensions(for: source.input))?.first
+            {
                 AudioFileType(pathExtension: ext)
 
             } else {
@@ -42,7 +43,7 @@ public class AudioFormatConverter {
         guard let inputFormat, AudioFormatConverter.inputFormats.contains(inputFormat) else {
             throw NSError(
                 description:
-                "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")"
+                    "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")"
             )
         }
 
@@ -74,13 +75,13 @@ public class AudioFormatConverter {
 
             // PCM input, compressed output
         } else if Self.isPCM(url: source.input) == true,
-                  Self.isCompressed(url: source.output) == true
+            Self.isCompressed(url: source.output) == true
         {
             try await AssetWriter(source: source).start()
 
             // Compressed input and output
         } else if Self.isCompressed(url: source.input) == true,
-                  Self.isCompressed(url: source.output) == true
+            Self.isCompressed(url: source.output) == true
         {
             try await convertCompressed()
 

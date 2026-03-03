@@ -28,7 +28,7 @@ extension AudioFormatConverter {
         guard let outputFileType: AVFileType = list.first else {
             throw NSError(
                 description:
-                "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)"
+                    "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)"
             )
         }
 

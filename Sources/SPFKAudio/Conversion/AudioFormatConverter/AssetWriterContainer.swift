@@ -62,7 +62,7 @@ struct AssetWriterContainer: @unchecked Sendable {
                 using: {
                     while writerInput.isReadyForMoreMediaData {
                         guard reader.status == .reading,
-                              let buffer = readerOutput.copyNextSampleBuffer()
+                            let buffer = readerOutput.copyNextSampleBuffer()
                         else {
                             writerInput.markAsFinished()
 

@@ -9,17 +9,17 @@ public enum BatchAudioFormatConverterResult: Sendable {
 
     public var source: AudioFormatConverterSource {
         switch self {
-        case let .success(source: source):
+        case .success(source: let source):
             return source
 
-        case let .failed(source: source, error: _):
+        case .failed(source: let source, error: _):
             return source
         }
     }
 
     /// Non nil if the conversion failed for this source
     public var error: Error? {
-        if case let .failed(_, error) = self {
+        if case .failed(_, let error) = self {
             return error
         }
 
