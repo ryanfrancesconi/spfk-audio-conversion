@@ -95,7 +95,7 @@ extension MetaAudioFileDescription {
             markerCollection = value
         }
 
-        imageDescription.pictureRef = try? await TagPictureRef.parsing(url: url)
+        imageDescription.pictureRef = try? TagPictureRef.parsing(url: url)
     }
 
     private mutating func updateDefaultImage() async {
