@@ -34,28 +34,32 @@ public actor AssetWriter {
             throw NSError(description: "Unsupported output format: \(outputFormat)")
         }
 
-        guard let track = source.asset.tracks(withMediaType: .audio).first else {
+        // Capture once — source.asset is a computed property that creates a new AVURLAsset each call.
+        // The reader, track, and format hint must all reference the same asset instance.
+        let asset = source.asset
+
+        guard let track = asset.tracks(withMediaType: .audio).first else {
             throw NSError(description: "No audio was found in the input file.")
         }
 
-        let outputSettings = try await createOutputSettings()
+        let outputSettings = try await createOutputSettings(for: asset)
 
-        let reader = try AVAssetReader(asset: source.asset)
+        let reader = try AVAssetReader(asset: asset)
         let writer = try AVAssetWriter(outputURL: source.output, fileType: fileType)
         let writerInput = AVAssetWriterInput(
             mediaType: .audio, outputSettings: outputSettings,
-            sourceFormatHint: source.asset.audioFormat?.formatDescription
+            sourceFormatHint: asset.audioFormat?.formatDescription
         )
         let readerOutput = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
-        let container = try AssetWriterContainer(
+        let container = AssetWriterContainer(
             reader: reader, writer: writer, writerInput: writerInput, readerOutput: readerOutput
         )
 
         try await container.start()
     }
 
-    private func createOutputSettings() async throws -> [String: Any] {
-        guard let inputFormat = source.asset.audioFormat else {
+    private func createOutputSettings(for asset: AVURLAsset) async throws -> [String: Any] {
+        guard let inputFormat = asset.audioFormat else {
             throw NSError(description: "Unable to read the input file format.")
         }
 

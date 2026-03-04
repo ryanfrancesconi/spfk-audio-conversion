@@ -18,12 +18,23 @@ struct AssetWriterContainer: @unchecked Sendable {
         writer: AVAssetWriter,
         writerInput: AVAssetWriterInput,
         readerOutput: AVAssetReaderTrackOutput
-    ) throws {
+    ) {
         self.reader = reader
         self.writer = writer
         self.writerInput = writerInput
         self.readerOutput = readerOutput
+    }
 
+    // TODO: macOS 26 adds async AVAssetWriter APIs (outputProvider(for:), inputReceiver(for:),
+    // SampleBufferReceiver.append). Initial attempts to use them here resulted in either a crash
+    // ("Must start a session") or an indefinite hang at receiver.append(). The legacy
+    // requestMediaDataWhenReady path works correctly on all platforms including macOS 26,
+    // so we use it unconditionally until the new APIs stabilize.
+    func start() async throws {
+        try await _startLegacy()
+    }
+
+    private func _startLegacy() async throws {
         writer.add(writerInput)
         reader.add(readerOutput)
 
@@ -36,26 +47,10 @@ struct AssetWriterContainer: @unchecked Sendable {
         if !reader.startReading() {
             throw reader.error ?? NSError(description: "Failed to start reading")
         }
-    }
 
-    // TODO: add macOS 26 version
-
-    func start() async throws {
-        if #available(macOS 26, iOS 26, *) {
-            try await _start()
-
-        } else {
-            try await _startLegacy()
-        }
-    }
-
-    private func _start() async throws {
-        try await _startLegacy() // TODO:
-    }
-
-    private func _startLegacy() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let queue = DispatchQueue(label: "com.spongefork.AudioFormatConverter")
+            let resumeGuard = ContinuationResumeGuard()
 
             writerInput.requestMediaDataWhenReady(
                 on: queue,
@@ -66,12 +61,14 @@ struct AssetWriterContainer: @unchecked Sendable {
                         else {
                             writerInput.markAsFinished()
 
-                            if reader.status != .completed {
-                                writer.cancelWriting()
-                                continuation.resume(
-                                    throwing: reader.error ?? NSError(description: "Conversion failed with error"))
-                            } else {
-                                continuation.resume()
+                            if resumeGuard.tryResume() {
+                                if reader.status != .completed {
+                                    writer.cancelWriting()
+                                    continuation.resume(
+                                        throwing: reader.error ?? NSError(description: "Conversion failed with error"))
+                                } else {
+                                    continuation.resume()
+                                }
                             }
 
                             break
@@ -84,5 +81,20 @@ struct AssetWriterContainer: @unchecked Sendable {
         }
 
         await writer.finishWriting()
+    }
+}
+
+/// Thread-safe guard to ensure a continuation is only resumed once.
+private final class ContinuationResumeGuard: @unchecked Sendable {
+    private let lock = NSLock()
+    private var didResume = false
+
+    /// Returns `true` exactly once; subsequent calls return `false`.
+    func tryResume() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !didResume else { return false }
+        didResume = true
+        return true
     }
 }

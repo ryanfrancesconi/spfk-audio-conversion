@@ -22,7 +22,7 @@ public class AudioFormatConverter {
 
     // MARK: -
 
-    /// The entry point for file conversionÏ
+    /// The entry point for file conversion
     public func start() async throws {
         let inputFormat: AudioFileType? =
             if source.input.pathExtension == "",

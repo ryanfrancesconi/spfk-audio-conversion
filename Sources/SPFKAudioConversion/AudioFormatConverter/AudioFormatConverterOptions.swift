@@ -19,7 +19,7 @@ public struct AudioFormatConverterOptions: Sendable {
         /// Don't allow upsampling to 24bit if the src is 16
         case lessThanOrEqual
 
-        /// allow any conversaion
+        /// allow any conversion
         case any
     }
 
@@ -32,7 +32,7 @@ public struct AudioFormatConverterOptions: Sendable {
         set {
             // enforce format to be a file extension
             guard let newValue,
-                AudioFormatConverter.outputFormats.contains(newValue)
+                  AudioFormatConverter.outputFormats.contains(newValue)
             else {
                 _format = nil
                 return
@@ -62,8 +62,7 @@ public struct AudioFormatConverterOptions: Sendable {
     public var bitRate: UInt32 = 256_000 {
         didSet {
             if bitRate < Self.bitRange.lowerBound {
-                assertionFailure(
-                    "bitRate is too low \(bitRate) and will be clamped to \(Self.bitRange). Did you *= 1000?")
+                Log.error("bitRate is too low \(bitRate) and will be clamped to \(Self.bitRange). Did you *= 1000? Will be clamped to \(Self.bitRange)")
             }
 
             bitRate = bitRate.clamped(to: Self.bitRange)

@@ -33,16 +33,12 @@ let package = Package(
                 .product(name: "SPFKUtils", package: "spfk-utils"),
             ],
         ),
-        
+
         .testTarget(
             name: "SPFKAudioConversionTests",
             dependencies: [
                 .targetItem(name: "SPFKAudioConversion", condition: nil),
                 .product(name: "SPFKTesting", package: "spfk-testing"),
-            ],
-            swiftSettings: [
-                .swiftLanguageMode(.v5),
-                .unsafeFlags(["-strict-concurrency=complete"]),
             ],
         ),
     ],

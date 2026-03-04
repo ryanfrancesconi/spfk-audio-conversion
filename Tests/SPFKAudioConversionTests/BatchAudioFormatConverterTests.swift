@@ -11,8 +11,6 @@ import Testing
 @Suite(.serialized, .tags(.file))
 class BatchAudioFormatConverterTests: BinTestCase {
     @Test func convertAll() async throws {
-        deleteBinOnExit = true
-
         let sources = TestBundleResources.shared.audioCases.map {
             let output = bin.appending(
                 component: "\($0.deletingPathExtension().lastPathComponent).m4a",
@@ -27,6 +25,7 @@ class BatchAudioFormatConverterTests: BinTestCase {
         }
 
         let converter = await BatchAudioFormatConverter(inputs: sources)
+        await converter.update(delegate: self)
 
         let results = try await converter.start()
 
@@ -51,7 +50,7 @@ class BatchAudioFormatConverterTests: BinTestCase {
     }
 }
 
-extension BatchAudioFormatConverterTests: BatchAudioFormatConverterDelegate {
+extension BatchAudioFormatConverterTests: @unchecked Sendable, BatchAudioFormatConverterDelegate {
     func batchProgress(progressEvent: LoadStateEvent) async {
         Log.debug(progressEvent)
     }

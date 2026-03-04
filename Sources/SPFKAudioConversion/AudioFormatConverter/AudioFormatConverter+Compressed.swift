@@ -74,7 +74,8 @@ extension AudioFormatConverter {
 
         let supportedInput = inputFormat == .wav || inputFormat == .aiff || inputFormat == .mp3
 
-        let supportedChannels = (source.asset.audioFormat?.channelCount ?? 0) <= 2
+        let asset = source.asset
+        let supportedChannels = (asset.audioFormat?.channelCount ?? 0) <= 2
 
         var tempFile: URL?
 
@@ -158,8 +159,9 @@ extension AudioFormatConverter {
 
         try await tempConverter.start()
 
-        source.input = tempFile
+        var assetWriterSource = source
+        assetWriterSource.input = tempFile
 
-        try await AssetWriter(source: source).start()
+        try await AssetWriter(source: assetWriterSource).start()
     }
 }

@@ -13,7 +13,7 @@ public struct AudioFormatConverterSource: Sendable {
     /// Options for conversion
     public var options: AudioFormatConverterOptions
 
-    public private(set) lazy var asset = AVURLAsset(url: input)
+    public var asset: AVURLAsset { AVURLAsset(url: input) }
 
     public init(input: URL, output: URL, options: AudioFormatConverterOptions) {
         self.input = input
