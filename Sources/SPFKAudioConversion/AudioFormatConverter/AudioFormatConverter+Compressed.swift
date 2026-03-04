@@ -27,7 +27,7 @@ extension AudioFormatConverter {
         guard let outputFileType: AVFileType = list.first else {
             throw NSError(
                 description:
-                    "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)"
+                "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)"
             )
         }
 
@@ -113,14 +113,14 @@ extension AudioFormatConverter {
             throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
         }
 
-        let result = await SoX.shared.convertMP3(
+        try await SoX.shared.convertMP3(
             input: inputURL,
             output: outputURL,
             bitRate: options.bitRate / 1000, // sox bit rate is kbps
             sampleRate: options.sampleRate
         )
 
-        guard result, outputURL.exists else {
+        guard outputURL.exists else {
             throw NSError(description: "Failed to convert to MP3: \(inputURL.lastPathComponent)")
         }
     }
