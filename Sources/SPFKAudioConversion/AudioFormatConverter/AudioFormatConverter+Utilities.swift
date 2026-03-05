@@ -8,11 +8,12 @@ import SPFKMetadata
 // MARK: - Definitions
 
 extension AudioFormatConverter {
-    /// Formats that this class can write
+    /// Formats that this class can write: WAV, AIFF, CAF, M4A, MP3.
     public static let outputFormats: [AudioFileType] = [
         .wav, .aiff, .caf, .m4a, .mp3,
     ]
 
+    /// File extensions corresponding to ``outputFormats``.
     public static let outputPathExtensions: [String] = outputFormats.map(\.pathExtension)
 
     /// Formats that this class can read
@@ -31,7 +32,12 @@ extension AudioFormatConverter {
         return !value
     }
 
-    /// Compressed format or not
+    /// Returns whether the file at `url` uses a compressed audio format.
+    /// - Parameters:
+    ///   - url: The file URL to inspect.
+    ///   - ignorePathExtension: When `true`, opens the file to inspect the stream format
+    ///     rather than relying on the path extension.
+    /// - Returns: `true` for compressed, `false` for PCM/lossless, or `nil` if undetermined.
     public static func isCompressed(url: URL, ignorePathExtension: Bool) -> Bool? {
         guard !ignorePathExtension else {
             return isCompressedExt(url: url)
@@ -40,6 +46,7 @@ extension AudioFormatConverter {
         return isCompressed(url: url)
     }
 
+    /// Returns whether the file at `url` uses a compressed format, determined by path extension.
     public static func isCompressed(url: URL) -> Bool {
         let pathExtension = url.pathExtension.lowercased()
 
@@ -118,7 +125,13 @@ extension AudioFormatConverter {
 }
 
 extension AudioFormatConverter {
-    /// Convenience function for common conversion to wave
+    /// Convenience method that converts any supported input to WAV.
+    /// - Parameters:
+    ///   - inputURL: The source audio file.
+    ///   - outputURL: The destination WAV file.
+    ///   - sampleRate: Target sample rate, or `nil` to preserve the source rate.
+    ///   - bitDepth: Bits per channel (default 16).
+    /// - Returns: The output URL.
     @discardableResult
     public static func convertToWave(
         inputURL: URL,

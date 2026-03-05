@@ -1,5 +1,8 @@
 # SPFKAudioConversion
 
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
+
 Audio file format conversion library supporting PCM and compressed formats via CoreAudio, AVFoundation, and SoX.
 
 ## Features
@@ -116,13 +119,20 @@ BatchAudioFormatConverter
 
 ## Dependencies
 
-- **SPFKBase** - Foundation extensions and utilities
-- **SPFKAudioBase** - Audio type definitions (`AudioFileType`, `AudioDefaults`)
-- **SPFKMetadata** - Audio file metadata parsing
-- **SPFKSoX** - SoX wrapper for MP3 encoding
-- **SPFKUtils** - General utilities (`Entropy`, `Serializable`)
+| Package | Description |
+|---------|-------------|
+| [spfk-base](https://github.com/ryanfrancesconi/spfk-base) | Foundation extensions and utilities |
+| [spfk-audio-base](https://github.com/ryanfrancesconi/spfk-audio-base) | Audio type definitions (`AudioFileType`, `AudioDefaults`) |
+| [spfk-metadata](https://github.com/ryanfrancesconi/spfk-metadata) | Audio file metadata parsing |
+| [spfk-sox](https://github.com/ryanfrancesconi/spfk-sox) | SoX wrapper for MP3 encoding |
+| [spfk-utils](https://github.com/ryanfrancesconi/spfk-utils) | General utilities (`Entropy`, `Serializable`) |
 
 ## Requirements
 
 - macOS 12+
 - Swift 6.2+
+
+## About
+
+Spongefork (SPFK) is the personal software projects of [Ryan Francesconi](https://github.com/ryanfrancesconi). Dedicated to creative sound manipulation, his first application, Spongefork, was released in 1999 for macOS 8. From 2016 to 2025 he was the lead macOS developer at [Audio Design Desk](https://add.app).
+

@@ -5,7 +5,11 @@ import Foundation
 import SPFKAudioBase
 import SPFKBase
 
+/// Writes audio to compressed or PCM formats using AVFoundation's `AVAssetWriter` pipeline.
+///
+/// Accepts PCM input only. For compressed input, first convert to an intermediate PCM file.
 public actor AssetWriter {
+    /// The conversion source describing input, output, and options.
     public var source: AudioFormatConverterSource
 
     init(source: AudioFormatConverterSource) {
@@ -119,7 +123,7 @@ public actor AssetWriter {
                 AVNumberOfChannelsKey: channels,
                 AVLinearPCMBitDepthKey: bitDepth,
                 AVLinearPCMIsFloatKey: isFloat,
-                AVLinearPCMIsBigEndianKey: fileType != .wav,
+                AVLinearPCMIsBigEndianKey: fileType == .aiff,
                 AVLinearPCMIsNonInterleaved: !(source.options.isInterleaved ?? inputFormat.isInterleaved),
             ]
         }

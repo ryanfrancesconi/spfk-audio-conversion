@@ -3,18 +3,21 @@
 import AVFoundation
 import Foundation
 
+/// Describes the input file, output file, and options for a single conversion operation.
 public struct AudioFormatConverterSource: Sendable {
-    /// The source audio file
+    /// The source audio file URL.
     public var input: URL
 
-    /// The audio file to be created after conversion
+    /// The destination URL for the converted file.
     public var output: URL
 
-    /// Options for conversion
+    /// Options controlling sample rate, bit depth, channels, format, and more.
     public var options: AudioFormatConverterOptions
 
+    /// An `AVURLAsset` created from ``input``. A new instance is returned on each access.
     public var asset: AVURLAsset { AVURLAsset(url: input) }
 
+    /// Creates a conversion source.
     public init(input: URL, output: URL, options: AudioFormatConverterOptions) {
         self.input = input
         self.output = output

@@ -5,24 +5,40 @@ import Foundation
 import SPFKAudioBase
 import SPFKBase
 
-/// AudioFormatConverter wraps the more complex AVFoundation and CoreAudio audio conversions in an easy to use format.
+/// Converts audio files between PCM and compressed formats using CoreAudio and AVFoundation.
+///
+/// Create a converter with an input URL, output URL, and optional ``AudioFormatConverterOptions``,
+/// then call ``start()`` to perform the conversion. The output format is determined by the file
+/// extension and options.
 public class AudioFormatConverter {
+    /// The source, destination, and options for this conversion.
     public var source: AudioFormatConverterSource
 
+    /// Creates a converter with explicit input and output URLs.
+    /// - Parameters:
+    ///   - inputURL: The audio file to read.
+    ///   - outputURL: The destination URL for the converted file.
+    ///   - options: Conversion options. Pass `nil` to use defaults (format inferred from output extension).
     public convenience init(inputURL: URL, outputURL: URL, options: AudioFormatConverterOptions? = nil) {
         let options = options ?? AudioFormatConverterOptions()
         let source = AudioFormatConverterSource(input: inputURL, output: outputURL, options: options)
         self.init(source: source)
     }
 
-    /// init with input, output and options - then start()
+    /// Creates a converter from a pre-configured source.
+    /// - Parameter source: The source describing input, output, and options.
     public init(source: AudioFormatConverterSource) {
         self.source = source
     }
 
     // MARK: -
 
-    /// The entry point for file conversion
+    /// Performs the conversion, routing through the appropriate pipeline based on input/output formats.
+    ///
+    /// - PCM output → `ExtAudioFile` (CoreAudio)
+    /// - MP3 output → SoX
+    /// - PCM-to-compressed → `AVAssetWriter` (AVFoundation)
+    /// - Compressed-to-compressed → intermediate PCM then `AVAssetWriter`
     public func start() async throws {
         let inputFormat: AudioFileType? =
             if source.input.pathExtension == "",

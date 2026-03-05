@@ -1,9 +1,14 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import AVFoundation
+import SPFKAudioBase
 import SPFKUtils
 
 extension AudioFormatConverter {
+    /// Converts the source file to PCM (WAV, AIFF, or CAF) using CoreAudio's `ExtAudioFile` API.
+    ///
+    /// If the input and output formats are identical, the file is copied instead of re-encoded.
+    /// Files 2 GB or larger are automatically promoted to CAF format.
     public func convertToPCM() async throws {
         guard let outputFormat = source.options.format else {
             throw NSError(description: "Options can't be nil.")
@@ -84,10 +89,10 @@ extension AudioFormatConverter {
             inputDescription: inputDescription
         )
 
-        let inputFormat = inputURL.pathExtension.lowercased()
+        let inputFileType = AudioFileType(pathExtension: inputURL.pathExtension)
 
         guard
-            inputFormat != outputFormat.pathExtension || outputDescription.mSampleRate != inputDescription.mSampleRate
+            inputFileType != outputFormat || outputDescription.mSampleRate != inputDescription.mSampleRate
                 || outputDescription.mChannelsPerFrame != inputDescription.mChannelsPerFrame
                 || outputDescription.mBitsPerChannel != inputDescription.mBitsPerChannel
         else {
@@ -153,7 +158,7 @@ extension AudioFormatConverter {
         srcBuffer.withUnsafeMutableBytes { srcBufferPtr in
             while true {
                 let mBuffer = AudioBuffer(
-                    mNumberChannels: inputDescription.mChannelsPerFrame,
+                    mNumberChannels: outputDescription.mChannelsPerFrame,
                     mDataByteSize: bufferByteSize,
                     mData: srcBufferPtr.baseAddress
                 )
@@ -197,6 +202,10 @@ extension AudioFormatConverter {
 }
 
 extension AudioFormatConverter {
+    /// Builds a linear PCM `AudioStreamBasicDescription` from the given options and input description.
+    ///
+    /// Options values override the input description; `nil` options adopt the input's values.
+    /// The ``AudioFormatConverterOptions/bitDepthRule`` is applied here.
     public static func createOutputDescription(
         options: AudioFormatConverterOptions,
         outputFormatID: AudioFormatID,
