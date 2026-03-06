@@ -129,8 +129,8 @@ BatchAudioFormatConverter
 
 ## Requirements
 
-- macOS 12+
-- Swift 6.2+
+- **Platforms:** macOS 13+
+- **Swift:** 6.2+
 
 ## About
 
