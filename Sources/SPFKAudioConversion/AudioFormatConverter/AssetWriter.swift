@@ -42,7 +42,7 @@ public actor AssetWriter {
         // The reader, track, and format hint must all reference the same asset instance.
         let asset = source.asset
 
-        guard let track = asset.tracks(withMediaType: .audio).first else {
+        guard let track = try await asset.loadTracks(withMediaType: .audio).first else {
             throw NSError(description: "No audio was found in the input file.")
         }
 
@@ -50,9 +50,12 @@ public actor AssetWriter {
 
         let reader = try AVAssetReader(asset: asset)
         let writer = try AVAssetWriter(outputURL: source.output, fileType: fileType)
+
+        let assetFormat = await asset.audioFormat()
+
         let writerInput = AVAssetWriterInput(
             mediaType: .audio, outputSettings: outputSettings,
-            sourceFormatHint: asset.audioFormat?.formatDescription
+            sourceFormatHint: assetFormat?.formatDescription
         )
         let readerOutput = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
         let container = AssetWriterContainer(
@@ -63,7 +66,7 @@ public actor AssetWriter {
     }
 
     private func createOutputSettings(for asset: AVURLAsset) async throws -> [String: Any] {
-        guard let inputFormat = asset.audioFormat else {
+        guard let inputFormat = await asset.audioFormat() else {
             throw NSError(description: "Unable to read the input file format.")
         }
 
