@@ -68,6 +68,8 @@ extension AudioFormatConverter {
 
     /// Using SoX for mp3 conversion
     func convertToMP3() async throws {
+        try Task.checkCancellation()
+
         var inputURL = source.input
 
         let inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
@@ -88,6 +90,8 @@ extension AudioFormatConverter {
                 tempFile = temp
             }
         }
+
+        try Task.checkCancellation()
 
         try await processConvertToMP3(
             inputURL: inputURL,
@@ -128,6 +132,8 @@ extension AudioFormatConverter {
     /// Convert to compressed first creating a tmp file to PCM to allow more flexible conversion
     /// options to work.
     func convertCompressed() async throws {
+        try Task.checkCancellation()
+
         if source.options.format == .mp3 {
             try await convertToMP3()
             return
@@ -158,6 +164,8 @@ extension AudioFormatConverter {
         }
 
         try await tempConverter.start()
+
+        try Task.checkCancellation()
 
         var assetWriterSource = source
         assetWriterSource.input = tempFile

@@ -78,6 +78,52 @@ struct FormatDetectionTests {
         #expect(result == nil)
     }
 
+    // MARK: - isPCM with deep inspection
+
+    @Test func isPCMWithDeepInspectionForWav() {
+        let result = AudioFormatConverter.isPCM(
+            url: TestBundleResources.shared.tabla_wav,
+            ignorePathExtension: true
+        )
+        #expect(result == true)
+    }
+
+    @Test func isPCMWithDeepInspectionForM4A() {
+        let result = AudioFormatConverter.isPCM(
+            url: TestBundleResources.shared.tabla_m4a,
+            ignorePathExtension: true
+        )
+        #expect(result == false)
+    }
+
+    @Test func isPCMReturnsNilForNonexistentFile() {
+        let url = URL(fileURLWithPath: "/nonexistent/file.xyz")
+        let result = AudioFormatConverter.isPCM(url: url, ignorePathExtension: true)
+        #expect(result == nil)
+    }
+
+    @Test func isPCMReturnsTrueForAIFF() {
+        let result = AudioFormatConverter.isPCM(url: TestBundleResources.shared.tabla_aif)
+        #expect(result == true)
+    }
+
+    @Test func isPCMReturnsTrueForCAF() {
+        let result = AudioFormatConverter.isPCM(url: TestBundleResources.shared.tabla_caf)
+        #expect(result == true)
+    }
+
+    @Test func isPCMReturnsFalseForMP3() {
+        let result = AudioFormatConverter.isPCM(url: TestBundleResources.shared.tabla_mp3)
+        #expect(result == false)
+    }
+
+    // MARK: - outputPathExtensions
+
+    @Test func outputPathExtensionsMatchOutputFormats() {
+        let expected = AudioFormatConverter.outputFormats.map(\.pathExtension)
+        #expect(AudioFormatConverter.outputPathExtensions == expected)
+    }
+
     // MARK: - Output format lists
 
     @Test func outputFormatsContainsExpectedTypes() {

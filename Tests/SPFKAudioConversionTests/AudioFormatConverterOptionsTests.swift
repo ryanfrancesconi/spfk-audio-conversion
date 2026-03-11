@@ -178,4 +178,81 @@ struct AudioFormatConverterOptionsTests {
         let options = AudioFormatConverterOptions()
         #expect(options.eraseFile == true)
     }
+
+    // MARK: - init(format:)
+
+    @Test func initWithFormatSetsFormatOnly() {
+        let options = AudioFormatConverterOptions(format: .m4a)
+        #expect(options.format == .m4a)
+        #expect(options.sampleRate == nil)
+        #expect(options.bitsPerChannel == nil)
+        #expect(options.channels == nil)
+        #expect(options.bitDepthRule == .any)
+    }
+
+    // MARK: - init(audioFile:)
+
+    @Test func initFromAudioFile() throws {
+        let url = TestBundleResources.shared.tabla_wav
+        let audioFile = try AVAudioFile(forReading: url)
+        let options = AudioFormatConverterOptions(audioFile: audioFile)
+
+        #expect(options != nil)
+        #expect(options?.format == .wav)
+        #expect(options?.sampleRate ?? 0 > 0)
+        #expect(options?.channels ?? 0 > 0)
+    }
+
+    // MARK: - Serializable round-trip
+
+    @Test func serializableRoundTrip() throws {
+        var original = AudioFormatConverterOptions()
+        original.format = .wav
+        original.sampleRate = 48000
+        original.bitsPerChannel = 24
+        original.channels = 2
+        original.bitRate = 128_000
+        original.bitDepthRule = .lessThanOrEqual
+        original.eraseFile = false
+
+        let data = try #require(original.dataRepresentation)
+        let decoded = try AudioFormatConverterOptions(data: data)
+
+        #expect(decoded.format == .wav)
+        #expect(decoded.sampleRate == 48000)
+        #expect(decoded.bitsPerChannel == 24)
+        #expect(decoded.channels == 2)
+        #expect(decoded.bitRate == 128_000)
+        #expect(decoded.bitDepthRule == .lessThanOrEqual)
+        #expect(decoded.eraseFile == false)
+    }
+
+    @Test func serializableRoundTripWithNilValues() throws {
+        let original = AudioFormatConverterOptions()
+
+        let data = try #require(original.dataRepresentation)
+        let decoded = try AudioFormatConverterOptions(data: data)
+
+        #expect(decoded.format == nil)
+        #expect(decoded.sampleRate == nil)
+        #expect(decoded.bitsPerChannel == nil)
+        #expect(decoded.channels == nil)
+        #expect(decoded.bitRate == 256_000)
+        #expect(decoded.bitDepthRule == .any)
+        #expect(decoded.eraseFile == true)
+    }
+
+    // MARK: - channels property
+
+    @Test func channelsNilByDefault() {
+        let options = AudioFormatConverterOptions()
+        #expect(options.channels == nil)
+    }
+
+    // MARK: - isInterleaved property
+
+    @Test func isInterleavedNilByDefault() {
+        let options = AudioFormatConverterOptions()
+        #expect(options.isInterleaved == nil)
+    }
 }

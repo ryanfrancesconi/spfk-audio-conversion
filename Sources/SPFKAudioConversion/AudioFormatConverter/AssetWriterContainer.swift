@@ -35,6 +35,8 @@ struct AssetWriterContainer: @unchecked Sendable {
     }
 
     private func _startLegacy() async throws {
+        try Task.checkCancellation()
+
         writer.add(writerInput)
         reader.add(readerOutput)
 
@@ -48,6 +50,9 @@ struct AssetWriterContainer: @unchecked Sendable {
             throw reader.error ?? NSError(description: "Failed to start reading")
         }
 
+        // Capture the current task's cancellation handle so the DispatchQueue callback can check it
+        let taskCancellationCheck: @Sendable () -> Bool = { Task.isCancelled }
+
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let queue = DispatchQueue(label: "com.spongefork.AudioFormatConverter")
             let resumeGuard = ContinuationResumeGuard()
@@ -56,6 +61,18 @@ struct AssetWriterContainer: @unchecked Sendable {
                 on: queue,
                 using: {
                     while writerInput.isReadyForMoreMediaData {
+                        if taskCancellationCheck() {
+                            writerInput.markAsFinished()
+                            reader.cancelReading()
+                            writer.cancelWriting()
+
+                            if resumeGuard.tryResume() {
+                                continuation.resume(throwing: CancellationError())
+                            }
+
+                            return
+                        }
+
                         guard reader.status == .reading,
                             let buffer = readerOutput.copyNextSampleBuffer()
                         else {

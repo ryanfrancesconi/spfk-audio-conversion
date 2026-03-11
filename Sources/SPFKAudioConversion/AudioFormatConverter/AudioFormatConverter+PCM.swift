@@ -149,6 +149,8 @@ extension AudioFormatConverter {
             throw NSError(description: "Unable to set the output file data format.")
         }
 
+        try Task.checkCancellation()
+
         let bufferByteSize: UInt32 = 32768
         var srcBuffer = [UInt8](repeating: 0, count: Int(bufferByteSize))
         var sourceFrameOffset: UInt32 = 0
@@ -157,6 +159,12 @@ extension AudioFormatConverter {
 
         srcBuffer.withUnsafeMutableBytes { srcBufferPtr in
             while true {
+                // Check cancellation periodically (every ~3 MB)
+                if sourceFrameOffset > 0, sourceFrameOffset % 100 == 0, Task.isCancelled {
+                    error = CancellationError()
+                    break
+                }
+
                 let mBuffer = AudioBuffer(
                     mNumberChannels: outputDescription.mChannelsPerFrame,
                     mDataByteSize: bufferByteSize,
@@ -196,6 +204,11 @@ extension AudioFormatConverter {
         }
 
         if let error {
+            // Clean up partial output file on cancellation or error
+            if outputURL.exists {
+                try? FileManager.default.removeItem(at: outputURL)
+            }
+
             throw error
         }
     }

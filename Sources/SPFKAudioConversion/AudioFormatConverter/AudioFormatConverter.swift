@@ -40,6 +40,8 @@ public class AudioFormatConverter {
     /// - PCM-to-compressed → `AVAssetWriter` (AVFoundation)
     /// - Compressed-to-compressed → intermediate PCM then `AVAssetWriter`
     public func start() async throws {
+        try Task.checkCancellation()
+
         let inputFormat: AudioFileType? =
             if source.input.pathExtension == "",
                 let ext = (try? AudioFileType.getExtensions(for: source.input))?.first
@@ -75,29 +77,39 @@ public class AudioFormatConverter {
 
         // Format checks are necessary as AVAssetReader has opinions about compressed
 
-        // PCM output, any supported input
-        if Self.isPCM(url: source.output) == true {
-            // PCM output
-            try await convertToPCM()
+        do {
+            // PCM output, any supported input
+            if Self.isPCM(url: source.output) == true {
+                // PCM output
+                try await convertToPCM()
 
-            // special case for MP3 files
-        } else if source.output.pathExtension.lowercased() == AudioFileType.mp3.pathExtension {
-            try await convertToMP3()
+                // special case for MP3 files
+            } else if source.output.pathExtension.lowercased() == AudioFileType.mp3.pathExtension {
+                try await convertToMP3()
 
-            // PCM input, compressed output
-        } else if Self.isPCM(url: source.input) == true,
-            Self.isCompressed(url: source.output) == true
-        {
-            try await AssetWriter(source: source).start()
+                // PCM input, compressed output
+            } else if Self.isPCM(url: source.input) == true,
+                Self.isCompressed(url: source.output) == true
+            {
+                try await AssetWriter(source: source).start()
 
-            // Compressed input and output
-        } else if Self.isCompressed(url: source.input) == true,
-            Self.isCompressed(url: source.output) == true
-        {
-            try await convertCompressed()
+                // Compressed input and output
+            } else if Self.isCompressed(url: source.input) == true,
+                Self.isCompressed(url: source.output) == true
+            {
+                try await convertCompressed()
 
-        } else {
-            throw NSError(description: "Unable to determine formats for conversion")
+            } else {
+                throw NSError(description: "Unable to determine formats for conversion")
+            }
+
+        } catch is CancellationError {
+            // Clean up partial output file
+            if source.output.exists {
+                try? FileManager.default.removeItem(at: source.output)
+            }
+
+            throw CancellationError()
         }
     }
 }
