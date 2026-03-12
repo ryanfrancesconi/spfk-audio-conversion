@@ -42,13 +42,13 @@ struct AudioFormatConverterOptionsTests {
     @Test func bitRateClampedToMinimum() {
         var options = AudioFormatConverterOptions()
         options.bitRate = 1000
-        #expect(options.bitRate == AudioFormatConverterOptions.bitRange.lowerBound)
+        #expect(options.bitRate == AudioFormatConverterOptions.bitRateRange.lowerBound)
     }
 
     @Test func bitRateClampedToMaximum() {
         var options = AudioFormatConverterOptions()
         options.bitRate = 1_000_000
-        #expect(options.bitRate == AudioFormatConverterOptions.bitRange.upperBound)
+        #expect(options.bitRate == AudioFormatConverterOptions.bitRateRange.upperBound)
     }
 
     @Test func bitRateDefaultIs256k() {

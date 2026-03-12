@@ -10,11 +10,27 @@ import SPFKUtils
 /// Leave any property `nil` to adopt the corresponding value from the input file.
 /// `bitRate` assumes a stereo bit rate; the converter halves it for mono output.
 public struct AudioFormatConverterOptions: Sendable {
-    /// Allowed range for ``bitsPerChannel`` (16–32).
-    public static let bitsPerChannelRange: ClosedRange<UInt32> = 16 ... 32
+    /// Discrete bit depths supported for PCM output.
+    public static let supportedBitsPerChannel: [UInt32] = [16, 24, 32]
 
-    /// Allowed range for ``bitRate`` in bits per second (64 000–320 000).
-    public static let bitRange: ClosedRange<UInt32> = 64000 ... 320_000
+    /// Discrete encoder bit rates in bits per second supported for compressed output.
+    public static let supportedBitRates: [UInt32] = [64_000, 96_000, 128_000, 160_000, 192_000, 256_000, 320_000]
+
+    /// Discrete sample rates in Hertz supported for conversion.
+    public static let supportedSampleRates: [Double] = [22_050, 44_100, 48_000, 88_200, 96_000]
+
+    /// Supported output channel counts.
+    public static let supportedChannelCounts: [UInt32] = [1, 2]
+
+    /// Clamping range derived from ``supportedBitsPerChannel``.
+    public static var bitsPerChannelRange: ClosedRange<UInt32> {
+        supportedBitsPerChannel.first! ... supportedBitsPerChannel.last!
+    }
+
+    /// Clamping range derived from ``supportedBitRates``.
+    public static var bitRateRange: ClosedRange<UInt32> {
+        supportedBitRates.first! ... supportedBitRates.last!
+    }
 
     /// Controls whether the converter may increase the bit depth beyond the source.
     public enum BitDepthRule: String, Codable, Sendable {
@@ -62,14 +78,14 @@ public struct AudioFormatConverterOptions: Sendable {
         }
     }
 
-    /// Encoder bit rate in bits per second for compressed output (clamped to ``bitRange``).
+    /// Encoder bit rate in bits per second for compressed output (clamped to ``bitRateRange``).
     public var bitRate: UInt32 = 256_000 {
         didSet {
-            if bitRate < Self.bitRange.lowerBound {
-                Log.error("bitRate is too low \(bitRate) and will be clamped to \(Self.bitRange). Did you *= 1000? Will be clamped to \(Self.bitRange)")
+            if bitRate < Self.bitRateRange.lowerBound {
+                Log.error("bitRate is too low \(bitRate) and will be clamped to \(Self.bitRateRange). Did you *= 1000? Will be clamped to \(Self.bitRateRange)")
             }
 
-            bitRate = bitRate.clamped(to: Self.bitRange)
+            bitRate = bitRate.clamped(to: Self.bitRateRange)
         }
     }
 
