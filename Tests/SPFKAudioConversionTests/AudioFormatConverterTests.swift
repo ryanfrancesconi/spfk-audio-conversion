@@ -43,10 +43,24 @@ class AudioFormatConverterTests: BinTestCase {
         try await convert(input: input, output: output, options: nil, expectedDuration: 4.39375)
     }
 
-    // SoX
+    // LAME
     @Test func convertToMP3() async throws {
         let input = TestBundleResources.shared.tabla_wav
         let output = bin.appending(component: "\(#function).mp3", directoryHint: .notDirectory)
+        try await convert(input: input, output: output, options: nil, expectedDuration: 4.39375)
+    }
+
+    // libsndfile
+    @Test func convertToFLAC() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).flac", directoryHint: .notDirectory)
+        try await convert(input: input, output: output, options: nil, expectedDuration: 4.39375)
+    }
+
+    // libsndfile
+    @Test func convertToOGG() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).ogg", directoryHint: .notDirectory)
         try await convert(input: input, output: output, options: nil, expectedDuration: 4.39375)
     }
 

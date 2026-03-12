@@ -24,6 +24,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (int)convertToOGG:(NSString *)input
              output:(NSString *)output;
 
+/// Read audio file info via libsndfile.
+/// @param path Path to the audio file.
+/// @param sampleRate On return, the file's sample rate.
+/// @param channels On return, the number of channels.
+/// @param bitDepth On return, the bit depth (8, 16, 24) or 0 if not PCM.
+/// @return 0 on success, non-zero on failure.
+- (int)fileInfo:(NSString *)path
+     sampleRate:(int *)sampleRate
+       channels:(int *)channels
+       bitDepth:(int *)bitDepth;
+
 @end
 
 NS_ASSUME_NONNULL_END

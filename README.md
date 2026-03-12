@@ -3,12 +3,12 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
 
-Audio file format conversion library supporting PCM and compressed formats via CoreAudio, AVFoundation, and SoX.
+Audio file format conversion library supporting PCM and compressed formats via CoreAudio, AVFoundation, LAME, and libsndfile.
 
 ## Features
 
 - Convert between PCM formats (WAV, AIFF, CAF) with sample rate, bit depth, and channel count options
-- Encode to compressed formats (M4A/AAC, MP3)
+- Encode to compressed formats (M4A/AAC, MP3, FLAC, OGG Opus)
 - Decode compressed formats to PCM
 - Transcode between compressed formats via intermediate PCM
 - Batch conversion with configurable concurrency and progress reporting
@@ -20,7 +20,7 @@ Audio file format conversion library supporting PCM and compressed formats via C
 | Direction | Formats |
 |-----------|---------|
 | **Input** | All `AudioFileType` cases (WAV, AIFF, CAF, M4A, MP3, MP4, FLAC, OGG, etc.) |
-| **Output** | WAV, AIFF, CAF, M4A, MP3 |
+| **Output** | WAV, AIFF, CAF, M4A, MP3, FLAC, OGG Opus |
 
 ## Usage
 
@@ -106,13 +106,19 @@ let isCompressed = AudioFormatConverter.isCompressed(url: fileURL)
 
 ```
 AudioFormatConverter.start()
-  |-- PCM output        --> convertToPCM()        [CoreAudio ExtAudioFile]
-  |-- MP3 output        --> convertToMP3()         [SoX]
+  |-- PCM output        --> convertToPCM()         [CoreAudio ExtAudioFile]
+  |-- MP3 output        --> convertToMP3()         [LAME via LameConverter]
+  |-- FLAC output       --> convertToFLAC()        [libsndfile via SndFileConverter]
+  |-- OGG Opus output   --> convertToOGG()         [libsndfile via SndFileConverter]
   |-- PCM in, M4A out   --> AssetWriter            [AVFoundation]
-  |-- Compressed in/out --> convertCompressed()     [intermediate PCM + AssetWriter]
+  |-- Compressed in/out --> convertCompressed()     [intermediate PCM + target encoder]
+
+SPFKAudioConverterC (ObjC target)
+  |-- LameConverter      LAME encoder + mpg123 decoder
+  |-- SndFileConverter   libsndfile for FLAC/OGG + file info queries
 
 BatchAudioFormatConverter
-  |-- Structured concurrency with TaskGroup
+  |-- Structured concurrency with batchMap
   |-- Sliding window of 8 concurrent conversions
   |-- Per-file progress via BatchAudioFormatConverterDelegate
 ```
@@ -124,8 +130,13 @@ BatchAudioFormatConverter
 | [spfk-base](https://github.com/ryanfrancesconi/spfk-base) | Foundation extensions and utilities |
 | [spfk-audio-base](https://github.com/ryanfrancesconi/spfk-audio-base) | Audio type definitions (`AudioFileType`, `AudioDefaults`) |
 | [spfk-metadata](https://github.com/ryanfrancesconi/spfk-metadata) | Audio file metadata parsing |
-| [spfk-sox](https://github.com/ryanfrancesconi/spfk-sox) | SoX wrapper for MP3 encoding |
+| [spfk-lame](https://github.com/ryanfrancesconi/spfk-lame) | LAME + mpg123 xcframeworks for MP3 encoding/decoding |
 | [spfk-utils](https://github.com/ryanfrancesconi/spfk-utils) | General utilities (`Entropy`, `Serializable`) |
+| [sndfile-binary-xcframework](https://github.com/sbooth/sndfile-binary-xcframework) | libsndfile for FLAC/OGG encoding |
+| [ogg-binary-xcframework](https://github.com/sbooth/ogg-binary-xcframework) | Ogg container library |
+| [flac-binary-xcframework](https://github.com/sbooth/flac-binary-xcframework) | FLAC codec |
+| [vorbis-binary-xcframework](https://github.com/sbooth/vorbis-binary-xcframework) | Vorbis codec |
+| [opus-binary-xcframework](https://github.com/sbooth/opus-binary-xcframework) | Opus codec |
 
 ## Requirements
 

@@ -113,4 +113,37 @@
     return 0;
 }
 
+- (int)fileInfo:(NSString *)path
+     sampleRate:(int *)sampleRate
+       channels:(int *)channels
+       bitDepth:(int *)bitDepth
+{
+    SF_INFO info;
+    memset(&info, 0, sizeof(info));
+
+    SNDFILE *file = sf_open(path.UTF8String, SFM_READ, &info);
+    if (file == NULL) {
+        return -1;
+    }
+
+    *sampleRate = info.samplerate;
+    *channels = info.channels;
+
+    int sub = info.format & SF_FORMAT_SUBMASK;
+    if (sub == SF_FORMAT_PCM_S8) {
+        *bitDepth = 8;
+    } else if (sub == SF_FORMAT_PCM_16) {
+        *bitDepth = 16;
+    } else if (sub == SF_FORMAT_PCM_24) {
+        *bitDepth = 24;
+    } else if (sub == SF_FORMAT_PCM_32) {
+        *bitDepth = 32;
+    } else {
+        *bitDepth = 0;
+    }
+
+    sf_close(file);
+    return 0;
+}
+
 @end

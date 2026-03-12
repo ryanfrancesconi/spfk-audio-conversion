@@ -154,6 +154,40 @@ class PCMConversionTests: BinTestCase {
         #expect(outputFile.duration > 0)
     }
 
+    // MARK: - FLAC / OGG input to PCM output
+
+    @Test func convertFLACToWav() async throws {
+        let input = TestBundleResources.shared.tabla_flac
+        let output = bin.appending(component: "\(#function).wav", directoryHint: .notDirectory)
+
+        var options = AudioFormatConverterOptions()
+        options.format = .wav
+        options.bitsPerChannel = 16
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(output.exists)
+        let outputFile = try AVAudioFile(forReading: output)
+        #expect(outputFile.duration > 0)
+    }
+
+    @Test func convertOGGToWav() async throws {
+        let input = TestBundleResources.shared.tabla_ogg
+        let output = bin.appending(component: "\(#function).wav", directoryHint: .notDirectory)
+
+        var options = AudioFormatConverterOptions()
+        options.format = .wav
+        options.bitsPerChannel = 16
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(output.exists)
+        let outputFile = try AVAudioFile(forReading: output)
+        #expect(outputFile.duration > 0)
+    }
+
     // MARK: - Combined options
 
     @Test func convertWithMultipleOptions() async throws {
