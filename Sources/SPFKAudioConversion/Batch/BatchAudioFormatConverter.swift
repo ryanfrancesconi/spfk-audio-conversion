@@ -40,74 +40,40 @@ public actor BatchAudioFormatConverter {
             throw NSError(description: "No files to process")
         }
 
-        return try await withThrowingTaskGroup(
-            of: Result?.self,
-            returning: [Result].self
-        ) { taskGroup in
-            try Task.checkCancellation()
+        return try await batchMap(count: count, batchSize: batchSize) { [weak self] i -> Result? in
+            guard collection.indices.contains(i) else { return nil }
 
-            @Sendable func worker(i: Int) async -> Result? {
-                guard collection.indices.contains(i) else {
-                    return nil
-                }
+            let source = collection[i]
 
-                let source = collection[i]
+            var result: Result
 
-                do {
-                    let converter = AudioFormatConverter(source: source)
-                    try await converter.start()
-                    return .success(source: source)
-
-                } catch {
-                    return .failed(source: source, error: error)
-                }
+            do {
+                let converter = AudioFormatConverter(source: source)
+                try await converter.start()
+                result = .success(source: source)
+            } catch {
+                result = .failed(source: source, error: error)
             }
 
-            for i in 0 ..< batchSize {
-                taskGroup.addTask {
-                    await worker(i: i)
-                }
-            }
+            await self?.sendProgress(for: result)
 
-            var index: Int = batchSize
-            var mutableResults = [Result]()
-
-            func sendProgress(for result: Result) async {
-                guard let delegate, count > 0 else { return }
-
-                await data.increment()
-                let progress: UnitInterval = await data.percent
-
-                let prefix = result.error != nil ? "Error" : "Converted"
-
-                await delegate.batchProgress(progressEvent: .loading(string: prefix, progress: progress))
-            }
-
-            for try await result in taskGroup {
-                try Task.checkCancellation()
-
-                if let result {
-                    mutableResults.append(result)
-                    await sendProgress(for: result)
-                }
-
-                if index < count {
-                    // as a task finishes add another one to keep the batch size intact
-                    taskGroup.addTask { [index] in
-                        await worker(i: index)
-                    }
-
-                    index += 1
-                }
-            }
-
-            return mutableResults
+            return result
         }
+    }
+
+    private func sendProgress(for result: Result) async {
+        guard let delegate else { return }
+
+        await data.increment()
+        let progress: UnitInterval = await data.percent
+        let string = "Converted \(result.source.output.lastPathComponent)"
+
+        await delegate.batchProgress(progressEvent: .loading(string: string, progress: progress))
     }
 }
 
 /// Receives progress events from a ``BatchAudioFormatConverter``.
-public protocol BatchAudioFormatConverterDelegate: AnyObject {
+public protocol BatchAudioFormatConverterDelegate: AnyObject, Sendable {
     /// Called after each file completes (success or failure).
     func batchProgress(progressEvent: LoadStateEvent) async
 }
