@@ -129,20 +129,117 @@ extension AudioFormatConverter {
         }
     }
 
+    /// Formats that are handled by SoX rather than AVAssetWriter.
+    static let soxOutputFormats: Set<AudioFileType> = [.mp3, .flac, .ogg]
+
+    /// Using SoX for FLAC conversion (lossless — uses bit depth, not bitrate).
+    func convertToFLAC() async throws {
+        try Task.checkCancellation()
+
+        let inputURL = try await prepareSoXInput(source: source)
+
+        defer {
+            cleanUpTempFile(inputURL: inputURL, originalURL: source.input)
+        }
+
+        try Task.checkCancellation()
+
+        try await SoX.shared.convertPCM(
+            input: inputURL,
+            output: source.output,
+            bitDepth: source.options.bitsPerChannel,
+            sampleRate: source.options.sampleRate
+        )
+
+        guard source.output.exists else {
+            throw NSError(description: "Failed to convert to FLAC: \(source.input.lastPathComponent)")
+        }
+    }
+
+    /// Using SoX for OGG Vorbis conversion (lossy — uses bitrate).
+    func convertToOGG() async throws {
+        try Task.checkCancellation()
+
+        let inputURL = try await prepareSoXInput(source: source)
+
+        defer {
+            cleanUpTempFile(inputURL: inputURL, originalURL: source.input)
+        }
+
+        try Task.checkCancellation()
+
+        let avfile = try AVAudioFile(forReading: inputURL)
+        guard avfile.fileFormat.channelCount <= 2 else {
+            throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
+        }
+
+        try await SoX.shared.convertOGG(
+            input: inputURL,
+            output: source.output,
+            bitRate: source.options.bitRate / 1000, // sox bit rate is kbps
+            sampleRate: source.options.sampleRate
+        )
+
+        guard source.output.exists else {
+            throw NSError(description: "Failed to convert to OGG: \(source.input.lastPathComponent)")
+        }
+    }
+
+    /// Prepares a WAV input suitable for SoX if the original format is unsupported.
+    /// Returns the original URL if already compatible, or a temp WAV file.
+    private func prepareSoXInput(source: AudioFormatConverterSource) async throws -> URL {
+        let inputFormat = AudioFileType(pathExtension: source.input.pathExtension)
+        let supportedInput = inputFormat == .wav || inputFormat == .aiff || inputFormat == .flac
+
+        let asset = source.asset
+        let supportedChannels = await (asset.audioFormat()?.channelCount ?? 0) <= 2
+
+        if supportedInput && supportedChannels {
+            return source.input
+        }
+
+        let temp = try await createTempFile(
+            inputURL: source.input,
+            in: source.output.deletingLastPathComponent()
+        )
+
+        guard temp.exists else {
+            return source.input
+        }
+
+        return temp
+    }
+
+    /// Removes temp file if it differs from the original.
+    private func cleanUpTempFile(inputURL: URL, originalURL: URL) {
+        guard inputURL != originalURL else { return }
+        Log.debug("Removing temp file at", inputURL.path)
+        try? inputURL.delete()
+    }
+
     /// Convert to compressed first creating a tmp file to PCM to allow more flexible conversion
     /// options to work.
     func convertCompressed() async throws {
         try Task.checkCancellation()
 
-        if source.options.format == .mp3 {
+        switch source.options.format {
+        case .mp3:
             try await convertToMP3()
             return
+        case .flac:
+            try await convertToFLAC()
+            return
+        case .ogg:
+            try await convertToOGG()
+            return
+        default:
+            break
         }
 
         let inputURL = source.input
         let outputURL = source.output
 
-        let tempName = outputURL.deletingPathExtension().lastPathComponent + "_TEMP.wav"
+        let tempName = outputURL.deletingPathExtension().lastPathComponent + "_tmp.wav"
         let tempFile = outputURL.deletingLastPathComponent().appendingPathComponent(tempName)
 
         var tempOptions = AudioFormatConverterOptions()

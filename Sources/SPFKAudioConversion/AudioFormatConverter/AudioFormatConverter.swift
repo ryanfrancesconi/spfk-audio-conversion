@@ -36,7 +36,7 @@ public class AudioFormatConverter {
     /// Performs the conversion, routing through the appropriate pipeline based on input/output formats.
     ///
     /// - PCM output → `ExtAudioFile` (CoreAudio)
-    /// - MP3 output → SoX
+    /// - FLAC / OGG / MP3 output → SoX
     /// - PCM-to-compressed → `AVAssetWriter` (AVFoundation)
     /// - Compressed-to-compressed → intermediate PCM then `AVAssetWriter`
     public func start() async throws {
@@ -75,25 +75,26 @@ public class AudioFormatConverter {
             source.options.format = AudioFileType(pathExtension: source.output.pathExtension)
         }
 
+        let outputFormat = AudioFileType(pathExtension: source.output.pathExtension)
+
         // Format checks are necessary as AVAssetReader has opinions about compressed
 
         do {
             // PCM output, any supported input
             if Self.isPCM(url: source.output) == true {
-                // PCM output
                 try await convertToPCM()
 
-                // special case for MP3 files
-            } else if source.output.pathExtension.lowercased() == AudioFileType.mp3.pathExtension {
-                try await convertToMP3()
+                // SoX-handled formats: MP3, FLAC, OGG Vorbis
+            } else if let outputFormat, Self.soxOutputFormats.contains(outputFormat) {
+                try await convertCompressed()
 
-                // PCM input, compressed output
+                // PCM input, compressed output (AVAssetWriter)
             } else if Self.isPCM(url: source.input) == true,
                 Self.isCompressed(url: source.output) == true
             {
                 try await AssetWriter(source: source).start()
 
-                // Compressed input and output
+                // Compressed input and output (intermediate PCM then AVAssetWriter)
             } else if Self.isCompressed(url: source.input) == true,
                 Self.isCompressed(url: source.output) == true
             {
