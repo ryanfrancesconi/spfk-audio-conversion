@@ -2,6 +2,7 @@
 
 import AVFoundation
 import Foundation
+import SPFKAudioBase
 
 /// Describes the input file, output file, and options for a single conversion operation.
 public struct AudioFormatConverterSource: Sendable {
