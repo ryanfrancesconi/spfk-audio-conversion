@@ -51,7 +51,7 @@ public actor AssetWriter {
         let reader = try AVAssetReader(asset: asset)
         let writer = try AVAssetWriter(outputURL: source.output, fileType: fileType)
 
-        let assetFormat = await asset.audioFormat()
+        let assetFormat = await asset.audioFormat
 
         let writerInput = AVAssetWriterInput(
             mediaType: .audio, outputSettings: outputSettings,
@@ -66,7 +66,7 @@ public actor AssetWriter {
     }
 
     private func createOutputSettings(for asset: AVURLAsset) async throws -> [String: Any] {
-        guard let inputFormat = await asset.audioFormat() else {
+        guard let inputFormat = await asset.audioFormat else {
             throw NSError(description: "Unable to read the input file format.")
         }
 

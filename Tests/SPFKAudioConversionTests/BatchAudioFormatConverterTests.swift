@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import AVFoundation
+import SPFKAudioBase
 import SPFKBase
 import SPFKTesting
 import SPFKUtils
@@ -40,10 +41,10 @@ class BatchAudioFormatConverterTests: BinTestCase {
 
         for result in results {
             switch result {
-            case .success(source: let source):
+            case let .success(source: source):
                 Log.debug("✅ \(source)")
 
-            case .failed(source: let source, error: let error):
+            case let .failed(source: source, error: error):
                 Log.debug("❌ \(source), \(error)")
             }
         }

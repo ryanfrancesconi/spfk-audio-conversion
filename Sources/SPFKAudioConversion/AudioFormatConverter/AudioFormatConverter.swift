@@ -36,7 +36,7 @@ public class AudioFormatConverter {
     /// Performs the conversion, routing through the appropriate pipeline based on input/output formats.
     ///
     /// - PCM output → `ExtAudioFile` (CoreAudio)
-    /// - FLAC / OGG / MP3 output → SoX
+    /// - FLAC / OGG / MP3 output → libsndfile / LAME (direct)
     /// - PCM-to-compressed → `AVAssetWriter` (AVFoundation)
     /// - Compressed-to-compressed → intermediate PCM then `AVAssetWriter`
     public func start() async throws {
@@ -84,8 +84,8 @@ public class AudioFormatConverter {
             if Self.isPCM(url: source.output) == true {
                 try await convertToPCM()
 
-                // SoX-handled formats: MP3, FLAC, OGG Vorbis
-            } else if let outputFormat, Self.soxOutputFormats.contains(outputFormat) {
+                // Direct conversion formats: MP3 (LAME), FLAC, OGG (libsndfile)
+            } else if let outputFormat, Self.directConversionFormats.contains(outputFormat) {
                 try await convertCompressed()
 
                 // PCM input, compressed output (AVAssetWriter)

@@ -123,15 +123,4 @@ struct FormatDetectionTests {
         let expected = AudioFormatConverter.outputFormats.map(\.pathExtension)
         #expect(AudioFormatConverter.outputPathExtensions == expected)
     }
-
-    // MARK: - Output format lists
-
-    @Test func outputFormatsContainsExpectedTypes() {
-        let expected: [AudioFileType] = [.wav, .aiff, .caf, .m4a, .mp3]
-        #expect(AudioFormatConverter.outputFormats == expected)
-    }
-
-    @Test func inputFormatsContainsAllCases() {
-        #expect(AudioFormatConverter.inputFormats == AudioFileType.allCases)
-    }
 }

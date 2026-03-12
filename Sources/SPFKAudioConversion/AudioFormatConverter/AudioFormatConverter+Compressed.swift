@@ -2,7 +2,8 @@
 
 import AVFoundation
 import SPFKAudioBase
-import SPFKSoX
+import SPFKAudioConverterC
+import SPFKBase
 import SPFKUtils
 
 extension AudioFormatConverter {
@@ -52,7 +53,6 @@ extension AudioFormatConverter {
         tempOptions.format = .wav
 
         let tempName = inputURL.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
-        // let temp = source.output.deletingLastPathComponent().appendingPathComponent(tempName)
         let output = directory.appendingPathComponent(tempName)
 
         let tempConverter = AudioFormatConverter(
@@ -66,77 +66,16 @@ extension AudioFormatConverter {
         return output
     }
 
-    /// Using SoX for mp3 conversion
+    /// Formats handled by direct library calls (libsndfile / LAME).
+    static let directConversionFormats: Set<AudioFileType> = [.mp3, .flac, .ogg]
+
+    // MARK: - MP3 Conversion (LAME)
+
+    /// Convert to MP3 using LAME directly.
     func convertToMP3() async throws {
         try Task.checkCancellation()
 
-        var inputURL = source.input
-
-        let inputFormat = AudioFileType(pathExtension: inputURL.pathExtension)
-
-        let supportedInput = inputFormat == .wav || inputFormat == .aiff || inputFormat == .mp3
-
-        let asset = source.asset
-        let supportedChannels = await (asset.audioFormat()?.channelCount ?? 0) <= 2
-
-        var tempFile: URL?
-
-        // sox has limited input compatibility, so convert to wave if needed
-        if !supportedInput || !supportedChannels {
-            let temp = try await createTempFile(inputURL: inputURL, in: source.output.deletingLastPathComponent())
-
-            if temp.exists {
-                inputURL = temp
-                tempFile = temp
-            }
-        }
-
-        try Task.checkCancellation()
-
-        try await processConvertToMP3(
-            inputURL: inputURL,
-            outputURL: source.output,
-            options: source.options
-        )
-
-        if let tempFile {
-            Log.debug("Removing temp file at", tempFile.path)
-            try? tempFile.delete()
-        }
-    }
-
-    private func processConvertToMP3(
-        inputURL: URL,
-        outputURL: URL,
-        options: AudioFormatConverterOptions
-    ) async throws {
-        // check input channels
-        let avfile = try AVAudioFile(forReading: inputURL)
-
-        guard avfile.fileFormat.channelCount <= 2 else {
-            throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
-        }
-
-        try await SoX.shared.convertMP3(
-            input: inputURL,
-            output: outputURL,
-            bitRate: options.bitRate / 1000, // sox bit rate is kbps
-            sampleRate: options.sampleRate
-        )
-
-        guard outputURL.exists else {
-            throw NSError(description: "Failed to convert to MP3: \(inputURL.lastPathComponent)")
-        }
-    }
-
-    /// Formats that are handled by SoX rather than AVAssetWriter.
-    static let soxOutputFormats: Set<AudioFileType> = [.mp3, .flac, .ogg]
-
-    /// Using SoX for FLAC conversion (lossless — uses bit depth, not bitrate).
-    func convertToFLAC() async throws {
-        try Task.checkCancellation()
-
-        let inputURL = try await prepareSoXInput(source: source)
+        let inputURL = try await prepareInput(source: source)
 
         defer {
             cleanUpTempFile(inputURL: inputURL, originalURL: source.input)
@@ -144,23 +83,58 @@ extension AudioFormatConverter {
 
         try Task.checkCancellation()
 
-        try await SoX.shared.convertPCM(
-            input: inputURL,
-            output: source.output,
-            bitDepth: source.options.bitsPerChannel,
-            sampleRate: source.options.sampleRate
+        let avfile = try AVAudioFile(forReading: inputURL)
+        guard avfile.fileFormat.channelCount <= 2 else {
+            throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
+        }
+
+        let converter = LameConverter()
+        let status = converter.convert(
+            toMP3: inputURL.path,
+            output: source.output.path,
+            bitRate: Int32(source.options.bitRate / 1000),
+            quality: 2
         )
 
-        guard source.output.exists else {
+        guard status == 0, source.output.exists else {
+            throw NSError(description: "Failed to convert to MP3: \(source.input.lastPathComponent)")
+        }
+    }
+
+    // MARK: - FLAC Conversion (libsndfile)
+
+    /// Convert to FLAC using libsndfile directly (lossless — uses bit depth, not bitrate).
+    func convertToFLAC() async throws {
+        try Task.checkCancellation()
+
+        let inputURL = try await prepareInput(source: source)
+
+        defer {
+            cleanUpTempFile(inputURL: inputURL, originalURL: source.input)
+        }
+
+        try Task.checkCancellation()
+
+        let converter = SndFileConverter()
+        let bitDepth = Int32(source.options.bitsPerChannel ?? 0)
+        let status = converter.convert(
+            toFLAC: inputURL.path,
+            output: source.output.path,
+            bitDepth: bitDepth
+        )
+
+        guard status == 0, source.output.exists else {
             throw NSError(description: "Failed to convert to FLAC: \(source.input.lastPathComponent)")
         }
     }
 
-    /// Using SoX for OGG Vorbis conversion (lossy — uses bitrate).
+    // MARK: - OGG Conversion (libsndfile)
+
+    /// Convert to OGG Opus using libsndfile directly.
     func convertToOGG() async throws {
         try Task.checkCancellation()
 
-        let inputURL = try await prepareSoXInput(source: source)
+        let inputURL = try await prepareInput(source: source)
 
         defer {
             cleanUpTempFile(inputURL: inputURL, originalURL: source.input)
@@ -173,28 +147,42 @@ extension AudioFormatConverter {
             throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
         }
 
-        try await SoX.shared.convertOGG(
-            input: inputURL,
-            output: source.output,
-            bitRate: source.options.bitRate / 1000, // sox bit rate is kbps
-            sampleRate: source.options.sampleRate
+        let converter = SndFileConverter()
+        let status = converter.convert(
+            toOGG: inputURL.path,
+            output: source.output.path
         )
 
-        guard source.output.exists else {
+        guard status == 0, source.output.exists else {
             throw NSError(description: "Failed to convert to OGG: \(source.input.lastPathComponent)")
         }
     }
 
-    /// Prepares a WAV input suitable for SoX if the original format is unsupported.
+    // MARK: - Input Preparation
+
+    /// Prepares a WAV input if the original format is unsupported by the target encoder.
     /// Returns the original URL if already compatible, or a temp WAV file.
-    private func prepareSoXInput(source: AudioFormatConverterSource) async throws -> URL {
+    /// Sample rate conversion happens here via CoreAudio's ExtAudioFile.
+    private func prepareInput(source: AudioFormatConverterSource) async throws -> URL {
         let inputFormat = AudioFileType(pathExtension: source.input.pathExtension)
         let supportedInput = inputFormat == .wav || inputFormat == .aiff || inputFormat == .flac
 
-        let asset = source.asset
-        let supportedChannels = await (asset.audioFormat()?.channelCount ?? 0) <= 2
+        // Check channel count and sample rate via AVAudioFile
+        let audioFile = try? AVAudioFile(forReading: source.input)
+        let channelCount = audioFile?.fileFormat.channelCount ?? 0
+        let supportedChannels = channelCount <= 2
 
-        if supportedInput && supportedChannels {
+        // If sample rate conversion is requested, always create a temp file
+        // since libsndfile doesn't do resampling
+        let needsResample: Bool
+        if let targetRate = source.options.sampleRate {
+            let sourceRate = audioFile?.fileFormat.sampleRate ?? 0
+            needsResample = targetRate != sourceRate
+        } else {
+            needsResample = false
+        }
+
+        if supportedInput && supportedChannels && !needsResample {
             return source.input
         }
 

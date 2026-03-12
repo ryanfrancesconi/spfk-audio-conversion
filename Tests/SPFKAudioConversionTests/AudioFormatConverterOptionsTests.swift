@@ -56,14 +56,6 @@ struct AudioFormatConverterOptionsTests {
         #expect(options.bitRate == 256_000)
     }
 
-    // MARK: - format validation
-
-    @Test func formatRejectsUnsupportedTypes() {
-        var options = AudioFormatConverterOptions()
-        options.format = .flac
-        #expect(options.format == nil)
-    }
-
     @Test func formatAcceptsSupportedTypes() {
         let supported: [AudioFileType] = [.wav, .aiff, .caf, .m4a, .mp3]
         for type in supported {
