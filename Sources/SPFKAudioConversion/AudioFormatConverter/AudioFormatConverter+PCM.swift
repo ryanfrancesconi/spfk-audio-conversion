@@ -2,6 +2,7 @@
 
 import AVFoundation
 import SPFKAudioBase
+import SPFKBase
 import SPFKUtils
 
 extension AudioFormatConverter {

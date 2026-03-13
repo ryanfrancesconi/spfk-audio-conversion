@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
 
 import Foundation
+import SPFKBase
 import SPFKUtils
 
 /// Converts multiple audio files concurrently using a sliding window of up to 8 tasks.
