@@ -113,6 +113,6 @@ public class AudioFormatConverter {
             throw CancellationError()
         }
         
-        // TODO: CLAUDE implement MetadataCopyScheme to new file
+        await copyMetadata()
     }
 }
