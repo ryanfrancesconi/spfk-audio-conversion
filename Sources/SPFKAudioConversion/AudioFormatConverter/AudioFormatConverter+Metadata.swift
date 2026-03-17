@@ -140,7 +140,7 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !MPEGChapterUtil.update(source.output.path, chapters: chapters) {
+            if !MPEGChapterUtil.writeChapters(chapters, to: source.output.path) {
                 Log.error("Failed to write chapters to \(source.output.lastPathComponent)")
             }
 
@@ -154,12 +154,25 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !XiphChapterUtil.update(source.output.path, chapters: chapters) {
+            if !XiphChapterUtil.writeChapters(chapters, to: source.output.path) {
+                Log.error("Failed to write chapters to \(source.output.lastPathComponent)")
+            }
+
+        case .m4a, .mp4, .aac, .m4b:
+            // Nero chpl chapters via TagLib MP4ChapterList
+            let chapters = collection.markerDescriptions.map { desc in
+                ChapterMarker(
+                    name: desc.name ?? "Chapter",
+                    startTime: desc.startTime,
+                    endTime: desc.endTime ?? desc.startTime
+                )
+            }
+
+            if !MP4ChapterUtil.writeChapters(chapters, to: source.output.path) {
                 Log.error("Failed to write chapters to \(source.output.lastPathComponent)")
             }
 
         default:
-            // TODO: Implement marker writing for M4A (TagLib PR)
             Log.debug("Marker writing not supported for \(outputType.rawValue) — skipping")
         }
     }
