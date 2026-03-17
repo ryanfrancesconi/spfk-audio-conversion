@@ -1,4 +1,4 @@
-// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi
 
 import AVFoundation
 import Foundation
@@ -15,13 +15,17 @@ public struct AudioFormatConverterSource: Sendable {
     /// Options controlling sample rate, bit depth, channels, format, and more.
     public var options: AudioFormatConverterOptions
 
+    /// Copy or ignore source metadata
+    public var metadataCopyScheme: MetadataCopyScheme
+
     /// An `AVURLAsset` created from ``input``. A new instance is returned on each access.
     public var asset: AVURLAsset { AVURLAsset(url: input) }
 
     /// Creates a conversion source.
-    public init(input: URL, output: URL, options: AudioFormatConverterOptions) {
+    public init(input: URL, output: URL, options: AudioFormatConverterOptions, metadataCopyScheme: MetadataCopyScheme = .copyAll) {
         self.input = input
         self.output = output
         self.options = options
+        self.metadataCopyScheme = metadataCopyScheme
     }
 }
