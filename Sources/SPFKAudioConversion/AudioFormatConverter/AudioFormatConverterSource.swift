@@ -22,7 +22,12 @@ public struct AudioFormatConverterSource: Sendable {
     public var asset: AVURLAsset { AVURLAsset(url: input) }
 
     /// Creates a conversion source.
-    public init(input: URL, output: URL, options: AudioFormatConverterOptions, metadataCopyScheme: MetadataCopyScheme = .copyAll) {
+    public init(
+        input: URL,
+        output: URL,
+        options: AudioFormatConverterOptions,
+        metadataCopyScheme: MetadataCopyScheme = .copyAll
+    ) {
         self.input = input
         self.output = output
         self.options = options
