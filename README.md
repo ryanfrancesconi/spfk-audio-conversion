@@ -102,6 +102,38 @@ let isPCM = AudioFormatConverter.isPCM(url: fileURL)
 let isCompressed = AudioFormatConverter.isCompressed(url: fileURL)
 ```
 
+## Metadata Copying
+
+Metadata is automatically copied from source to output after conversion, controlled by `MetadataCopyScheme` (default: `.copyAll`):
+
+| Scheme | Tags | BEXT/iXML | XMP | Markers | Artwork |
+|--------|:----:|:---------:|:---:|:-------:|:-------:|
+| `.copyAll` | yes | yes | yes | yes | yes |
+| `.copyTextAndMarkers` | yes | yes | yes | yes | -- |
+| `.copyText` | yes | yes | yes | -- | -- |
+| `.copyMarkers` | -- | -- | -- | yes | -- |
+| `.ignore` | -- | -- | -- | -- | -- |
+
+```swift
+let source = AudioFormatConverterSource(
+    input: inputURL,
+    output: outputURL,
+    options: options,
+    metadataCopyScheme: .copyText // default is .copyAll
+)
+```
+
+**Marker format mapping** — markers are written in the native chapter/cue format of the output:
+
+| Output format | Marker format |
+|---------------|---------------|
+| WAV, AIFF | RIFF cue points (AudioToolbox) |
+| MP3 | ID3v2 CHAP frames |
+| FLAC, OGG, Opus | Vorbis comment chapters |
+| M4A, MP4, M4B | Nero `chpl` chapters |
+
+BEXT and iXML are WAV-to-WAV only. XMP copy is best-effort (silently skipped if not present).
+
 ## Architecture
 
 ```
@@ -130,6 +162,7 @@ BatchAudioFormatConverter
 | [spfk-base](https://github.com/ryanfrancesconi/spfk-base) | Foundation extensions and utilities |
 | [spfk-audio-base](https://github.com/ryanfrancesconi/spfk-audio-base) | Audio type definitions (`AudioFileType`, `AudioDefaults`) |
 | [spfk-metadata](https://github.com/ryanfrancesconi/spfk-metadata) | Audio file metadata parsing |
+| [spfk-metadata-xmp](https://github.com/ryanfrancesconi/spfk-metadata-xmp) | XMP metadata reading/writing |
 | [spfk-lame](https://github.com/ryanfrancesconi/spfk-lame) | LAME + mpg123 xcframeworks for MP3 encoding/decoding |
 | [spfk-utils](https://github.com/ryanfrancesconi/spfk-utils) | General utilities (`Entropy`, `Serializable`) |
 | [sndfile-binary-xcframework](https://github.com/sbooth/sndfile-binary-xcframework) | libsndfile for FLAC/OGG encoding |
