@@ -173,11 +173,23 @@ extension AudioFormatConverter {
         let supportedChannels = channelCount <= 2
 
         // If sample rate conversion is requested, always create a temp file
-        // since libsndfile doesn't do resampling
+        // since libsndfile doesn't do resampling.
+        //
+        // OGG Opus only supports specific sample rates. If the output is OGG and the
+        // source rate isn't in the supported set, force a resample to 48000 Hz so
+        // libsndfile doesn't reject the input.
+        let supportedOpusRates: Set<Double> = [8000, 12000, 16000, 24000, 48000]
+        let sourceRate = audioFile?.fileFormat.sampleRate ?? 0
+        let outputFormat = AudioFileType(pathExtension: source.output.pathExtension)
+
         let needsResample: Bool
         if let targetRate = source.options.sampleRate {
-            let sourceRate = audioFile?.fileFormat.sampleRate ?? 0
             needsResample = targetRate != sourceRate
+        } else if outputFormat == .ogg, !supportedOpusRates.contains(sourceRate) {
+            // No user-specified rate, but OGG Opus can't handle this source rate.
+            // Inject 48000 Hz so createTempFile resamples to a valid Opus rate.
+            self.source.options.sampleRate = 48000
+            needsResample = true
         } else {
             needsResample = false
         }

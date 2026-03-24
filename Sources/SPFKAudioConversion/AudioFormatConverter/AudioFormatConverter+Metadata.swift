@@ -93,8 +93,7 @@ extension AudioFormatConverter {
 
     private func copyXMP() {
         do {
-            let xmpString = try XMP.shared.parse(url: source.input)
-            try XMP.shared.write(string: xmpString, to: source.output)
+            try XMP.shared.copyXMP(from: source.input, to: source.output)
         } catch {
             // Most files won't have XMP — this is expected, not an error worth logging
         }

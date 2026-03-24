@@ -31,6 +31,11 @@ public class AudioFormatConverter {
         self.source = source
     }
 
+    // Set to true by convertToPCM() when it takes the same-format copy path instead of
+    // re-encoding. A verbatim file copy already contains all source metadata, so
+    // copyMetadata() must be skipped to avoid TagLib rewriting (and altering) the output.
+    var didFileCopy = false
+
     // MARK: -
 
     /// Performs the conversion, routing through the appropriate pipeline based on input/output formats.
@@ -113,6 +118,8 @@ public class AudioFormatConverter {
             throw CancellationError()
         }
         
-        await copyMetadata()
+        if !didFileCopy {
+            await copyMetadata()
+        }
     }
 }

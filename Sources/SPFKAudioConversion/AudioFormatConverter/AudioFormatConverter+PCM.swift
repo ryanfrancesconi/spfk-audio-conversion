@@ -99,6 +99,7 @@ extension AudioFormatConverter {
         else {
             Log.error("No conversion is needed, formats are the same. Copying to", outputURL)
 
+            didFileCopy = true
             try FileManager.default.copyItem(at: inputURL, to: outputURL)
             return
         }

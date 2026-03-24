@@ -61,7 +61,9 @@ class BatchAudioFormatConverterTests: BinTestCase {
         var sources: [AudioFormatConverterSource] = []
 
         for input in inputs {
-            let baseName = input.deletingPathExtension().lastPathComponent
+            // Include input extension in base name to ensure unique output paths when all
+            // inputs share the same stem (e.g. tabla.wav, tabla.mp3 → tabla_wav_to.mp3, tabla_mp3_to.mp3)
+            let baseName = "\(input.deletingPathExtension().lastPathComponent)_\(input.pathExtension)"
 
             for format in outputFormats {
                 let output = bin.appending(

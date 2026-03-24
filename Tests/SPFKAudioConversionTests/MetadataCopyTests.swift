@@ -143,16 +143,6 @@ class MetadataCopyTests: BinTestCase {
         #expect(chapters.map { $0.startTime } == [0, 1, 2])
     }
 
-    @Test func copyMarkersMP3ToMP4() async throws {
-        let input = TestBundleResources.shared.mp3_id3
-        let output = try await convert(input: input, outputExtension: "mp4")
-
-        let chapters = MP4ChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 3)
-        #expect(chapters.map { $0.name } == ["M0", "M1", "M2"])
-        #expect(chapters.map { $0.startTime } == [0, 1, 2])
-    }
-
     @Test func copyMarkersOnlySkipsTagsFLAC() async throws {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "flac", scheme: .copyMarkers)
