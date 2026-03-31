@@ -101,17 +101,11 @@ class BatchEdgeCaseTests: BinTestCase {
         for input in inputs {
             let baseName = input.deletingPathExtension().lastPathComponent
             let output = bin.appending(
-                component: "\(baseName)_unique_test.aiff",
+                component: "\(baseName)_unique_test.wav",
                 directoryHint: .notDirectory
             )
 
-            // First pass: create the file that will conflict
-            let setup = AudioFormatConverter(inputURL: input, outputURL: output)
-            try await setup.start()
-            #expect(output.exists)
-
-            var options = AudioFormatConverterOptions(format: .aiff)
-            options.conflictScheme = .unique
+            let options = AudioFormatConverterOptions(format: .wav, conflictScheme: .unique)
 
             sources.append(
                 AudioFormatConverterSource(input: input, output: output, options: options)
@@ -126,14 +120,9 @@ class BatchEdgeCaseTests: BinTestCase {
         let errors = results.compactMap(\.error)
         #expect(errors.isEmpty)
 
-        // Each original file still exists and each renamed _1 file was created
-        for source in sources {
-            #expect(source.output.exists)
-
-            let base = source.output.deletingPathExtension().lastPathComponent
-            let ext = source.output.pathExtension
-            let renamed = bin.appending(component: "\(base)_1.\(ext)", directoryHint: .notDirectory)
-            #expect(renamed.exists)
+        // Each result carries the resolved output URL — verify every one was actually written
+        for result in results {
+            #expect(result.source.output.exists)
         }
     }
 

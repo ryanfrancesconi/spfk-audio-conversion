@@ -117,7 +117,7 @@ extension AudioFormatConverter {
 
         if status != noErr {
             let message =
-                "Unable to create output file at \(outputURL.path). dstFormat \(outputDescription) Error: \(status.string) (\(status.fourCC))"
+                "Unable to create output file at \(outputURL.path) (error: \(status.string) \(status.fourCC))"
 
             throw NSError(description: message)
         }
