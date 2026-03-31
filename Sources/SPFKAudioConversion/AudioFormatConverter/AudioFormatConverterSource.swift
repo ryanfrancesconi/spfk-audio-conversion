@@ -21,6 +21,8 @@ public struct AudioFormatConverterSource: Sendable {
     /// An `AVURLAsset` created from ``input``. A new instance is returned on each access.
     public var asset: AVURLAsset { AVURLAsset(url: input) }
 
+    public var outputExists: Bool { output.exists }
+    
     /// Creates a conversion source.
     public init(
         input: URL,

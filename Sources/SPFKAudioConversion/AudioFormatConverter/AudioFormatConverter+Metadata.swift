@@ -5,7 +5,6 @@ import SPFKAudioBase
 import SPFKBase
 import SPFKMetadata
 import SPFKMetadataC
-import SPFKMetadataXMP
 
 extension AudioFormatConverter {
     /// Copies metadata from the source file to the converted output file based on the
@@ -29,7 +28,6 @@ extension AudioFormatConverter {
             copyTags()
             copyBEXT(inputType: inputType, outputType: outputType)
             copyIXML(inputType: inputType, outputType: outputType)
-            copyXMP()
         }
 
         if scheme.includesMarkers {
@@ -86,16 +84,6 @@ extension AudioFormatConverter {
 
         if !destFile.save() {
             Log.error("Failed to write iXML to \(source.output.lastPathComponent)")
-        }
-    }
-
-    // MARK: - XMP
-
-    private func copyXMP() {
-        do {
-            try XMP.shared.copyXMP(from: source.input, to: source.output)
-        } catch {
-            // Most files won't have XMP — this is expected, not an error worth logging
         }
     }
 

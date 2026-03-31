@@ -10,7 +10,7 @@ import Testing
 
 @Suite(.serialized, .tags(.file))
 class ConversionErrorTests: BinTestCase {
-    // MARK: - eraseFile = false
+    // MARK: - .error
 
     @Test func eraseFileFalseThrowsWhenOutputExists() async throws {
         let input = TestBundleResources.shared.tabla_wav
@@ -23,7 +23,7 @@ class ConversionErrorTests: BinTestCase {
 
         // Second conversion with eraseFile = false should throw
         var options = AudioFormatConverterOptions()
-        options.eraseFile = false
+        options.conflictScheme = .error
 
         let converter2 = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
         await #expect(throws: Error.self) {
@@ -31,7 +31,7 @@ class ConversionErrorTests: BinTestCase {
         }
     }
 
-    // MARK: - eraseFile = true
+    // MARK: - .overwrite
 
     @Test func eraseFileTrueOverwritesExistingOutput() async throws {
         let input = TestBundleResources.shared.tabla_wav
@@ -44,11 +44,39 @@ class ConversionErrorTests: BinTestCase {
 
         // Second conversion with eraseFile = true (default) should succeed
         var options = AudioFormatConverterOptions()
-        options.eraseFile = true
+        options.conflictScheme = .overwrite
 
         let converter2 = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
         try await converter2.start()
         #expect(output.exists)
+    }
+
+    // MARK: - .unique
+
+    @Test func uniqueSchemeRenamesOutputWhenExists() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).aiff", directoryHint: .notDirectory)
+
+        // First conversion creates the output file
+        let converter1 = AudioFormatConverter(inputURL: input, outputURL: output)
+        try await converter1.start()
+        #expect(output.exists)
+
+        // Second conversion with .unique should write to a renamed file
+        var options = AudioFormatConverterOptions()
+        options.conflictScheme = .unique
+
+        let converter2 = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter2.start()
+
+        // Original file still exists, unchanged
+        #expect(output.exists)
+
+        // Renamed output was created with _1 suffix
+        let base = output.deletingPathExtension().lastPathComponent
+        let ext = output.pathExtension
+        let renamedOutput = bin.appending(component: "\(base)_1.\(ext)", directoryHint: .notDirectory)
+        #expect(renamedOutput.exists)
     }
 
     // MARK: - Invalid input

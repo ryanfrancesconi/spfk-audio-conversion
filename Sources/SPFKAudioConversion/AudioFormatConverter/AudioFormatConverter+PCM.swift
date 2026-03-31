@@ -19,14 +19,14 @@ extension AudioFormatConverter {
         let outputURL = source.output
 
         guard outputFormat == .aiff || outputFormat == .wav || outputFormat == .caf,
-            var format = outputFormat.audioFileTypeID
+              var format = outputFormat.audioFileTypeID
         else {
             throw NSError(description: "Output file must be caf, wav or aif but it is \(outputFormat)")
         }
 
         // This might want to be an option or throw an error
         if format != kAudioFileCAFType,
-            let fileSize = inputURL.regularFileAllocatedSize
+           let fileSize = inputURL.regularFileAllocatedSize
         {
             let gb = fileSize / ByteCount.gigabyte.rawValue
 
@@ -93,9 +93,10 @@ extension AudioFormatConverter {
         let inputFileType = AudioFileType(pathExtension: inputURL.pathExtension)
 
         guard
-            inputFileType != outputFormat || outputDescription.mSampleRate != inputDescription.mSampleRate
-                || outputDescription.mChannelsPerFrame != inputDescription.mChannelsPerFrame
-                || outputDescription.mBitsPerChannel != inputDescription.mBitsPerChannel
+            inputFileType != outputFormat
+            || outputDescription.mSampleRate != inputDescription.mSampleRate
+            || outputDescription.mChannelsPerFrame != inputDescription.mChannelsPerFrame
+            || outputDescription.mBitsPerChannel != inputDescription.mBitsPerChannel
         else {
             Log.error("No conversion is needed, formats are the same. Copying to", outputURL)
 
@@ -175,7 +176,8 @@ extension AudioFormatConverter {
 
                 var fillBufList = AudioBufferList(
                     mNumberBuffers: 1,
-                    mBuffers: mBuffer)
+                    mBuffers: mBuffer
+                )
                 var frameCount: UInt32 = 0
 
                 if outputDescription.mBytesPerFrame > 0 {
@@ -233,7 +235,7 @@ extension AudioFormatConverter {
         var mBitsPerChannel = options.bitsPerChannel ?? inputDescription.mBitsPerChannel
 
         // For example: don't allow upsampling to 24bit if the src is 16
-        if options.bitDepthRule == .lessThanOrEqual && mBitsPerChannel > inputDescription.mBitsPerChannel {
+        if options.bitDepthRule == .lessThanOrEqual, mBitsPerChannel > inputDescription.mBitsPerChannel {
             mBitsPerChannel = inputDescription.mBitsPerChannel
         }
 
@@ -251,7 +253,7 @@ extension AudioFormatConverter {
             mFormatFlags = mFormatFlags | kLinearPCMFormatFlagIsBigEndian
         }
 
-        if outputFormatID == kAudioFileWAVEType && mBitsPerChannel == 8 {
+        if outputFormatID == kAudioFileWAVEType, mBitsPerChannel == 8 {
             // if is 8 BIT PER CHANNEL, remove kAudioFormatFlagIsSignedInteger
             mFormatFlags &= ~kAudioFormatFlagIsSignedInteger
         }

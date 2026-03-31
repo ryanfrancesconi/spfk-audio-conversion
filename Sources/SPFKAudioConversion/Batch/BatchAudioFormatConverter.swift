@@ -33,6 +33,8 @@ public actor BatchAudioFormatConverter {
 
     /// Converts all sources, returning a result for each (success or failure with error).
     public func start() async throws -> [Result] {
+        await data.resolveUniqueConflicts()
+
         let collection: [AudioFormatConverterSource] = await data.sources
         let count = await data.count
         let batchSize: Int = await data.batchSize

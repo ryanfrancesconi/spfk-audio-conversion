@@ -88,6 +88,55 @@ class BatchEdgeCaseTests: BinTestCase {
         #expect(failure.error != nil)
     }
 
+    // MARK: - .unique conflict scheme in batch
+
+    @Test func batchUniqueSchemeRenamesEachConflictingOutput() async throws {
+        deleteBinOnExit = false
+
+        let inputs = TestBundleResources.shared.formats
+
+        // Pre-create an output file for each input so every job encounters a conflict
+        var sources: [AudioFormatConverterSource] = []
+
+        for input in inputs {
+            let baseName = input.deletingPathExtension().lastPathComponent
+            let output = bin.appending(
+                component: "\(baseName)_unique_test.aiff",
+                directoryHint: .notDirectory
+            )
+
+            // First pass: create the file that will conflict
+            let setup = AudioFormatConverter(inputURL: input, outputURL: output)
+            try await setup.start()
+            #expect(output.exists)
+
+            var options = AudioFormatConverterOptions(format: .aiff)
+            options.conflictScheme = .unique
+
+            sources.append(
+                AudioFormatConverterSource(input: input, output: output, options: options)
+            )
+        }
+
+        let converter = await BatchAudioFormatConverter(inputs: sources)
+        let results = try await converter.start()
+
+        #expect(results.count == inputs.count)
+
+        let errors = results.compactMap(\.error)
+        #expect(errors.isEmpty)
+
+        // Each original file still exists and each renamed _1 file was created
+        for source in sources {
+            #expect(source.output.exists)
+
+            let base = source.output.deletingPathExtension().lastPathComponent
+            let ext = source.output.pathExtension
+            let renamed = bin.appending(component: "\(base)_1.\(ext)", directoryHint: .notDirectory)
+            #expect(renamed.exists)
+        }
+    }
+
     // MARK: - Single file batch
 
     @Test func singleFileBatch() async throws {

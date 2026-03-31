@@ -4,6 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKAudioBase
 import SPFKBase
+import SPFKFileSystem
 
 /// Converts audio files between PCM and compressed formats using CoreAudio and AVFoundation.
 ///
@@ -49,8 +50,7 @@ public class AudioFormatConverter {
 
         let inputFormat: AudioFileType? =
             if source.input.pathExtension == "",
-                let ext = (try? AudioFileType.getExtensions(for: source.input))?.first
-            {
+            let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
                 AudioFileType(pathExtension: ext)
 
             } else {
@@ -61,18 +61,22 @@ public class AudioFormatConverter {
         guard let inputFormat, AudioFormatConverter.inputFormats.contains(inputFormat) else {
             throw NSError(
                 description:
-                    "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")"
+                "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")"
             )
         }
 
         if source.output.exists {
-            if source.options.eraseFile {
+            switch source.options.conflictScheme {
+            case .overwrite:
                 try FileManager.default.removeItem(at: source.output)
                 Log.debug("eraseFile == true, removed existing file at", source.output.path)
 
-            } else {
+            case .error:
                 let message = "The output file exists already. You need to choose a unique URL or delete the file."
                 throw NSError(description: message)
+
+            case .unique:
+                source.output = FileSystem.nextAvailableURL(source.output)
             }
         }
 
@@ -95,13 +99,13 @@ public class AudioFormatConverter {
 
                 // PCM input, compressed output (AVAssetWriter)
             } else if Self.isPCM(url: source.input) == true,
-                Self.isCompressed(url: source.output) == true
+                      Self.isCompressed(url: source.output) == true
             {
                 try await AssetWriter(source: source).start()
 
                 // Compressed input and output (intermediate PCM then AVAssetWriter)
             } else if Self.isCompressed(url: source.input) == true,
-                Self.isCompressed(url: source.output) == true
+                      Self.isCompressed(url: source.output) == true
             {
                 try await convertCompressed()
 
@@ -117,7 +121,7 @@ public class AudioFormatConverter {
 
             throw CancellationError()
         }
-        
+
         if !didFileCopy {
             await copyMetadata()
         }

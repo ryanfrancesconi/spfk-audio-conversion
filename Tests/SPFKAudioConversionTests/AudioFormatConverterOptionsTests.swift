@@ -168,7 +168,7 @@ struct AudioFormatConverterOptionsTests {
 
     @Test func eraseFileDefaultIsTrue() {
         let options = AudioFormatConverterOptions()
-        #expect(options.eraseFile == true)
+        #expect(options.conflictScheme == .overwrite)
     }
 
     // MARK: - init(format:)
@@ -205,7 +205,7 @@ struct AudioFormatConverterOptionsTests {
         original.channels = 2
         original.bitRate = 128_000
         original.bitDepthRule = .lessThanOrEqual
-        original.eraseFile = false
+        original.conflictScheme = .error
 
         let data = try #require(original.dataRepresentation)
         let decoded = try AudioFormatConverterOptions(data: data)
@@ -216,7 +216,7 @@ struct AudioFormatConverterOptionsTests {
         #expect(decoded.channels == 2)
         #expect(decoded.bitRate == 128_000)
         #expect(decoded.bitDepthRule == .lessThanOrEqual)
-        #expect(decoded.eraseFile == false)
+        #expect(decoded.conflictScheme == .error)
     }
 
     @Test func serializableRoundTripWithNilValues() throws {
@@ -231,7 +231,7 @@ struct AudioFormatConverterOptionsTests {
         #expect(decoded.channels == nil)
         #expect(decoded.bitRate == 256_000)
         #expect(decoded.bitDepthRule == .any)
-        #expect(decoded.eraseFile == true)
+        #expect(decoded.conflictScheme == .overwrite)
     }
 
     // MARK: - channels property
