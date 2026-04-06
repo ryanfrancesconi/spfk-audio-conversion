@@ -48,82 +48,85 @@ public class AudioFormatConverter {
     public func start() async throws {
         try Task.checkCancellation()
 
-        let inputFormat: AudioFileType? =
-            if source.input.pathExtension == "",
-            let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
-                AudioFileType(pathExtension: ext)
+        let inputURL = source.input
+        try await inputURL.withSecurityScopedAccess {
+            let inputFormat: AudioFileType? =
+                if source.input.pathExtension == "",
+                let ext = (try? AudioFileType.getExtensions(for: source.input))?.first {
+                    AudioFileType(pathExtension: ext)
 
-            } else {
-                AudioFileType(pathExtension: source.input.pathExtension)
+                } else {
+                    AudioFileType(pathExtension: source.input.pathExtension)
+                }
+
+            // verify inputFormat, only allow files with path extensions for speed?
+            guard let inputFormat, AudioFormatConverter.inputFormats.contains(inputFormat) else {
+                throw NSError(
+                    description:
+                    "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")"
+                )
             }
 
-        // verify inputFormat, only allow files with path extensions for speed?
-        guard let inputFormat, AudioFormatConverter.inputFormats.contains(inputFormat) else {
-            throw NSError(
-                description:
-                "The input file format (\(source.input.lastPathComponent)) is in an incompatible format: \(inputFormat?.rawValue ?? "nil")"
-            )
-        }
-
-        if source.output.exists {
-            switch source.options.conflictScheme {
-            case .overwrite:
-                try FileManager.default.removeItem(at: source.output)
-                Log.debug("eraseFile == true, removed existing file at", source.output.path)
-
-            case .error:
-                let message = "The output file exists already. You need to choose a unique URL or delete the file."
-                throw NSError(description: message)
-
-            case .unique:
-                source.output = FileSystem.nextAvailableURL(source.output)
-            }
-        }
-
-        if source.options.format == nil {
-            source.options.format = AudioFileType(pathExtension: source.output.pathExtension)
-        }
-
-        let outputFormat = AudioFileType(pathExtension: source.output.pathExtension)
-
-        // Format checks are necessary as AVAssetReader has opinions about compressed
-
-        do {
-            // PCM output, any supported input
-            if Self.isPCM(url: source.output) == true {
-                try await convertToPCM()
-
-                // Direct conversion formats: MP3 (LAME), FLAC, OGG (libsndfile)
-            } else if let outputFormat, Self.directConversionFormats.contains(outputFormat) {
-                try await convertCompressed()
-
-                // PCM input, compressed output (AVAssetWriter)
-            } else if Self.isPCM(url: source.input) == true,
-                      Self.isCompressed(url: source.output) == true
-            {
-                try await AssetWriter(source: source).start()
-
-                // Compressed input and output (intermediate PCM then AVAssetWriter)
-            } else if Self.isCompressed(url: source.input) == true,
-                      Self.isCompressed(url: source.output) == true
-            {
-                try await convertCompressed()
-
-            } else {
-                throw NSError(description: "Unable to determine formats for conversion")
-            }
-
-        } catch is CancellationError {
-            // Clean up partial output file
             if source.output.exists {
-                try? FileManager.default.removeItem(at: source.output)
+                switch source.options.conflictScheme {
+                case .overwrite:
+                    try FileManager.default.removeItem(at: source.output)
+                    Log.debug("eraseFile == true, removed existing file at", source.output.path)
+
+                case .error:
+                    let message = "The output file exists already. You need to choose a unique URL or delete the file."
+                    throw NSError(description: message)
+
+                case .unique:
+                    source.output = FileSystem.nextAvailableURL(source.output)
+                }
             }
 
-            throw CancellationError()
-        }
+            if source.options.format == nil {
+                source.options.format = AudioFileType(pathExtension: source.output.pathExtension)
+            }
 
-        if !didFileCopy {
-            await copyMetadata()
+            let outputFormat = AudioFileType(pathExtension: source.output.pathExtension)
+
+            // Format checks are necessary as AVAssetReader has opinions about compressed
+
+            do {
+                // PCM output, any supported input
+                if Self.isPCM(url: source.output) == true {
+                    try await convertToPCM()
+
+                    // Direct conversion formats: MP3 (LAME), FLAC, OGG (libsndfile)
+                } else if let outputFormat, Self.directConversionFormats.contains(outputFormat) {
+                    try await convertCompressed()
+
+                    // PCM input, compressed output (AVAssetWriter)
+                } else if Self.isPCM(url: source.input) == true,
+                          Self.isCompressed(url: source.output) == true
+                {
+                    try await AssetWriter(source: source).start()
+
+                    // Compressed input and output (intermediate PCM then AVAssetWriter)
+                } else if Self.isCompressed(url: source.input) == true,
+                          Self.isCompressed(url: source.output) == true
+                {
+                    try await convertCompressed()
+
+                } else {
+                    throw NSError(description: "Unable to determine formats for conversion")
+                }
+
+            } catch is CancellationError {
+                // Clean up partial output file
+                if source.output.exists {
+                    try? FileManager.default.removeItem(at: source.output)
+                }
+
+                throw CancellationError()
+            }
+
+            if !didFileCopy {
+                await copyMetadata()
+            }
         }
     }
 }
