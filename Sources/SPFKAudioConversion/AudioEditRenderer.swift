@@ -172,14 +172,7 @@ public actor AudioEditRenderer {
         try await AudioFormatConverter(source: convSource).start()
     }
 
-    // `AVAudioFile` supports writing PCM formats (WAV, AIFF, CAF) and AAC (M4A/MP4).
-    // MP3, FLAC, and OGG require `AudioFormatConverter` via an intermediate WAV.
     private static func isDirectlyWritable(url: URL) -> Bool {
-        switch url.pathExtension.lowercased() {
-        case "mp3", "flac", "ogg", "opus":
-            return false
-        default:
-            return true
-        }
+        AudioFileType(pathExtension: url.pathExtension)?.isAVAudioFileWritable ?? true
     }
 }

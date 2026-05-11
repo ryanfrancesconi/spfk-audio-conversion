@@ -44,8 +44,8 @@ class AudioEditRendererTests: BinTestCase {
 
     // MARK: - render()
 
-    @Test func renderTrimReducesFrameLength() async throws {
-        // 10 frames at 44100 Hz. Trim 2 frames from head and 3 from tail → 5 frames remain.
+    @Test func renderKeepRangeReducesFrameLength() async throws {
+        // 10 frames at 44100 Hz. Keep frames 2–6 (5 frames).
         let sampleRate: Double = 44100
         let source = try makeTempWAV(
             samples: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -53,10 +53,9 @@ class AudioEditRendererTests: BinTestCase {
             name: "render_trim_src"
         )
         let output = bin.appending(component: "render_trim_out.wav", directoryHint: .notDirectory)
-        // Derive trim times from exact frame counts to avoid floating-point rounding
-        let trimStart = 2.0 / sampleRate
-        let trimEnd = 3.0 / sampleRate
-        let edit = AudioEditDescription(trimStart: trimStart, trimEnd: trimEnd)
+        let edit = AudioEditDescription(keepRanges: [
+            AudioTimeRange(start: 2.0 / sampleRate, end: 7.0 / sampleRate),
+        ])
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
@@ -224,8 +223,8 @@ class AudioEditRendererTests: BinTestCase {
         #expect(resultURL.exists)
     }
 
-    @Test func renderTrimThenReversePreservesPipelineOrder() async throws {
-        // 5 frames at 44100 Hz. Trim 1 frame from head, reverse → [5, 4, 3, 2].
+    @Test func renderKeepRangeThenReversePreservesPipelineOrder() async throws {
+        // 5 frames at 44100 Hz. Keep frame indices 1–4 (values [2, 3, 4, 5]), then reverse → [5, 4, 3, 2].
         let sampleRate: Double = 44100
         let source = try makeTempWAV(
             samples: [1, 2, 3, 4, 5],
@@ -236,7 +235,10 @@ class AudioEditRendererTests: BinTestCase {
             component: "render_trim_reverse_out.wav",
             directoryHint: .notDirectory
         )
-        let edit = AudioEditDescription(trimStart: 1.0 / sampleRate, isReversed: true)
+        let edit = AudioEditDescription(
+            keepRanges: [AudioTimeRange(start: 1.0 / sampleRate, end: 5.0 / sampleRate)],
+            isReversed: true
+        )
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
