@@ -14,12 +14,12 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "0.0.5"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "1.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-audio-base", from: "1.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "0.0.9"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-lame", from: "0.0.1"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "0.0.9"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-utils", from: "0.0.8"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "1.2.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-lame", from: "1.0.0"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "1.0.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-utils", from: "1.0.2"),
         .package(url: "https://github.com/sbooth/sndfile-binary-xcframework", from: "0.1.2"),
         .package(url: "https://github.com/sbooth/ogg-binary-xcframework", from: "0.1.3"),
         .package(url: "https://github.com/sbooth/flac-binary-xcframework", from: "0.2.0"),
