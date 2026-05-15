@@ -54,8 +54,7 @@ class AudioEditRendererTests: BinTestCase {
         )
         let output = bin.appending(component: "render_trim_out.wav", directoryHint: .notDirectory)
         let edit = AudioEditDescription(
-            inPoint: 2.0 / sampleRate,
-            outPoint: 7.0 / sampleRate
+            trim: TrimDescription(inPoint: 2.0 / sampleRate, outPoint: 7.0 / sampleRate)
         )
 
         let renderer = AudioEditRenderer(
@@ -237,8 +236,7 @@ class AudioEditRendererTests: BinTestCase {
             directoryHint: .notDirectory
         )
         let edit = AudioEditDescription(
-            inPoint: 1.0 / sampleRate,
-            outPoint: 5.0 / sampleRate,
+            trim: TrimDescription(inPoint: 1.0 / sampleRate, outPoint: 5.0 / sampleRate),
             isReversed: true
         )
 
