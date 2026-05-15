@@ -4,6 +4,9 @@ import AVFoundation
 import Foundation
 import SPFKAudioBase
 import SPFKBase
+import SPFKMetadata
+import SPFKMetadataBase
+import SPFKMetadataC
 import SPFKTesting
 import Testing
 
@@ -60,8 +63,7 @@ class AudioEditRendererTests: BinTestCase {
         let renderer = AudioEditRenderer(
             sourceURL: source,
             edit: edit,
-            outputURL: output,
-            metadataCopyScheme: .ignore
+            outputURL: output
         )
         try await renderer.render()
 
@@ -79,13 +81,11 @@ class AudioEditRendererTests: BinTestCase {
             name: "render_reverse_src"
         )
         let output = bin.appending(component: "render_reverse_out.wav", directoryHint: .notDirectory)
-        let edit = AudioEditDescription(isReversed: true)
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
-            edit: edit,
-            outputURL: output,
-            metadataCopyScheme: .ignore
+            edit: AudioEditDescription(isReversed: true),
+            outputURL: output
         )
         try await renderer.render()
 
@@ -105,13 +105,12 @@ class AudioEditRendererTests: BinTestCase {
             name: "render_fadein_src"
         )
         let output = bin.appending(component: "render_fadein_out.wav", directoryHint: .notDirectory)
-        let edit = AudioEditDescription(fadeIn: 0.1)
+        let edit = AudioEditDescription(fade: FadeDescription(inTime: 0.1))
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
             edit: edit,
-            outputURL: output,
-            metadataCopyScheme: .ignore
+            outputURL: output
         )
         try await renderer.render()
 
@@ -128,13 +127,12 @@ class AudioEditRendererTests: BinTestCase {
             name: "render_format_src"
         )
         let output = bin.appending(component: "render_format_out.wav", directoryHint: .notDirectory)
-        let edit = AudioEditDescription(fadeIn: 0.01)
+        let edit = AudioEditDescription(fade: FadeDescription(inTime: 0.01))
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
             edit: edit,
-            outputURL: output,
-            metadataCopyScheme: .ignore
+            outputURL: output
         )
         try await renderer.render()
 
@@ -155,13 +153,12 @@ class AudioEditRendererTests: BinTestCase {
             sampleRate: 44100,
             name: "render_conflict_out"
         )
-        let edit = AudioEditDescription(fadeIn: 0.1)
+        let edit = AudioEditDescription(fade: FadeDescription(inTime: 0.01))
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
             edit: edit,
             outputURL: output,
-            metadataCopyScheme: .ignore,
             fileConflictScheme: .error
         )
 
@@ -181,17 +178,15 @@ class AudioEditRendererTests: BinTestCase {
             sampleRate: 44100,
             name: "render_overwrite_out"
         )
-        let edit = AudioEditDescription(fadeIn: 0.001)
+        let edit = AudioEditDescription(fade: FadeDescription(inTime: 0.001))
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
             edit: edit,
             outputURL: output,
-            metadataCopyScheme: .ignore,
             fileConflictScheme: .overwrite
         )
 
-        // Should not throw
         let resultURL = try await renderer.render()
         let result = try AVAudioFile(forReading: resultURL)
         #expect(result.length == 100)
@@ -211,9 +206,8 @@ class AudioEditRendererTests: BinTestCase {
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
-            edit: AudioEditDescription(fadeIn: 0.001),
+            edit: AudioEditDescription(fade: FadeDescription(inTime: 0.001)),
             outputURL: output,
-            metadataCopyScheme: .ignore,
             fileConflictScheme: .unique
         )
 
@@ -243,12 +237,117 @@ class AudioEditRendererTests: BinTestCase {
         let renderer = AudioEditRenderer(
             sourceURL: source,
             edit: edit,
-            outputURL: output,
-            metadataCopyScheme: .ignore
+            outputURL: output
         )
         try await renderer.render()
 
         let out = try readSamples(from: output)
         #expect(out == [5, 4, 3, 2])
+    }
+
+    // MARK: - Metadata preservation
+
+    /// mp3_id3 has embedded artwork (600×592). Rendering should preserve the image.
+    @Test func renderPreservesEmbeddedImage() async throws {
+        let source = TestBundleResources.shared.mp3_id3
+        let output = bin.appending(component: "render_image_out.mp3", directoryHint: .notDirectory)
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(fade: FadeDescription(inTime: 0.01)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let pictureRef = try TagPictureRef.parsing(url: output)
+        #expect(pictureRef.cgImage.width == 600)
+        #expect(pictureRef.cgImage.height == 592)
+    }
+
+    // MARK: - Marker adjustment on trim
+
+    /// mp3_id3 has chapters at t=0, 1, 2. Trimming inPoint=0.5 removes the t=0 chapter
+    /// and shifts the remaining two to t=0.5 and t=1.5.
+    @Test func renderInPointTrimCropsAndShiftsMarkers() async throws {
+        let source = TestBundleResources.shared.mp3_id3
+        let output = bin.appending(component: "render_marker_in_out.mp3", directoryHint: .notDirectory)
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 0.5)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        #expect(chapters.count == 2)
+        #expect(chapters[0].startTime == 0.5)
+        #expect(chapters[1].startTime == 1.5)
+    }
+
+    /// mp3_id3 has chapters at t=0, 1, 2. Trimming outPoint=1.5 removes the t=2 chapter;
+    /// the remaining two stay at t=0 and t=1 (no inPoint shift).
+    @Test func renderOutPointTrimCropsMarkers() async throws {
+        let source = TestBundleResources.shared.mp3_id3
+        let output = bin.appending(component: "render_marker_out_out.mp3", directoryHint: .notDirectory)
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(outPoint: 1.5)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        #expect(chapters.count == 2)
+        #expect(chapters[0].startTime == 0)
+        #expect(chapters[1].startTime == 1)
+    }
+
+    /// Trimming both ends: inPoint=0.5, outPoint=1.5 keeps only the t=1 chapter, shifted to t=0.5.
+    @Test func renderInAndOutPointTrimKeepsSingleMarker() async throws {
+        let source = TestBundleResources.shared.mp3_id3
+        let output = bin.appending(component: "render_marker_both_out.mp3", directoryHint: .notDirectory)
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 0.5, outPoint: 1.5)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        #expect(chapters.count == 1)
+        #expect(chapters[0].startTime == 0.5)
+    }
+
+    // MARK: - M4A image preservation
+
+    /// Copies tabla_m4a to the bin, embeds sharksandwich.jpg, renders it, and verifies the image survives.
+    @Test func renderPreservesEmbeddedImageInM4A() async throws {
+        let m4a = try copyToBin(url: TestBundleResources.shared.tabla_m4a)
+
+        let imageURL = TestBundleResources.shared.sharksandwich
+        guard let pictureRef = TagPictureRef(url: imageURL, pictureDescription: "", pictureType: "") else {
+            Issue.record("Failed to load sharksandwich.jpg")
+            return
+        }
+        let expectedWidth = pictureRef.cgImage.width
+        let expectedHeight = pictureRef.cgImage.height
+
+        let written = TagPicture.write(pictureRef, path: m4a.path)
+        #expect(written, "Precondition: image must be writable to M4A")
+
+        let output = bin.appending(component: "m4a_image_out.m4a", directoryHint: .notDirectory)
+        let renderer = AudioEditRenderer(
+            sourceURL: m4a,
+            edit: AudioEditDescription(fade: FadeDescription(inTime: 0.01)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let readBack = try TagPictureRef.parsing(url: output)
+        #expect(readBack.cgImage.width == expectedWidth)
+        #expect(readBack.cgImage.height == expectedHeight)
     }
 }

@@ -5,6 +5,7 @@ import Foundation
 import SPFKAudioBase
 import SPFKBase
 import SPFKFileSystem
+import SPFKMetadata
 
 /// Applies an ``AudioEditDescription`` to an audio file and writes the result to an output URL.
 ///
@@ -28,13 +29,6 @@ public actor AudioEditRenderer {
     /// The destination URL for the rendered output.
     public let outputURL: URL
 
-    /// Determines which metadata is copied from the source to the output.
-    ///
-    /// Defaults to `.copyTextAndMarkers`. Note: marker positions are not adjusted to
-    /// account for trimming or reversal — markers outside the rendered time range are
-    /// still written to the output as-is.
-    public var metadataCopyScheme: MetadataCopyScheme
-
     /// Determines how to handle an existing file at ``outputURL``. Defaults to `.error`.
     public var fileConflictScheme: FileConflictScheme
 
@@ -42,13 +36,11 @@ public actor AudioEditRenderer {
         sourceURL: URL,
         edit: AudioEditDescription,
         outputURL: URL,
-        metadataCopyScheme: MetadataCopyScheme = .copyTextAndMarkers,
         fileConflictScheme: FileConflictScheme = .error
     ) {
         self.sourceURL = sourceURL
         self.edit = edit
         self.outputURL = outputURL
-        self.metadataCopyScheme = metadataCopyScheme
         self.fileConflictScheme = fileConflictScheme
     }
 
@@ -84,14 +76,18 @@ public actor AudioEditRenderer {
 
         try await write(processed, fileFormat: audioFile.fileFormat, to: resolvedOutput)
 
-        if metadataCopyScheme != .ignore {
-            let convSource = AudioFormatConverterSource(
-                input: sourceURL,
-                output: resolvedOutput,
-                options: AudioFormatConverterOptions(),
-                metadataCopyScheme: metadataCopyScheme
-            )
-            await AudioFormatConverter(source: convSource).copyMetadata()
+        let convSource = AudioFormatConverterSource(
+            input: sourceURL,
+            output: resolvedOutput,
+            options: AudioFormatConverterOptions(),
+            metadataCopyScheme: .copyAll
+        )
+        await AudioFormatConverter(source: convSource).copyMetadata()
+
+        // Re-write markers adjusted for the trim range, overwriting the unadjusted markers
+        // that copyMetadata wrote above.
+        if edit.trim.inPoint > 0 || edit.trim.outPoint > 0 {
+            await adjustAndWriteMarkers(to: resolvedOutput)
         }
 
         return resolvedOutput
@@ -174,5 +170,39 @@ public actor AudioEditRenderer {
 
     private static func isDirectlyWritable(url: URL) -> Bool {
         AudioFileType(pathExtension: url.pathExtension)?.isAVAudioFileWritable ?? true
+    }
+
+    /// Reads source markers, filters out those outside the trim range, shifts remaining times
+    /// by the in-point offset, and re-writes to `outputURL`, overwriting the unadjusted markers
+    /// that `copyMetadata` already wrote.
+    private func adjustAndWriteMarkers(to outputURL: URL) async {
+        guard let outputType = AudioFileType(pathExtension: outputURL.pathExtension) else { return }
+
+        let collection: AudioMarkerDescriptionCollection
+        do {
+            collection = try await AudioMarkerDescriptionCollection(url: sourceURL)
+        } catch {
+            return
+        }
+
+        guard collection.count > 0 else { return }
+
+        let inPoint = edit.trim.inPoint
+        let outPoint = edit.trim.outPoint  // 0 means "keep to end"
+
+        let adjusted: [AudioMarkerDescription] = collection.markerDescriptions.compactMap { desc in
+            guard desc.startTime >= inPoint else { return nil }
+            if outPoint > 0, desc.startTime >= outPoint { return nil }
+
+            var copy = desc
+            copy.startTime = max(0, desc.startTime - inPoint)
+            if let end = desc.endTime {
+                copy.endTime = max(0, end - inPoint)
+            }
+            return copy
+        }
+
+        guard adjusted.isNotEmpty else { return }
+        AudioFormatConverter.writeMarkers(adjusted, to: outputURL, outputType: outputType)
     }
 }

@@ -101,10 +101,21 @@ extension AudioFormatConverter {
 
         guard collection.count > 0 else { return }
 
+        AudioFormatConverter.writeMarkers(collection.markerDescriptions, to: source.output, outputType: outputType)
+    }
+
+    /// Writes an array of marker descriptions to the given URL using the format-appropriate
+    /// marker writing utility. Called by `copyMarkers` and by `AudioEditRenderer` after
+    /// adjusting marker times to account for trim operations.
+    static func writeMarkers(
+        _ descriptions: [AudioMarkerDescription],
+        to url: URL,
+        outputType: AudioFileType
+    ) {
         switch outputType {
         case .wav, .w64, .aiff, .aifc:
             // RIFF cue points via AudioToolbox
-            let audioMarkers = collection.markerDescriptions.enumerated().map { i, desc in
+            let audioMarkers = descriptions.enumerated().map { i, desc in
                 AudioMarker(
                     name: desc.name ?? "Marker",
                     time: desc.startTime,
@@ -113,13 +124,13 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !AudioMarkerUtil.update(source.output, markers: audioMarkers) {
-                Log.error("Failed to write markers to \(source.output.lastPathComponent)")
+            if !AudioMarkerUtil.update(url, markers: audioMarkers) {
+                Log.error("Failed to write markers to \(url.lastPathComponent)")
             }
 
         case .mp3:
             // ID3 CHAP frames via TagLib
-            let chapters = collection.markerDescriptions.map { desc in
+            let chapters = descriptions.map { desc in
                 ChapterMarker(
                     name: desc.name ?? "Chapter",
                     startTime: desc.startTime,
@@ -127,13 +138,13 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !MPEGChapterUtil.writeChapters(chapters, to: source.output.path) {
-                Log.error("Failed to write chapters to \(source.output.lastPathComponent)")
+            if !MPEGChapterUtil.writeChapters(chapters, to: url.path) {
+                Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 
         case .flac, .ogg, .opus:
             // Vorbis comment chapters via TagLib XiphComment
-            let chapters = collection.markerDescriptions.map { desc in
+            let chapters = descriptions.map { desc in
                 ChapterMarker(
                     name: desc.name ?? "Chapter",
                     startTime: desc.startTime,
@@ -141,13 +152,13 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !XiphChapterUtil.writeChapters(chapters, to: source.output.path) {
-                Log.error("Failed to write chapters to \(source.output.lastPathComponent)")
+            if !XiphChapterUtil.writeChapters(chapters, to: url.path) {
+                Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 
         case .m4a, .mp4, .aac, .m4b:
             // Nero chpl chapters via TagLib MP4ChapterList
-            let chapters = collection.markerDescriptions.map { desc in
+            let chapters = descriptions.map { desc in
                 ChapterMarker(
                     name: desc.name ?? "Chapter",
                     startTime: desc.startTime,
@@ -155,8 +166,8 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !MP4ChapterUtil.writeChapters(chapters, to: source.output.path) {
-                Log.error("Failed to write chapters to \(source.output.lastPathComponent)")
+            if !MP4ChapterUtil.writeChapters(chapters, to: url.path) {
+                Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 
         default:
