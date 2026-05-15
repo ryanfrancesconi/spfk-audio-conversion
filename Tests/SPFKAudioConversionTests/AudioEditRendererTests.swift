@@ -44,7 +44,7 @@ class AudioEditRendererTests: BinTestCase {
 
     // MARK: - render()
 
-    @Test func renderKeepRangeReducesFrameLength() async throws {
+    @Test func renderInOutPointReducesFrameLength() async throws {
         // 10 frames at 44100 Hz. Keep frames 2–6 (5 frames).
         let sampleRate: Double = 44100
         let source = try makeTempWAV(
@@ -53,9 +53,10 @@ class AudioEditRendererTests: BinTestCase {
             name: "render_trim_src"
         )
         let output = bin.appending(component: "render_trim_out.wav", directoryHint: .notDirectory)
-        let edit = AudioEditDescription(keepRanges: [
-            AudioTimeRange(start: 2.0 / sampleRate, end: 7.0 / sampleRate),
-        ])
+        let edit = AudioEditDescription(
+            inPoint: 2.0 / sampleRate,
+            outPoint: 7.0 / sampleRate
+        )
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
@@ -223,7 +224,7 @@ class AudioEditRendererTests: BinTestCase {
         #expect(resultURL.exists)
     }
 
-    @Test func renderKeepRangeThenReversePreservesPipelineOrder() async throws {
+    @Test func renderInOutPointThenReversePreservesPipelineOrder() async throws {
         // 5 frames at 44100 Hz. Keep frame indices 1–4 (values [2, 3, 4, 5]), then reverse → [5, 4, 3, 2].
         let sampleRate: Double = 44100
         let source = try makeTempWAV(
@@ -236,7 +237,8 @@ class AudioEditRendererTests: BinTestCase {
             directoryHint: .notDirectory
         )
         let edit = AudioEditDescription(
-            keepRanges: [AudioTimeRange(start: 1.0 / sampleRate, end: 5.0 / sampleRate)],
+            inPoint: 1.0 / sampleRate,
+            outPoint: 5.0 / sampleRate,
             isReversed: true
         )
 
