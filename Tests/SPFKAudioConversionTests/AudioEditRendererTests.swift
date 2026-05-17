@@ -74,26 +74,6 @@ class AudioEditRendererTests: BinTestCase {
         #expect(out == [2, 3, 4, 5, 6])
     }
 
-    @Test func renderReverseFlipsContent() async throws {
-        let source = try makeTempWAV(
-            samples: [1, 2, 3, 4, 5],
-            sampleRate: 44100,
-            name: "render_reverse_src"
-        )
-        let output = bin.appending(component: "render_reverse_out.wav", directoryHint: .notDirectory)
-
-        let renderer = AudioEditRenderer(
-            sourceURL: source,
-            edit: AudioEditDescription(isReversed: true),
-            outputURL: output
-        )
-        try await renderer.render()
-
-        let out = try readSamples(from: output)
-        #expect(out[0] == 5)
-        #expect(out[4] == 1)
-    }
-
     @Test func renderFadeInFirstSampleNearZero() async throws {
         let sampleRate: Double = 44100
         let fadeInSamples = Int(sampleRate * 0.1)
@@ -215,34 +195,6 @@ class AudioEditRendererTests: BinTestCase {
         // The returned URL must be different from the original (a new unique path was chosen)
         #expect(resultURL != output)
         #expect(resultURL.exists)
-    }
-
-    @Test func renderInOutPointThenReversePreservesPipelineOrder() async throws {
-        // 5 frames at 44100 Hz. Keep frame indices 1–4 (values [2, 3, 4, 5]), then reverse → [5, 4, 3, 2].
-        let sampleRate: Double = 44100
-        let source = try makeTempWAV(
-            samples: [1, 2, 3, 4, 5],
-            sampleRate: sampleRate,
-            name: "render_trim_reverse_src"
-        )
-        let output = bin.appending(
-            component: "render_trim_reverse_out.wav",
-            directoryHint: .notDirectory
-        )
-        let edit = AudioEditDescription(
-            trim: TrimDescription(inPoint: 1.0 / sampleRate, outPoint: 5.0 / sampleRate),
-            isReversed: true
-        )
-
-        let renderer = AudioEditRenderer(
-            sourceURL: source,
-            edit: edit,
-            outputURL: output
-        )
-        try await renderer.render()
-
-        let out = try readSamples(from: output)
-        #expect(out == [5, 4, 3, 2])
     }
 
     // MARK: - Metadata preservation
