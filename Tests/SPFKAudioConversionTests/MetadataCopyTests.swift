@@ -75,7 +75,7 @@ class MetadataCopyTests: BinTestCase {
         #expect(props[.title] == "Stonehenge")
 
         // Markers should not be present
-        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.isEmpty)
     }
 
@@ -99,7 +99,7 @@ class MetadataCopyTests: BinTestCase {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "mp3")
 
-        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 3)
     }
 
@@ -117,7 +117,7 @@ class MetadataCopyTests: BinTestCase {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "flac")
 
-        let chapters = XiphChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = XiphChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 3)
         #expect(chapters.map { $0.name } == ["M0", "M1", "M2"])
         #expect(chapters.map { $0.startTime } == [0, 1, 2])
@@ -127,7 +127,7 @@ class MetadataCopyTests: BinTestCase {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "ogg")
 
-        let chapters = XiphChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = XiphChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 3)
         #expect(chapters.map { $0.name } == ["M0", "M1", "M2"])
         #expect(chapters.map { $0.startTime } == [0, 1, 2])
@@ -137,7 +137,7 @@ class MetadataCopyTests: BinTestCase {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "m4a")
 
-        let chapters = MP4ChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = MP4ChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 3)
         #expect(chapters.map { $0.name } == ["M0", "M1", "M2"])
         #expect(chapters.map { $0.startTime } == [0, 1, 2])
@@ -152,7 +152,7 @@ class MetadataCopyTests: BinTestCase {
         #expect(props[.title] == nil)
 
         // Markers should be present
-        let chapters = XiphChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = XiphChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 3)
     }
 }

@@ -124,7 +124,7 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !AudioMarkerUtil.update(url, markers: audioMarkers) {
+            if !AudioMarkerUtil.write(audioMarkers, to: url) {
                 Log.error("Failed to write markers to \(url.lastPathComponent)")
             }
 
@@ -138,7 +138,7 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !MPEGChapterUtil.writeChapters(chapters, to: url.path) {
+            if !MPEGChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 
@@ -152,7 +152,7 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !XiphChapterUtil.writeChapters(chapters, to: url.path) {
+            if !XiphChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 
@@ -166,7 +166,7 @@ extension AudioFormatConverter {
                 )
             }
 
-            if !MP4ChapterUtil.writeChapters(chapters, to: url.path) {
+            if !MP4ChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 

@@ -231,7 +231,7 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 2)
         #expect(chapters[0].startTime == 0.5)
         #expect(chapters[1].startTime == 1.5)
@@ -250,7 +250,7 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 2)
         #expect(chapters[0].startTime == 0)
         #expect(chapters[1].startTime == 1)
@@ -268,7 +268,7 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let chapters = MPEGChapterUtil.chapters(in: output.path) as? [ChapterMarker] ?? []
+        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 1)
         #expect(chapters[0].startTime == 0.5)
     }
