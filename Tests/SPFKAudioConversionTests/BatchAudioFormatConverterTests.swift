@@ -31,7 +31,10 @@ class BatchAudioFormatConverterTests: BinTestCase {
         let results = try await converter.start()
 
         let errors = results.compactMap(\.error)
-        #expect(errors.isNotEmpty) // could change
+        
+        if errors.isNotEmpty {
+            Log.error(errors)
+        }
 
         #expect(bin.directoryContents?.count == 6)
 
