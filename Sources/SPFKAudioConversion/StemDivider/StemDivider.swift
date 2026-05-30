@@ -8,7 +8,7 @@ import SPFKMetadata
 
 /// Divides a single audio file into separate files, one per detected segment.
 ///
-/// Provide a source URL and an array of ``TrimDescription`` values (from ``StemSegmentDetector``
+/// Provide a source URL and an array of ``TrimDescription`` values (from ``SegmentDetector``
 /// or read back from "In NN" region markers), then call ``divide()`` to render each segment
 /// to its own file. Up to 4 segments render concurrently.
 ///
