@@ -142,4 +142,73 @@ class StemDividerTests: BinTestCase {
         let divider = StemDivider(sourceURL: sourceURL, segments: [segments[0]])
         #expect(await divider.outputDirectory == sourceURL.deletingLastPathComponent())
     }
+
+    // MARK: - Ordering with > 4 segments
+
+    @Test("output files are returned in segment order when more than 4 segments run concurrently")
+    func outputOrderWithSixSegments() async throws {
+        // 6 audio bursts — exercises the concurrent task group's index-based ordering
+        // (the group caps at 4 in-flight, so tasks 5 and 6 are enqueued after earlier ones complete)
+        let (url, _) = try AudioTestFile.make(segments: [
+            (4410, audioLevel), (4410, 0.0),
+            (4410, audioLevel), (4410, 0.0),
+            (4410, audioLevel), (4410, 0.0),
+            (4410, audioLevel), (4410, 0.0),
+            (4410, audioLevel), (4410, 0.0),
+            (4410, audioLevel),
+        ])
+        let dest = bin.appending(component: "source6.wav", directoryHint: .notDirectory)
+        try FileManager.default.copyItem(at: url, to: dest)
+        try FileManager.default.removeItem(at: url)
+
+        let sixSegments: [TrimDescription] = (0 ..< 6).map { i in
+            let start = Double(i) * 0.2
+            return TrimDescription(inPoint: start, outPoint: start + 0.1)
+        }
+
+        let divider = StemDivider(sourceURL: dest, segments: sixSegments, outputDirectory: bin)
+        let result = try await divider.divide()
+
+        #expect(result.count == 6)
+        for (i, outputURL) in result.enumerated() {
+            let expected = String(format: "source6_%03d.wav", i + 1)
+            #expect(outputURL.lastPathComponent == expected)
+        }
+    }
+}
+
+// MARK: - StemDividerOptions Codable
+
+struct StemDividerOptionsTests {
+    @Test("StemDividerOptions encodes and decodes without data loss")
+    func codableRoundTrip() throws {
+        var options = StemDividerOptions()
+        options.normalizeEach = true
+        options.fadeInTime = 0.1
+        options.fadeOutTime = 0.2
+        options.fileConflictScheme = .overwrite
+
+        let data = try JSONEncoder().encode(options)
+        let decoded = try JSONDecoder().decode(StemDividerOptions.self, from: data)
+
+        #expect(decoded.outputFormat == options.outputFormat)
+        #expect(decoded.normalizeEach == options.normalizeEach)
+        #expect(decoded.fadeInTime == options.fadeInTime)
+        #expect(decoded.fadeOutTime == options.fadeOutTime)
+        #expect(decoded.fileConflictScheme == options.fileConflictScheme)
+    }
+
+    @Test("StemDividerOptions decoding falls back to defaults when all fields are absent")
+    func codableMissingFieldsUseDefaults() throws {
+        let data = "{}".data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(StemDividerOptions.self, from: data)
+        let defaults = StemDividerOptions()
+
+        #expect(decoded.outputFormat == defaults.outputFormat)
+        #expect(decoded.conversionOptions == nil)
+        #expect(decoded.normalizeEach == defaults.normalizeEach)
+        #expect(decoded.fadeInTime == defaults.fadeInTime)
+        #expect(decoded.fadeOutTime == defaults.fadeOutTime)
+        #expect(decoded.fileConflictScheme == defaults.fileConflictScheme)
+    }
 }
