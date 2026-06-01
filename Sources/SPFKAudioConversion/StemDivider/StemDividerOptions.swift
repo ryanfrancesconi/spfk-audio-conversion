@@ -31,8 +31,8 @@ public struct StemDividerOptions: Sendable, Codable {
         outputFormat: AudioFileType? = nil,
         conversionOptions: AudioFormatConverterOptions? = nil,
         normalizeEach: Bool = false,
-        fadeInTime: TimeInterval = 0.05,
-        fadeOutTime: TimeInterval = 0.05,
+        fadeInTime: TimeInterval = 0,
+        fadeOutTime: TimeInterval = 0,
         fileConflictScheme: FileConflictScheme = .unique
     ) {
         self.outputFormat = outputFormat
@@ -49,8 +49,8 @@ public struct StemDividerOptions: Sendable, Codable {
         outputFormat = try c.decodeIfPresent(AudioFileType.self, forKey: .outputFormat) ?? nil
         conversionOptions = try c.decodeIfPresent(AudioFormatConverterOptions.self, forKey: .conversionOptions) ?? nil
         normalizeEach = try c.decodeIfPresent(Bool.self, forKey: .normalizeEach) ?? false
-        fadeInTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeInTime) ?? 0.05
-        fadeOutTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeOutTime) ?? 0.05
+        fadeInTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeInTime) ?? 0
+        fadeOutTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeOutTime) ?? 0
         fileConflictScheme = try c.decodeIfPresent(FileConflictScheme.self, forKey: .fileConflictScheme) ?? .unique
     }
 }
