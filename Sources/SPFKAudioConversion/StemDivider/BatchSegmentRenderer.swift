@@ -48,13 +48,13 @@ public struct BatchSegmentRenderer: Sendable {
         self.options = options
     }
 
-    /// Renders all items and returns the total number of output files created.
+    /// Renders all items and returns the output file URLs.
     /// - Parameter progressHandler: Called after each source file completes, with (completedCount, totalCount).
     @discardableResult
     public func render(
         progressHandler: (@Sendable (Int, Int) async -> Void)? = nil
-    ) async throws -> Int {
-        var total = 0
+    ) async throws -> [URL] {
+        var outputURLs: [URL] = []
         for (i, item) in items.enumerated() {
             guard !item.segments.isEmpty else { continue }
             try Task.checkCancellation()
@@ -65,9 +65,9 @@ public struct BatchSegmentRenderer: Sendable {
                 options: options
             )
             let urls = try await divider.divide()
-            total += urls.count
+            outputURLs.append(contentsOf: urls)
             await progressHandler?(i + 1, items.count)
         }
-        return total
+        return outputURLs
     }
 }
