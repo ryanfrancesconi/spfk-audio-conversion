@@ -13,7 +13,7 @@ import SPFKMetadata
 /// to its own file. Up to 4 segments render concurrently.
 ///
 /// Output files are named `{stem}_{index:03d}.{ext}` — e.g. `FX_Hits_001.wav`, `FX_Hits_002.wav`.
-public actor StemDivider {
+public actor SegmentDivider {
     /// The audio file to divide.
     public let sourceURL: URL
 
@@ -24,7 +24,7 @@ public actor StemDivider {
     public let outputDirectory: URL
 
     /// Options controlling per-segment processing and output format.
-    public var options: StemDividerOptions
+    public var options: SegmentDividerOptions
 
     /// - Parameters:
     ///   - sourceURL: The audio file to divide.
@@ -35,7 +35,7 @@ public actor StemDivider {
         sourceURL: URL,
         segments: [TrimDescription],
         outputDirectory: URL? = nil,
-        options: StemDividerOptions = StemDividerOptions()
+        options: SegmentDividerOptions = SegmentDividerOptions()
     ) {
         self.sourceURL = sourceURL
         self.segments = segments

@@ -10,7 +10,7 @@ import Testing
 @testable import SPFKAudioConversion
 
 @Suite(.serialized, .tags(.file))
-class StemDividerTests: BinTestCase {
+class SegmentDividerTests: BinTestCase {
     // Three equal-length segments separated by silence: audio, silence, audio, silence, audio
     // Total: 3 × 4410 audio + 2 × 8820 silence = 30870 frames at 44100 Hz (~0.7 s)
     private let sampleRate: Double = 44100
@@ -42,7 +42,7 @@ class StemDividerTests: BinTestCase {
     @Test("divide() returns empty array for empty segment list")
     func emptySegmentsReturnsEmpty() async throws {
         let sourceURL = try makeSourceFile()
-        let divider = StemDivider(sourceURL: sourceURL, segments: [], outputDirectory: bin)
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: [], outputDirectory: bin)
         let result = try await divider.divide()
         #expect(result.isEmpty)
     }
@@ -52,7 +52,7 @@ class StemDividerTests: BinTestCase {
     @Test("divide() produces one file per segment")
     func outputCountMatchesSegmentCount() async throws {
         let sourceURL = try makeSourceFile()
-        let divider = StemDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin)
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin)
         let result = try await divider.divide()
         #expect(result.count == segments.count)
     }
@@ -62,7 +62,7 @@ class StemDividerTests: BinTestCase {
     @Test("output files are named {stem}_001, _002, _003 with source extension")
     func outputNaming() async throws {
         let sourceURL = try makeSourceFile()
-        let divider = StemDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin)
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin)
         let result = try await divider.divide()
 
         #expect(result[0].lastPathComponent == "source_001.wav")
@@ -75,7 +75,7 @@ class StemDividerTests: BinTestCase {
     @Test("all output files exist on disk after divide()")
     func outputFilesExist() async throws {
         let sourceURL = try makeSourceFile()
-        let divider = StemDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin)
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin)
         let result = try await divider.divide()
 
         for url in result {
@@ -89,10 +89,10 @@ class StemDividerTests: BinTestCase {
     func outputFileDurationMatchesSegment() async throws {
         let sourceURL = try makeSourceFile()
 
-        var options = StemDividerOptions()
+        var options = SegmentDividerOptions()
         options.fileConflictScheme = .overwrite
 
-        let divider = StemDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin, options: options)
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin, options: options)
         let result = try await divider.divide()
 
         for (index, url) in result.enumerated() {
@@ -110,10 +110,10 @@ class StemDividerTests: BinTestCase {
     func normalizeEachDoesNotCrash() async throws {
         let sourceURL = try makeSourceFile()
 
-        var options = StemDividerOptions()
+        var options = SegmentDividerOptions()
         options.normalizeEach = true
 
-        let divider = StemDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin, options: options)
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin, options: options)
         let result = try await divider.divide()
         #expect(result.count == segments.count)
     }
@@ -125,11 +125,11 @@ class StemDividerTests: BinTestCase {
         try FileManager.default.copyItem(at: url, to: dest)
         try FileManager.default.removeItem(at: url)
 
-        var options = StemDividerOptions()
+        var options = SegmentDividerOptions()
         options.normalizeEach = true
 
         let silentSegments = [TrimDescription(inPoint: 0.0, outPoint: 0.5)]
-        let divider = StemDivider(sourceURL: dest, segments: silentSegments, outputDirectory: bin, options: options)
+        let divider = SegmentDivider(sourceURL: dest, segments: silentSegments, outputDirectory: bin, options: options)
         let result = try await divider.divide()
         #expect(result.count == 1)
     }
@@ -139,7 +139,7 @@ class StemDividerTests: BinTestCase {
     @Test("outputDirectory defaults to source file's parent directory")
     func defaultOutputDirectory() async throws {
         let sourceURL = try makeSourceFile()
-        let divider = StemDivider(sourceURL: sourceURL, segments: [segments[0]])
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: [segments[0]])
         #expect(await divider.outputDirectory == sourceURL.deletingLastPathComponent())
     }
 
@@ -166,7 +166,7 @@ class StemDividerTests: BinTestCase {
             return TrimDescription(inPoint: start, outPoint: start + 0.1)
         }
 
-        let divider = StemDivider(sourceURL: dest, segments: sixSegments, outputDirectory: bin)
+        let divider = SegmentDivider(sourceURL: dest, segments: sixSegments, outputDirectory: bin)
         let result = try await divider.divide()
 
         #expect(result.count == 6)
@@ -177,19 +177,19 @@ class StemDividerTests: BinTestCase {
     }
 }
 
-// MARK: - StemDividerOptions Codable
+// MARK: - SegmentDividerOptions Codable
 
-struct StemDividerOptionsTests {
-    @Test("StemDividerOptions encodes and decodes without data loss")
+struct SegmentDividerOptionsTests {
+    @Test("SegmentDividerOptions encodes and decodes without data loss")
     func codableRoundTrip() throws {
-        var options = StemDividerOptions()
+        var options = SegmentDividerOptions()
         options.normalizeEach = true
         options.fadeInTime = 0.1
         options.fadeOutTime = 0.2
         options.fileConflictScheme = .overwrite
 
         let data = try JSONEncoder().encode(options)
-        let decoded = try JSONDecoder().decode(StemDividerOptions.self, from: data)
+        let decoded = try JSONDecoder().decode(SegmentDividerOptions.self, from: data)
 
         #expect(decoded.outputFormat == options.outputFormat)
         #expect(decoded.normalizeEach == options.normalizeEach)
@@ -198,11 +198,11 @@ struct StemDividerOptionsTests {
         #expect(decoded.fileConflictScheme == options.fileConflictScheme)
     }
 
-    @Test("StemDividerOptions decoding falls back to defaults when all fields are absent")
+    @Test("SegmentDividerOptions decoding falls back to defaults when all fields are absent")
     func codableMissingFieldsUseDefaults() throws {
         let data = "{}".data(using: .utf8)!
-        let decoded = try JSONDecoder().decode(StemDividerOptions.self, from: data)
-        let defaults = StemDividerOptions()
+        let decoded = try JSONDecoder().decode(SegmentDividerOptions.self, from: data)
+        let defaults = SegmentDividerOptions()
 
         #expect(decoded.outputFormat == defaults.outputFormat)
         #expect(decoded.conversionOptions == nil)

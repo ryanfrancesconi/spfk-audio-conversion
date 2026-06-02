@@ -3,8 +3,8 @@
 import Foundation
 import SPFKAudioBase
 
-/// Options controlling per-segment processing and output format for ``StemDivider``.
-public struct StemDividerOptions: Sendable, Codable {
+/// Options controlling per-segment processing and output format for ``SegmentDivider``.
+public struct SegmentDividerOptions: Sendable, Codable {
     /// Output format. `nil` = same extension as source file.
     /// When non-nil and the extension differs from the source, each rendered segment
     /// is converted through ``AudioFormatConverter`` after the initial render.
@@ -19,10 +19,10 @@ public struct StemDividerOptions: Sendable, Codable {
     public var normalizeEach: Bool = false
 
     /// Fade-in applied to each segment's start. 0 = none.
-    public var fadeInTime: TimeInterval = 0
+    public var fadeInTime: TimeInterval = 0.005
 
     /// Fade-out applied to each segment's end. 0 = none.
-    public var fadeOutTime: TimeInterval = 0
+    public var fadeOutTime: TimeInterval = 0.005
 
     /// Conflict scheme for output files that already exist. Defaults to `.unique`.
     public var fileConflictScheme: FileConflictScheme = .unique
@@ -31,8 +31,8 @@ public struct StemDividerOptions: Sendable, Codable {
         outputFormat: AudioFileType? = nil,
         conversionOptions: AudioFormatConverterOptions? = nil,
         normalizeEach: Bool = false,
-        fadeInTime: TimeInterval = 0,
-        fadeOutTime: TimeInterval = 0,
+        fadeInTime: TimeInterval = 0.005,
+        fadeOutTime: TimeInterval = 0.005,
         fileConflictScheme: FileConflictScheme = .unique
     ) {
         self.outputFormat = outputFormat
@@ -49,8 +49,8 @@ public struct StemDividerOptions: Sendable, Codable {
         outputFormat = try c.decodeIfPresent(AudioFileType.self, forKey: .outputFormat) ?? nil
         conversionOptions = try c.decodeIfPresent(AudioFormatConverterOptions.self, forKey: .conversionOptions) ?? nil
         normalizeEach = try c.decodeIfPresent(Bool.self, forKey: .normalizeEach) ?? false
-        fadeInTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeInTime) ?? 0
-        fadeOutTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeOutTime) ?? 0
+        fadeInTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeInTime) ?? 0.005
+        fadeOutTime = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeOutTime) ?? 0.005
         fileConflictScheme = try c.decodeIfPresent(FileConflictScheme.self, forKey: .fileConflictScheme) ?? .unique
     }
 }
