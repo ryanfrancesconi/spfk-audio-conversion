@@ -55,40 +55,35 @@ extension AudioFormatConverter {
         }
     }
 
-    // MARK: - BEXT (WAV → WAV only)
+    // MARK: - BEXT (WAV or FLAC)
 
     private func copyBEXT(inputType: AudioFileType?, outputType: AudioFileType) {
-        guard inputType == .wav, outputType == .wav else { return }
+        guard let inputType, [AudioFileType.wav, .flac].contains(inputType),
+              [AudioFileType.wav, .flac].contains(outputType)
+        else { return }
 
-        guard let bext = BEXTDescription(url: source.input) else { return }
+        guard let bext = MetadataPaster.readBEXT(from: source.input, type: inputType) else { return }
 
         do {
-            try BEXTDescription.write(bextDescription: bext, to: source.output)
+            try MetadataPaster.writeBEXT(bext, to: source.output, type: outputType)
         } catch {
             Log.error("Failed to copy BEXT to \(source.output.lastPathComponent):", error)
         }
     }
 
-    // MARK: - iXML (WAV → WAV only)
+    // MARK: - iXML (WAV or FLAC)
 
     private func copyIXML(inputType: AudioFileType?, outputType: AudioFileType) {
-        guard inputType == .wav, outputType == .wav else { return }
+        guard let inputType, [AudioFileType.wav, .flac].contains(inputType),
+              [AudioFileType.wav, .flac].contains(outputType)
+        else { return }
 
-        let sourceFile = WaveFileC(path: source.input.path)
-        guard sourceFile.load(), let ixml = sourceFile.iXML else { return }
+        guard let ixml = MetadataPaster.readIXML(from: source.input, type: inputType) else { return }
 
-        let destFile = WaveFileC(path: source.output.path)
-        guard destFile.load() else {
-            Log.error("Failed to open \(source.output.lastPathComponent) for iXML writing")
-            return
-        }
-
-        destFile.iXML = ixml
-        destFile.markersNeedsSave = false
-        destFile.imageNeedsSave = false
-
-        if !destFile.save() {
-            Log.error("Failed to write iXML to \(source.output.lastPathComponent)")
+        do {
+            try MetadataPaster.writeIXML(ixml, to: source.output, type: outputType)
+        } catch {
+            Log.error("Failed to copy iXML to \(source.output.lastPathComponent):", error)
         }
     }
 
