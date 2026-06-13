@@ -3,6 +3,7 @@
 import Foundation
 import SPFKAudioBase
 import SPFKBase
+import SPFKFileSystem
 import SPFKMetadata
 import SPFKMetadataC
 
@@ -36,6 +37,10 @@ extension AudioFormatConverter {
 
         if scheme.includesImage {
             copyImage()
+        }
+
+        if scheme.includesFinderTags {
+            copyFinderTags()
         }
     }
 
@@ -172,6 +177,16 @@ extension AudioFormatConverter {
 
         default:
             Log.debug("Marker writing not supported for \(outputType.rawValue) — skipping")
+        }
+    }
+
+    // MARK: - Finder Tags
+
+    private func copyFinderTags() {
+        do {
+            try source.input.copyFinderTags(to: source.output)
+        } catch {
+            Log.error("Failed to copy Finder tags to \(source.output.lastPathComponent):", error)
         }
     }
 
