@@ -74,7 +74,7 @@ public actor AudioEditRenderer {
 
         let processed = try buffer.applying(edit)
 
-        try await write(processed, fileFormat: audioFile.fileFormat, to: resolvedOutput)
+        try await write(processed, fileFormat: audioFile.fileFormat, to: resolvedOutput) // error here for large mp4
 
         let convSource = AudioFormatConverterSource(
             input: sourceURL,
@@ -121,7 +121,7 @@ public actor AudioEditRenderer {
         if Self.isDirectlyWritable(url: url) {
             let outputFile = try AVAudioFile(
                 forWriting: url,
-                settings: fileFormat.settings,
+                settings: Self.resolveOutputSettings(fileFormat: fileFormat, buffer: buffer, outputURL: url),
                 commonFormat: .pcmFormatFloat32,
                 interleaved: false
             )
@@ -129,6 +129,33 @@ public actor AudioEditRenderer {
         } else {
             try await writeViaIntermediateWAV(buffer, sampleRate: fileFormat.sampleRate, to: url)
         }
+    }
+
+    /// Resolves the AVAudioFile write settings for the given output URL.
+    ///
+    /// When the output is a PCM container (WAV/AIFF/CAF) but the source is compressed
+    /// (e.g. MP4/AAC), the source `fileFormat.settings` contain codec parameters that
+    /// AVAudioFile rejects with `kAudioFormatUnsupportedDataFormatError`. In that case,
+    /// derive float32 PCM settings from the already-decompressed buffer instead.
+    private static func resolveOutputSettings(
+        fileFormat: AVAudioFormat,
+        buffer: AVAudioPCMBuffer,
+        outputURL: URL
+    ) -> [String: Any] {
+        let outputType = AudioFileType(pathExtension: outputURL.pathExtension)
+        let sourceFormatID = fileFormat.settings[AVFormatIDKey] as? UInt32 ?? kAudioFormatLinearPCM
+
+        if outputType?.isPCM == true, sourceFormatID != kAudioFormatLinearPCM {
+            return [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: buffer.format.sampleRate,
+                AVNumberOfChannelsKey: Int(buffer.format.channelCount),
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+            ]
+        }
+        return fileFormat.settings
     }
 
     private func writeViaIntermediateWAV(

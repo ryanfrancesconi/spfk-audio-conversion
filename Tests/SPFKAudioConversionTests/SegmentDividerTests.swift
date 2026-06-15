@@ -19,9 +19,9 @@ class SegmentDividerTests: BinTestCase {
     private func makeSourceFile() throws -> URL {
         let (url, _) = try AudioTestFile.make(segments: [
             (4410, audioLevel), // 0.0–0.1 s  segment 1
-            (8820, 0.0),        // 0.1–0.3 s  silence
+            (8820, 0.0), // 0.1–0.3 s  silence
             (4410, audioLevel), // 0.3–0.4 s  segment 2
-            (8820, 0.0),        // 0.4–0.6 s  silence
+            (8820, 0.0), // 0.4–0.6 s  silence
             (4410, audioLevel), // 0.6–0.7 s  segment 3
         ])
         // Move into bin so it's cleaned up with the test
