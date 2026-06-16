@@ -13,6 +13,11 @@ import SPFKMetadata
 /// to its own file. Up to 4 segments render concurrently.
 ///
 /// Output files are named `{stem}_{index:03d}.{ext}` — e.g. `FX_Hits_001.wav`, `FX_Hits_002.wav`.
+///
+/// Pass ``markers`` to carry through any cue markers (those without an `endTime`) from the
+/// source file. Each cue that falls within a segment's time window is written to that segment's
+/// output with its time shifted relative to the segment's start. Region markers (with an `endTime`)
+/// are treated as segment boundaries and are never written to output files.
 public actor SegmentDivider {
     /// The audio file to divide.
     public let sourceURL: URL
@@ -26,21 +31,30 @@ public actor SegmentDivider {
     /// Options controlling per-segment processing and output format.
     public var options: SegmentDividerOptions
 
+    /// Markers from the source file. Cue markers (no `endTime`) that fall within a segment's
+    /// time window are written to that segment's output, time-adjusted to be relative to the
+    /// segment start. Region markers (with an `endTime`) are skipped.
+    public let markers: [AudioMarkerDescription]
+
     /// - Parameters:
     ///   - sourceURL: The audio file to divide.
     ///   - segments: Detected segments — each becomes one output file.
     ///   - outputDirectory: Where to write output files. Pass `nil` to use the source file's directory.
     ///   - options: Processing and format options.
+    ///   - markers: Markers from the source. Cue markers within each segment are written to that
+    ///     segment's output with times adjusted relative to the segment start.
     public init(
         sourceURL: URL,
         segments: [TrimDescription],
         outputDirectory: URL? = nil,
-        options: SegmentDividerOptions = SegmentDividerOptions()
+        options: SegmentDividerOptions = SegmentDividerOptions(),
+        markers: [AudioMarkerDescription] = []
     ) {
         self.sourceURL = sourceURL
         self.segments = segments
         self.outputDirectory = outputDirectory ?? sourceURL.deletingLastPathComponent()
         self.options = options
+        self.markers = markers
     }
 
     /// Divides the source into one file per segment and returns the output URLs in segment order.
@@ -62,6 +76,11 @@ public actor SegmentDivider {
         let outputExt = options.outputFormat?.pathExtension ?? sourceURL.pathExtension
         let stem = sourceURL.deletingPathExtension().lastPathComponent
         var results = [URL?](repeating: nil, count: segments.count)
+        // Resolve once here; passed to each renderSegment so writeNonSegmentMarkers
+        // can stamp cue marker positions without reopening the source per segment.
+        let sourceSampleRate: Double? = markers.isEmpty
+            ? nil
+            : (try? AVAudioFile(forReading: sourceURL))?.processingFormat.sampleRate
 
         try await withThrowingTaskGroup(of: (Int, URL).self) { group in
             let maxConcurrent = 4
@@ -72,7 +91,7 @@ public actor SegmentDivider {
                 let gain = gains[i]
                 let dest = makeOutputURL(stem: stem, index: i + 1, extension: outputExt)
                 group.addTask { [self] in
-                    (i, try await renderSegment(segment: segment, gain: gain, outputURL: dest))
+                    (i, try await renderSegment(segment: segment, gain: gain, outputURL: dest, sourceSampleRate: sourceSampleRate))
                 }
                 submitted += 1
             }
@@ -103,7 +122,8 @@ public actor SegmentDivider {
     private func renderSegment(
         segment: TrimDescription,
         gain: Float,
-        outputURL: URL
+        outputURL: URL,
+        sourceSampleRate: Double?
     ) async throws -> URL {
         let normalize = abs(gain - 1.0) >= 0.001
             ? NormalizeDescription(gain: gain)
@@ -124,9 +144,12 @@ public actor SegmentDivider {
                 sourceURL: sourceURL,
                 edit: edit,
                 outputURL: outputURL,
-                fileConflictScheme: options.fileConflictScheme
+                fileConflictScheme: options.fileConflictScheme,
+                metadataCopyScheme: .copyTextAndAssets
             )
-            return try await renderer.render()
+            let resolvedOutput = try await renderer.render()
+            writeNonSegmentMarkers(segment: segment, to: resolvedOutput, sourceSampleRate: sourceSampleRate)
+            return resolvedOutput
         }
 
         // Render to an intermediate WAV, then convert to target format.
@@ -139,7 +162,8 @@ public actor SegmentDivider {
             sourceURL: sourceURL,
             edit: edit,
             outputURL: tempURL,
-            fileConflictScheme: .overwrite
+            fileConflictScheme: .overwrite,
+            metadataCopyScheme: .copyTextAndAssets
         )
         try await renderer.render()
 
@@ -151,11 +175,36 @@ public actor SegmentDivider {
             input: tempURL,
             output: outputURL,
             options: convOptions,
-            metadataCopyScheme: .copyAll
+            metadataCopyScheme: .copyTextAndAssets
         )
         let converter = AudioFormatConverter(source: convSource)
         try await converter.start()
+        writeNonSegmentMarkers(segment: segment, to: convSource.output, sourceSampleRate: sourceSampleRate)
         return convSource.output
+    }
+
+    /// Filters ``markers`` to cue markers (no `endTime`) within `segment`'s time window,
+    /// shifts their times relative to the segment start, and writes them to `outputURL`.
+    private func writeNonSegmentMarkers(segment: TrimDescription, to outputURL: URL, sourceSampleRate: Double?) {
+        guard !markers.isEmpty else { return }
+        guard let outputType = AudioFileType(pathExtension: outputURL.pathExtension) else { return }
+
+        let inPoint = segment.inPoint
+        let outPoint = segment.outPoint
+
+        let adjusted: [AudioMarkerDescription] = markers.compactMap { desc in
+            guard desc.endTime == nil else { return nil }
+            guard desc.startTime >= inPoint else { return nil }
+            if outPoint > 0, desc.startTime >= outPoint { return nil }
+
+            var copy = desc
+            copy.startTime = max(0, desc.startTime - inPoint)
+            if copy.sampleRate == nil { copy.sampleRate = sourceSampleRate }
+            return copy
+        }
+
+        guard adjusted.isNotEmpty else { return }
+        AudioFormatConverter.writeMarkers(adjusted, to: outputURL, outputType: outputType)
     }
 
     /// Reads the source file once and computes the peak-normalizing gain for each segment.

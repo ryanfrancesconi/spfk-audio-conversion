@@ -4,6 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKAudioBase
 import SPFKBase
+import SPFKMetadata
 import SPFKTesting
 import Testing
 
@@ -132,6 +133,108 @@ class SegmentDividerTests: BinTestCase {
         let divider = SegmentDivider(sourceURL: dest, segments: silentSegments, outputDirectory: bin, options: options)
         let result = try await divider.divide()
         #expect(result.count == 1)
+    }
+
+    // MARK: - Markers
+
+    @Test("divide() does not copy source markers to output segments")
+    func markersNotCopiedToSegments() async throws {
+        let sourceURL = try makeSourceFile()
+
+        // Write "In NN" segment markers to the source so there is something to NOT copy.
+        let sourceMarkers = segments.asSegmentMarkers()
+        AudioFormatConverter.writeMarkers(sourceMarkers, to: sourceURL, outputType: .wav)
+
+        let sourceCollection = try await AudioMarkerDescriptionCollection(url: sourceURL)
+        #expect(sourceCollection.count == segments.count, "precondition: source must have markers")
+
+        var options = SegmentDividerOptions()
+        options.fileConflictScheme = .overwrite
+
+        let divider = SegmentDivider(sourceURL: sourceURL, segments: segments, outputDirectory: bin, options: options)
+        let result = try await divider.divide()
+
+        for url in result {
+            let collection = try await AudioMarkerDescriptionCollection(url: url)
+            #expect(collection.count == 0, "\(url.lastPathComponent): expected no markers, found \(collection.count)")
+        }
+    }
+
+    @Test("divide() writes cue markers to the segment they fall in, adjusted to segment-relative time")
+    func cueMarkersWrittenToMatchingSegment() async throws {
+        let sourceURL = try makeSourceFile()
+
+        // Cue marker inside segment 2 (0.3–0.4), one outside any segment, and a region
+        // marker that should never appear in output (region markers define boundaries).
+        let sourceMarkers: [AudioMarkerDescription] = [
+            AudioMarkerDescription(name: "Cue A", startTime: 0.35),
+            AudioMarkerDescription(name: "Cue B", startTime: 0.55),
+            AudioMarkerDescription(name: "Region", startTime: 0.3, endTime: 0.4, markerType: .region),
+        ]
+
+        var options = SegmentDividerOptions()
+        options.fileConflictScheme = .overwrite
+
+        let divider = SegmentDivider(
+            sourceURL: sourceURL,
+            segments: segments,
+            outputDirectory: bin,
+            options: options,
+            markers: sourceMarkers
+        )
+        let result = try await divider.divide()
+
+        // Segment 1 (0.0–0.1): no cues inside → no markers
+        let seg1 = try await AudioMarkerDescriptionCollection(url: result[0])
+        #expect(seg1.count == 0)
+
+        // Segment 2 (0.3–0.4): "Cue A" at 0.35 → adjusted to 0.05
+        let seg2 = try await AudioMarkerDescriptionCollection(url: result[1])
+        #expect(seg2.count == 1)
+        #expect(seg2.markerDescriptions[0].name == "Cue A")
+        #expect(abs(seg2.markerDescriptions[0].startTime - 0.05) < 0.001)
+
+        // Segment 3 (0.6–0.7): no cues inside → no markers
+        let seg3 = try await AudioMarkerDescriptionCollection(url: result[2])
+        #expect(seg3.count == 0)
+    }
+
+    @Test("divide() writes cue markers to converted output format (WAV → AIFF)")
+    func cueMarkersWrittenToConvertedOutput() async throws {
+        let sourceURL = try makeSourceFile()
+
+        let sourceMarkers: [AudioMarkerDescription] = [
+            AudioMarkerDescription(name: "Cue A", startTime: 0.35),
+            AudioMarkerDescription(name: "Region", startTime: 0.3, endTime: 0.4, markerType: .region),
+        ]
+
+        var options = SegmentDividerOptions()
+        options.outputFormat = .aiff
+        options.fileConflictScheme = .overwrite
+
+        let divider = SegmentDivider(
+            sourceURL: sourceURL,
+            segments: segments,
+            outputDirectory: bin,
+            options: options,
+            markers: sourceMarkers
+        )
+        let result = try await divider.divide()
+
+        #expect(result.count == segments.count)
+        #expect(result[1].pathExtension == "aiff")
+
+        // Segment 2 (0.3–0.4): "Cue A" at 0.35 → adjusted to 0.05
+        let seg2 = try await AudioMarkerDescriptionCollection(url: result[1])
+        #expect(seg2.count == 1)
+        #expect(seg2.markerDescriptions[0].name == "Cue A")
+        #expect(abs(seg2.markerDescriptions[0].startTime - 0.05) < 0.001)
+
+        // Segment 1 and 3: no cues inside → no markers
+        let seg1 = try await AudioMarkerDescriptionCollection(url: result[0])
+        #expect(seg1.count == 0)
+        let seg3 = try await AudioMarkerDescriptionCollection(url: result[2])
+        #expect(seg3.count == 0)
     }
 
     // MARK: - Output directory default

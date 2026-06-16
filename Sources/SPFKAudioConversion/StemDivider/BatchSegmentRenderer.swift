@@ -2,6 +2,7 @@
 
 import Foundation
 import SPFKAudioBase
+import SPFKMetadata
 
 /// Renders segments from multiple source files to a shared output directory.
 ///
@@ -10,27 +11,34 @@ import SPFKAudioBase
 ///
 /// ```swift
 /// let items = selectedElements.compactMap { element -> BatchSegmentRenderer.Item? in
-///     let segments = element.mafDescription.markerCollection.markerDescriptions
+///     let allMarkers = element.mafDescription.markerCollection.markerDescriptions
+///     let segments = allMarkers
 ///         .filter { $0.markerType == .region }
 ///         .compactMap { desc -> TrimDescription? in
 ///             guard let end = desc.endTime else { return nil }
 ///             return TrimDescription(inPoint: desc.startTime, outPoint: end)
 ///         }
 ///     guard !segments.isEmpty else { return nil }
-///     return BatchSegmentRenderer.Item(sourceURL: element.url, segments: segments)
+///     return BatchSegmentRenderer.Item(sourceURL: element.url, segments: segments, markers: allMarkers)
 /// }
 /// let renderer = BatchSegmentRenderer(items: items, outputDirectory: dir, options: opts)
 /// let total = try await renderer.render()
 /// ```
 public struct BatchSegmentRenderer: Sendable {
     /// A single source file paired with its detected segment boundaries.
+    ///
+    /// Pass all source markers in ``markers``; ``SegmentDivider`` will write only the cue markers
+    /// (those without an `endTime`) that fall within each segment's time window.
     public struct Item: Sendable {
         public let sourceURL: URL
         public let segments: [TrimDescription]
+        /// All markers from the source file. Cue markers are routed to the matching output segment.
+        public let markers: [AudioMarkerDescription]
 
-        public init(sourceURL: URL, segments: [TrimDescription]) {
+        public init(sourceURL: URL, segments: [TrimDescription], markers: [AudioMarkerDescription] = []) {
             self.sourceURL = sourceURL
             self.segments = segments
+            self.markers = markers
         }
     }
 
@@ -62,7 +70,8 @@ public struct BatchSegmentRenderer: Sendable {
                 sourceURL: item.sourceURL,
                 segments: item.segments,
                 outputDirectory: outputDirectory,
-                options: options
+                options: options,
+                markers: item.markers
             )
             let urls = try await divider.divide()
             outputURLs.append(contentsOf: urls)

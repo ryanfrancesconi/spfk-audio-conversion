@@ -32,16 +32,21 @@ public actor AudioEditRenderer {
     /// Determines how to handle an existing file at ``outputURL``. Defaults to `.error`.
     public var fileConflictScheme: FileConflictScheme
 
+    /// Controls which metadata categories are copied from source to output. Defaults to `.copyAll`.
+    public var metadataCopyScheme: MetadataCopyScheme
+
     public init(
         sourceURL: URL,
         edit: AudioEditDescription,
         outputURL: URL,
-        fileConflictScheme: FileConflictScheme = .error
+        fileConflictScheme: FileConflictScheme = .error,
+        metadataCopyScheme: MetadataCopyScheme = .copyAll
     ) {
         self.sourceURL = sourceURL
         self.edit = edit
         self.outputURL = outputURL
         self.fileConflictScheme = fileConflictScheme
+        self.metadataCopyScheme = metadataCopyScheme
     }
 
     /// Applies the edit and writes the processed audio to the output URL.
@@ -80,13 +85,13 @@ public actor AudioEditRenderer {
             input: sourceURL,
             output: resolvedOutput,
             options: AudioFormatConverterOptions(),
-            metadataCopyScheme: .copyAll
+            metadataCopyScheme: metadataCopyScheme
         )
         await AudioFormatConverter(source: convSource).copyMetadata()
 
         // Re-write markers adjusted for the trim range, overwriting the unadjusted markers
         // that copyMetadata wrote above.
-        if edit.trim.inPoint > 0 || edit.trim.outPoint > 0 {
+        if metadataCopyScheme.includesMarkers, edit.trim.inPoint > 0 || edit.trim.outPoint > 0 {
             await adjustAndWriteMarkers(to: resolvedOutput)
         }
 
