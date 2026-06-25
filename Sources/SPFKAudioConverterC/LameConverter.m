@@ -61,7 +61,7 @@
     }
 
     // Open output MP3 file
-    FILE *mp3File = fopen(output.UTF8String, "wb");
+    FILE *mp3File = fopen(output.UTF8String, "w+b");
     if (mp3File == NULL) {
         lame_close(lame);
         sf_close(inFile);

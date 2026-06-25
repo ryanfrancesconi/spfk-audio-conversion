@@ -89,10 +89,12 @@ extension AudioFormatConverter {
         }
 
         let converter = LameConverter()
+        let bitRate = Int32(source.options.bitRate / 1000)
+
         let status = converter.convert(
             toMP3: inputURL.path,
             output: source.output.path,
-            bitRate: Int32(source.options.bitRate / 1000),
+            bitRate: bitRate,
             quality: 2
         )
 
@@ -194,7 +196,7 @@ extension AudioFormatConverter {
             needsResample = false
         }
 
-        if supportedInput && supportedChannels && !needsResample {
+        if supportedInput, supportedChannels, !needsResample {
             return source.input
         }
 

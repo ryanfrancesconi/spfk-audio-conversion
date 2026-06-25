@@ -66,7 +66,21 @@ public actor AudioEditRenderer {
         }
 
         let audioFile = try AVAudioFile(forReading: sourceURL)
-        let frameCapacity = AVAudioFrameCount(audioFile.length)
+
+        print("AudioEditRenderer: audioFile.length=\(audioFile.length) fileFormat=\(audioFile.fileFormat) processingFormat=\(audioFile.processingFormat)")
+
+        // AVAudioFile.length returns 0 for some compressed formats (e.g. MP3) because
+        // MPEG audio doesn't store a reliable frame count. Fall back to the asset duration.
+        let frameCapacity: AVAudioFrameCount
+        if audioFile.length > 0 {
+            frameCapacity = AVAudioFrameCount(audioFile.length)
+        } else {
+            let asset = AVURLAsset(url: sourceURL)
+            let duration = try await asset.load(.duration)
+            frameCapacity = AVAudioFrameCount(ceil(duration.seconds * audioFile.processingFormat.sampleRate))
+        }
+
+        print("AudioEditRenderer: frameCapacity=\(frameCapacity)")
 
         guard let buffer = AVAudioPCMBuffer(
             pcmFormat: audioFile.processingFormat,
@@ -77,7 +91,19 @@ public actor AudioEditRenderer {
 
         try audioFile.read(into: buffer)
 
+        print("AudioEditRenderer: buffer.frameLength=\(buffer.frameLength) buffer.format=\(buffer.format)")
+
+        guard buffer.frameLength > 0 else {
+            throw NSError(description: "Read 0 frames from \(sourceURL.lastPathComponent)")
+        }
+
         let processed = try buffer.applying(edit)
+
+        print("AudioEditRenderer: processed.frameLength=\(processed.frameLength)")
+
+        guard processed.frameLength > 0 else {
+            throw NSError(description: "Edit produced 0 frames from \(sourceURL.lastPathComponent) — trim range may be outside file bounds")
+        }
 
         try await write(processed, fileFormat: audioFile.fileFormat, to: resolvedOutput) // error here for large mp4
 
@@ -172,24 +198,33 @@ public actor AudioEditRenderer {
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("wav")
 
+        print("AudioEditRenderer.writeViaIntermediateWAV: buffer.frameLength=\(buffer.frameLength) sampleRate(fileFormat)=\(sampleRate) buffer.format.sampleRate=\(buffer.format.sampleRate) channels=\(buffer.format.channelCount) tempURL=\(tempURL.path)")
+
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
-        let wavSettings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: sampleRate,
-            AVNumberOfChannelsKey: Int(buffer.format.channelCount),
-            AVLinearPCMBitDepthKey: 32,
-            AVLinearPCMIsFloatKey: true,
-            AVLinearPCMIsBigEndianKey: false,
-        ]
+        // Scope tempFile so AVAudioFile is deallocated (and the WAV RIFF header finalized)
+        // before the converter opens the file. Without this, libsndfile reads the RIFF
+        // data-chunk size as 0 because AVAudioFile only writes it on close.
+        do {
+            let wavSettings: [String: Any] = [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: sampleRate,
+                AVNumberOfChannelsKey: Int(buffer.format.channelCount),
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+            ]
 
-        let tempFile = try AVAudioFile(
-            forWriting: tempURL,
-            settings: wavSettings,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
-        )
-        try tempFile.write(from: buffer)
+            let tempFile = try AVAudioFile(
+                forWriting: tempURL,
+                settings: wavSettings,
+                commonFormat: .pcmFormatFloat32,
+                interleaved: false
+            )
+            try tempFile.write(from: buffer)
+
+            print("AudioEditRenderer.writeViaIntermediateWAV: tempFile.length=\(tempFile.length) tempURL.exists=\(tempURL.exists)")
+        }
 
         let convSource = AudioFormatConverterSource(
             input: tempURL,
@@ -197,7 +232,12 @@ public actor AudioEditRenderer {
             options: AudioFormatConverterOptions(),
             metadataCopyScheme: .ignore
         )
+
+        print("AudioEditRenderer.writeViaIntermediateWAV: starting converter input=\(tempURL.lastPathComponent) output=\(url.lastPathComponent)")
+
         try await AudioFormatConverter(source: convSource).start()
+
+        print("AudioEditRenderer.writeViaIntermediateWAV: converter done output.exists=\(url.exists)")
     }
 
     private static func isDirectlyWritable(url: URL) -> Bool {

@@ -197,6 +197,25 @@ class AudioEditRendererTests: BinTestCase {
         #expect(resultURL.exists)
     }
 
+    // MARK: - MP3 source → MP3 output
+
+    /// Trim an MP3 source and write back to MP3 — the actual failing scenario in the app.
+    /// Regression: output was 0-length or corrupted because the trim path was not tested.
+    @Test func renderMP3TrimToMP3ProducesNonEmptyFile() async throws {
+        let source = TestBundleResources.shared.mp3_id3
+        let output = bin.appending(component: "render_mp3_trim_out.mp3", directoryHint: .notDirectory)
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 0.5, outPoint: 2.0)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let result = try AVAudioFile(forReading: output)
+        #expect(result.length > 0, "MP3 trim output must contain audio frames; got length=\(result.length)")
+    }
+
     // MARK: - Metadata preservation
 
     /// mp3_id3 has embedded artwork (600×592). Rendering should preserve the image.
