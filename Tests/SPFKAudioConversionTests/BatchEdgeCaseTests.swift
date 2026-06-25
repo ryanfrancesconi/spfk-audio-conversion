@@ -91,7 +91,7 @@ class BatchEdgeCaseTests: BinTestCase {
     // MARK: - .unique conflict scheme in batch
 
     @Test func batchUniqueSchemeRenamesEachConflictingOutput() async throws {
-        deleteBinOnExit = false
+        deleteBinOnExit = true
 
         let inputs = TestBundleResources.shared.formats
 
