@@ -216,6 +216,29 @@ class AudioEditRendererTests: BinTestCase {
         #expect(result.length > 0, "MP3 trim output must contain audio frames; got length=\(result.length)")
     }
 
+    // MARK: - Trim across formats
+
+    /// Verifies that trim-to-same-format produces a non-empty file for every format in
+    /// TestBundleResources.formats. Covers the regression where MP3 trim produced a 0-length
+    /// output due to an unfinalised WAV RIFF header in the intermediate write path.
+    @Test(arguments: TestBundleResources.shared.formats)
+    func renderTrimToSameFormatProducesNonEmptyFile(source: URL) async throws {
+        let ext = source.pathExtension
+        let output = bin.appending(
+            component: "render_trim_\(source.deletingPathExtension().lastPathComponent)_out.\(ext)",
+            directoryHint: .notDirectory
+        )
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 0.5, outPoint: 2.0)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let result = try AVAudioFile(forReading: output)
+        #expect(result.length > 0, "Trim output must contain audio frames for .\(ext); got length=\(result.length)")
+    }
+
     // MARK: - Metadata preservation
 
     /// mp3_id3 has embedded artwork (600×592). Rendering should preserve the image.
@@ -320,5 +343,32 @@ class AudioEditRendererTests: BinTestCase {
         let readBack = try TagPictureRef.parsing(url: output)
         #expect(readBack.cgImage.width == expectedWidth)
         #expect(readBack.cgImage.height == expectedHeight)
+    }
+
+    // MARK: - XMP handling
+
+    /// XMP lives in an ID3 PRIV frame. AudioEditRenderer routes through AudioFormatConverter
+    /// which copies tags via TagLib's PropertyMap only — PRIV frames are not in the PropertyMap,
+    /// so XMP is stripped. This test documents that current behavior.
+    ///
+    /// When XMP copy is added at a higher layer (outside spfk-audio-conversion), update this expectation.
+    @Test func renderStripsXMPFromMP3() async throws {
+        let source = TestBundleResources.shared.mp3_xmp
+        let output = bin.appending(component: "render_xmp_strip_out.mp3", directoryHint: .notDirectory)
+
+        let sourceID3 = ID3File(path: source.path)
+        try #require(sourceID3.load())
+        try #require(sourceID3[id3: .private] != nil, "Precondition: mp3_xmp must have a PRIV (XMP) frame")
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(fade: FadeDescription(inTime: 0.01)),
+            outputURL: output
+        )
+        try await renderer.render()
+
+        let outputID3 = ID3File(path: output.path)
+        #expect(outputID3.load())
+        #expect(outputID3[id3: .private] == nil, "XMP PRIV frame is stripped — copyTags only copies the PropertyMap")
     }
 }

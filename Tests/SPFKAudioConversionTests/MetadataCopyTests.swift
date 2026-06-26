@@ -155,4 +155,25 @@ class MetadataCopyTests: BinTestCase {
         let chapters = XiphChapterUtil.read(output.path) as? [ChapterMarker] ?? []
         #expect(chapters.count == 3)
     }
+
+    // MARK: - XMP handling
+
+    /// XMP lives in an ID3 PRIV frame. TagLibBridge.copyTags copies TagLib's PropertyMap only;
+    /// PRIV frames are not in the PropertyMap, so copyAll does not preserve XMP.
+    /// This test documents that current behavior.
+    ///
+    /// When XMP copy is added at a higher layer (outside spfk-audio-conversion), update this expectation.
+    @Test func copyAllStripsXMPFromMP3() async throws {
+        let input = TestBundleResources.shared.mp3_xmp
+
+        let sourceID3 = ID3File(path: input.path)
+        try #require(sourceID3.load())
+        try #require(sourceID3[id3: .private] != nil, "Precondition: mp3_xmp must have a PRIV (XMP) frame")
+
+        let output = try await convert(input: input, outputExtension: "mp3")
+
+        let outputID3 = ID3File(path: output.path)
+        #expect(outputID3.load())
+        #expect(outputID3[id3: .private] == nil, "XMP PRIV frame is stripped — TagLibBridge.copyTags only copies the PropertyMap")
+    }
 }
