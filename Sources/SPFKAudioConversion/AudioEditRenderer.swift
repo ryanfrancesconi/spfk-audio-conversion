@@ -67,8 +67,6 @@ public actor AudioEditRenderer {
 
         let audioFile = try AVAudioFile(forReading: sourceURL)
 
-        print("AudioEditRenderer: audioFile.length=\(audioFile.length) fileFormat=\(audioFile.fileFormat) processingFormat=\(audioFile.processingFormat)")
-
         // AVAudioFile.length returns 0 for some compressed formats (e.g. MP3) because
         // MPEG audio doesn't store a reliable frame count. Fall back to the asset duration.
         let frameCapacity: AVAudioFrameCount
@@ -80,8 +78,6 @@ public actor AudioEditRenderer {
             frameCapacity = AVAudioFrameCount(ceil(duration.seconds * audioFile.processingFormat.sampleRate))
         }
 
-        print("AudioEditRenderer: frameCapacity=\(frameCapacity)")
-
         guard let buffer = AVAudioPCMBuffer(
             pcmFormat: audioFile.processingFormat,
             frameCapacity: frameCapacity
@@ -91,15 +87,13 @@ public actor AudioEditRenderer {
 
         try audioFile.read(into: buffer)
 
-        print("AudioEditRenderer: buffer.frameLength=\(buffer.frameLength) buffer.format=\(buffer.format)")
-
         guard buffer.frameLength > 0 else {
             throw NSError(description: "Read 0 frames from \(sourceURL.lastPathComponent)")
         }
 
-        let processed = try buffer.applying(edit)
-
-        print("AudioEditRenderer: processed.frameLength=\(processed.frameLength)")
+        let fileDuration = Double(buffer.frameLength) / audioFile.processingFormat.sampleRate
+        let safeEdit = edit.clampingFadesToTrim(fileDuration: fileDuration)
+        let processed = try buffer.applying(safeEdit)
 
         guard processed.frameLength > 0 else {
             throw NSError(description: "Edit produced 0 frames from \(sourceURL.lastPathComponent) — trim range may be outside file bounds")
@@ -260,7 +254,7 @@ public actor AudioEditRenderer {
         guard collection.count > 0 else { return }
 
         let inPoint = edit.trim.inPoint
-        let outPoint = edit.trim.outPoint  // 0 means "keep to end"
+        let outPoint = edit.trim.outPoint // 0 means "keep to end"
 
         let adjusted: [AudioMarkerDescription] = collection.markerDescriptions.compactMap { desc in
             guard desc.startTime >= inPoint else { return nil }
