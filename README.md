@@ -1,6 +1,6 @@
 # SPFKAudioConversion
 
-[![CI](https://github.com/ryanfrancesconi/spfk-audio-conversion/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/ryanfrancesconi/spfk-audio-conversion/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/ryanfrancesconi/spfk-audio-conversion/ci.yml?branch=development)](https://github.com/ryanfrancesconi/spfk-audio-conversion/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/tag/ryanfrancesconi/spfk-audio-conversion)](https://github.com/ryanfrancesconi/spfk-audio-conversion/tags)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
