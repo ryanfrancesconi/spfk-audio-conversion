@@ -12,7 +12,7 @@ import SPFKAudioConverterC
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class ConversionPathTests: BinTestCase {
     // MARK: - convertToWave convenience
 

@@ -11,7 +11,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class MetadataCopyTests: BinTestCase {
     // MARK: - Helpers
 

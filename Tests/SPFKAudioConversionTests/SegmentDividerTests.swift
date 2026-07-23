@@ -10,7 +10,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class SegmentDividerTests: BinTestCase {
     // Three equal-length segments separated by silence: audio, silence, audio, silence, audio
     // Total: 3 × 4410 audio + 2 × 8820 silence = 30870 frames at 44100 Hz (~0.7 s)

@@ -7,7 +7,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class AudioFormatConverterTests: BinTestCase {
     func convert(input: URL, output: URL, options: AudioFormatConverterOptions?, expectedDuration: TimeInterval)
         async throws

@@ -9,7 +9,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class BatchAudioFormatConverterTests: BinTestCase {
     @Test func convertAll() async throws {
         let sources = TestBundleResources.shared.audioCases.map {

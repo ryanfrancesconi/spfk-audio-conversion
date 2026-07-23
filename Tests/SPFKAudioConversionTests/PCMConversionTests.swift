@@ -9,7 +9,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class PCMConversionTests: BinTestCase {
     // MARK: - Sample rate conversion
 

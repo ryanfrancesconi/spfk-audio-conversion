@@ -8,7 +8,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class AssetWriterErrorTests: BinTestCase {
     // MARK: - Nil format throws
 

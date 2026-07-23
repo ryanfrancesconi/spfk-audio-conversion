@@ -9,7 +9,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class BatchEdgeCaseTests: BinTestCase {
     // MARK: - Empty batch
 

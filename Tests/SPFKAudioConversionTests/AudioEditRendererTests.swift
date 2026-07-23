@@ -12,7 +12,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-@Suite(.serialized, .tags(.file))
+@Suite(.tags(.file))
 class AudioEditRendererTests: BinTestCase {
     // MARK: - Helpers
 
