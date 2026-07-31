@@ -3,6 +3,7 @@
 import Foundation
 import SPFKAudioBase
 import SPFKMetadata
+import SPFKBase
 
 /// Renders segments from multiple source files to a shared output directory.
 ///
