@@ -156,8 +156,10 @@ extension AudioFormatConverter {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 
-        case .m4a, .mp4, .aac, .m4b:
-            // Nero chpl chapters via TagLib MP4ChapterList
+        case .m4a, .mp4, .aac, .m4b, .mov, .m4v:
+            // QuickTime chapter track via TagLib MP4ChapterList — the native marker format for
+            // mov as much as for the MP4 family. Kept in step with `saveMarkers()` in
+            // spfk-metadata and the reader in `AudioMarkerDescriptionCollection`.
             let chapters = descriptions.map { desc in
                 ChapterMarker(
                     name: desc.name ?? "Chapter",
