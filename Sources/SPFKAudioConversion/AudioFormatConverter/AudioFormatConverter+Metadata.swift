@@ -107,7 +107,13 @@ extension AudioFormatConverter {
     /// Writes an array of marker descriptions to the given URL using the format-appropriate
     /// marker writing utility. Called by `copyMarkers` and by `AudioEditRenderer` after
     /// adjusting marker times to account for trim operations.
-    static func writeMarkers(
+    /// Writes markers to an existing file, dispatching on `outputType`.
+    ///
+    /// Public because it is the one entry point that writes markers *without* touching anything
+    /// else — going through `MetaAudioFileDescription.save(dirtyFlags: [.markers])` instead would
+    /// run `tagProperties.save` on the way, and a caller that only has markers in hand would
+    /// strip the file's tags doing it.
+    public static func writeMarkers(
         _ descriptions: [AudioMarkerDescription],
         to url: URL,
         outputType: AudioFileType
