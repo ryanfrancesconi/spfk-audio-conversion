@@ -18,38 +18,9 @@ import SPFKMatroska
 /// suits the callers — a waveform scan reads front to back — and avoids holding a whole film's
 /// audio in memory, which at 48kHz stereo float is roughly 1.4GB per hour.
 public final class MatroskaAudioDecoder {
-    /// Codecs this decoder can hand to `AVAudioConverter`.
-    ///
-    /// Deliberately a small set. Matroska admits codecs macOS has no decoder for (DTS, and TrueHD
-    /// among others), and a caller needs "cannot decode this" to be an answer rather than silence.
-    public enum Codec: String, Sendable, CaseIterable {
-        case aac = "A_AAC"
-        case mp3 = "A_MPEG/L3"
-        case ac3 = "A_AC3"
-        case flac = "A_FLAC"
-        case pcmIntegerLittleEndian = "A_PCM/INT/LIT"
-
-        var formatID: AudioFormatID {
-            switch self {
-            case .aac: kAudioFormatMPEG4AAC
-            case .mp3: kAudioFormatMPEGLayer3
-            case .ac3: kAudioFormatAC3
-            case .flac: kAudioFormatFLAC
-            case .pcmIntegerLittleEndian: kAudioFormatLinearPCM
-            }
-        }
-
-        /// Frames per compressed packet, which the converter needs up front because a compressed
-        /// format cannot state bytes-per-frame.
-        var framesPerPacket: UInt32 {
-            switch self {
-            case .aac: 1024
-            case .mp3: 1152
-            case .ac3: 1536
-            case .flac, .pcmIntegerLittleEndian: 0
-            }
-        }
-    }
+    /// The codec table moved to `spfk-matroska` (2026-08-06) once the sample-buffer path needed
+    /// the same mapping — one table rather than two that drift.
+    public typealias Codec = MatroskaAudioCodec
 
     public let url: URL
 
