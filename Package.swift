@@ -16,6 +16,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "1.2.2"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-audio-base", from: "1.6.1"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-matroska", from: "1.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "1.5.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-lame", from: "1.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "1.1.0"),
@@ -48,6 +49,7 @@ let package = Package(
                 "SPFKAudioConverterC",
                 .product(name: "SPFKBase", package: "spfk-base"),
                 .product(name: "SPFKAudioBase", package: "spfk-audio-base"),
+                .product(name: "SPFKMatroska", package: "spfk-matroska"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
                 .product(name: "SPFKUtils", package: "spfk-utils"),
             ],
