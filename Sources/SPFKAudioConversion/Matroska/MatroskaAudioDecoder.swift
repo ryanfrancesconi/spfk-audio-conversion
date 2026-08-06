@@ -60,10 +60,37 @@ public final class MatroskaAudioDecoder {
     /// which is what the waveform and the audio engine both consume.
     public let processingFormat: AVAudioFormat
 
+    /// The demuxed file's headers, so a caller reading PCM can still ask what it is reading.
+    public var file: MatroskaFile { reader.file }
+
     private let reader: MatroskaFrameReader
     private let compressedFormat: AVAudioFormat
     private let converter: AVAudioConverter
     private var reachedEnd = false
+
+    /// Decoder output not yet handed to a caller, and how far into it we have got. The decoder
+    /// emits whatever a whole number of packets produced; callers ask for an exact frame count, so
+    /// the remainder has to be held between calls.
+    private var pending: AVAudioPCMBuffer?
+
+    var pendingOffset: AVAudioFrameCount = 0
+
+    /// The buffer to read from next, decoding another if the held one is spent. `nil` at the end.
+    func pendingBuffer() throws -> AVAudioPCMBuffer? {
+        if let pending, pendingOffset < pending.frameLength {
+            return pending
+        }
+
+        pending = try nextBuffer()
+        pendingOffset = 0
+
+        return pending
+    }
+
+    func clearPending() {
+        pending = nil
+        pendingOffset = 0
+    }
 
     /// Opens `url` and prepares to decode its first audio track.
     ///
