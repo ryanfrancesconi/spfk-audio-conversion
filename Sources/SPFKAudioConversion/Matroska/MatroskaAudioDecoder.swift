@@ -160,16 +160,18 @@ public final class MatroskaAudioDecoder {
             throw MatroskaAudioDecoderError.bufferAllocationFailed
         }
 
-        var demuxError: (any Error)?
+        // `AVAudioConverter` calls the input block synchronously on this thread and is done with it
+        // by the time `convert` returns -- nothing escapes and nothing runs concurrently. The block
+        // is typed `@Sendable` regardless, which the compiler cannot reconcile with a decoder
+        // holding a file position. `nonisolated(unsafe)` states that invariant, rather than
+        // declaring the decoder `Sendable`, which it genuinely is not: two threads pulling from one
+        // would interleave their reads of the same file.
+        nonisolated(unsafe) let source = self
+        nonisolated(unsafe) var demuxError: (any Error)?
 
-        let status = converter.convert(to: output, error: nil) { [weak self] _, statusOut in
-            guard let self else {
-                statusOut.pointee = .endOfStream
-                return nil
-            }
-
+        let status = converter.convert(to: output, error: nil) { _, statusOut in
             do {
-                guard let packet = try nextPacket() else {
+                guard let packet = try source.nextPacket() else {
                     statusOut.pointee = .endOfStream
                     return nil
                 }
