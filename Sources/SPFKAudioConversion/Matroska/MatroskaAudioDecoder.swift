@@ -184,9 +184,11 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
 
     /// Repositions so the next read starts at `frame`.
     ///
-    /// - Throws: ``MatroskaError`` if the container cannot be re-read at all, or
-    ///   ``MatroskaError/noSeekIndex(_:)`` for a **backward** seek in a file with no `Cues` — see
-    ///   the fallback below. Forward seeks always succeed.
+    /// A file with no `Cues` index still seeks, by decoding up to the target — see the fallback
+    /// below. That costs time proportional to the distance, so it is O(1) on an indexed file and
+    /// O(target) on one without.
+    ///
+    /// - Throws: ``MatroskaError`` if the container cannot be re-read at all.
     public func seek(toFrame frame: AVAudioFramePosition) throws {
         let target = max(0, frame)
         let targetTime = Double(target) / processingFormat.sampleRate
@@ -194,19 +196,27 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
         do {
             try reader.seek(to: max(0, targetTime - Self.seekPreroll), trackNumber: track.number)
 
-        } catch let MatroskaError.noSeekIndex(url) {
-            // With no `Cues` there is nothing to look a position up in. Forward is still reachable
-            // by decoding on from where the run already is, which costs the seek distance and no
-            // more. Backward is not: it means reopening and decoding from zero, so a scrub near the
-            // end of a feature-length track stalls the caller for minutes — indistinguishable from
-            // a hang, and on the feed task it *is* one. Refuse and let the caller disable scrubbing
-            // rather than appear to freeze.
-            guard target >= framePosition else {
-                throw MatroskaError.noSeekIndex(url)
+        } catch MatroskaError.noSeekIndex {
+            // With no `Cues` there is nothing to look a position up in, so the only way to a
+            // position is to decode up to it. **The cost is the distance, not the direction**:
+            // forward continues from where the run already is, backward has to reopen and start
+            // over, so a seek back to the top of a selection near the start of a file is nearly
+            // free while one near the end of a long file is not.
+            //
+            // This deliberately does *not* refuse. A version that threw on any backward seek was
+            // wrong on ordinary use, not just on scrubbing: pressing play with a selection seeks
+            // back to its in-point, and so does playing the same file twice — both failed on every
+            // indexless `.mkv`, which is most of them.
+            guard target < framePosition else {
+                // Already before the target, so the run can simply decode on to it — no restart,
+                // and none of the state below needs clearing.
+                try discardForward(to: target)
+                return
             }
 
-            try discardForward(to: target)
-            return
+            // Reopened rather than rewound, because the walk holds a parsed position rather than an
+            // offset. Falls through to the shared reset below.
+            reader = try MatroskaFrameReader(url: url)
         }
 
         converter.reset()
@@ -320,7 +330,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
         // holding a file position. `nonisolated(unsafe)` states that invariant, rather than
         // declaring the decoder `Sendable`, which it genuinely is not: two threads pulling from one
         // would interleave their reads of the same file.
-        nonisolated(unsafe) let source = self
+        let source = self
         nonisolated(unsafe) var demuxError: (any Error)?
 
         let status = converter.convert(to: output, error: nil) { _, statusOut in
