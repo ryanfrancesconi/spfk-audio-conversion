@@ -150,21 +150,23 @@ AudioFormatConverter.start()
   |-- PCM in, M4A out   --> AssetWriter            [AVFoundation]
   |-- Compressed in/out --> convertCompressed()     [intermediate PCM + target encoder]
 
-SPFKAudioConverterC (ObjC target)
-  |-- LameConverter      LAME encoder + mpg123 decoder
-  |-- SndFileConverter   libsndfile for FLAC/OGG + file info queries
-
-Matroska/
-  |-- MatroskaAudioDecoder      Demuxed blocks --> PCM, seekable by frame
-  |-- MatroskaPCMBlockReader    Uncompressed tracks, widened to float with no converter
-  |-- +WaveformPCMSource        Conformance that lets a waveform parse a container
-                                AVFoundation cannot open
-
-BatchAudioFormatConverter
-  |-- Structured concurrency with batchMap
-  |-- Sliding window of 8 concurrent conversions
-  |-- Per-file progress via BatchAudioFormatConverterDelegate
 ```
+
+`LameConverter` and `SndFileConverter` are the two encoders in the ObjC target, wrapping LAME +
+mpg123 and libsndfile respectively.
+
+`BatchAudioFormatConverter` runs the above under structured concurrency, with a sliding window of
+8 concurrent conversions and per-file progress through `BatchAudioFormatConverterDelegate`.
+
+### Matroska
+
+`MatroskaAudioDecoder` turns demuxed blocks into PCM and seeks by frame.
+`MatroskaPCMBlockReader` handles uncompressed tracks, widening to float with no converter in the
+path — the data is already PCM, so putting `AVAudioConverter` in front of it would only add a
+place to go wrong.
+
+`MatroskaAudioDecoder+WaveformPCMSource` is the conformance that lets a waveform parse a container
+AVFoundation cannot open.
 
 ## Dependencies
 
