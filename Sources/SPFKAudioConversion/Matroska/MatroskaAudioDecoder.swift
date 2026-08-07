@@ -44,9 +44,24 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     /// Reopened rather than mutated when a file with no `Cues` index has to be rewound — hence
     /// `var`. See ``seek(toFrame:)``.
     private var reader: MatroskaFrameReader
-    private let compressedFormat: AVAudioFormat
-    private let converter: AVAudioConverter
+
+    /// How this track's blocks become PCM. A compressed codec goes through Core Audio; a PCM track
+    /// is already what the caller asked for and only needs its samples widened to float.
+    private enum Path {
+        case converter(AVAudioConverter, compressedFormat: AVAudioFormat)
+        case pcm(MatroskaPCMBlockReader)
+    }
+
+    private let path: Path
     private var reachedEnd = false
+
+    /// Packets handed to the converter, and frames it gave back, over the decoder's whole life.
+    ///
+    /// A stream description with the wrong packet length or source depth builds a converter that
+    /// consumes packets, emits nothing, and reports success — so an empty result is only believable
+    /// when there was nothing to decode. See ``endOfStream()``.
+    private var suppliedPacketCount = 0
+    private var producedFrameCount: AVAudioFramePosition = 0
 
     /// Decoder output not yet handed to a caller, and how far into it we have got. The decoder
     /// emits whatever a whole number of packets produced; callers ask for an exact frame count, so
@@ -83,6 +98,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     private func clearPending() {
         pending = nil
         pendingOffset = 0
+        pcmRemainder = nil
     }
 
     // MARK: - Position
@@ -219,7 +235,10 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
             reader = try MatroskaFrameReader(url: url)
         }
 
-        converter.reset()
+        if case let .converter(converter, _) = path {
+            converter.reset()
+        }
+
         clearPending()
 
         reachedEnd = false
@@ -279,22 +298,6 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
 
         self.track = track
 
-        var description = AudioStreamBasicDescription(
-            mSampleRate: parameters.sampleRate,
-            mFormatID: codec.formatID,
-            mFormatFlags: 0,
-            mBytesPerPacket: 0,
-            mFramesPerPacket: codec.framesPerPacket,
-            mBytesPerFrame: 0,
-            mChannelsPerFrame: UInt32(parameters.channelCount),
-            mBitsPerChannel: 0,
-            mReserved: 0
-        )
-
-        guard let compressedFormat = AVAudioFormat(streamDescription: &description) else {
-            throw MatroskaAudioDecoderError.unsupportedCodec(track.codecID)
-        }
-
         guard let processingFormat = AVAudioFormat(
             standardFormatWithSampleRate: parameters.sampleRate,
             channels: AVAudioChannelCount(parameters.channelCount)
@@ -302,13 +305,35 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
             throw MatroskaAudioDecoderError.unsupportedCodec(track.codecID)
         }
 
+        self.processingFormat = processingFormat
+
+        if codec.pcmSampleFormat != nil {
+            guard let blockReader = MatroskaPCMBlockReader(track: track) else {
+                throw MatroskaAudioDecoderError.unsupportedCodec(track.codecID)
+            }
+
+            path = .pcm(blockReader)
+            return
+        }
+
+        // The description comes from `spfk-matroska` rather than being rebuilt here: FLAC's packet
+        // length and source depth are read from the file, and a second copy of that reading is how
+        // one path decodes and the other returns silence.
+        let formatDescription: CMAudioFormatDescription
+
+        do {
+            formatDescription = try track.makeAudioFormatDescription()
+        } catch {
+            throw MatroskaAudioDecoderError.unsupportedCodec(track.codecID)
+        }
+
+        let compressedFormat = AVAudioFormat(cmAudioFormatDescription: formatDescription)
+
         guard let converter = AVAudioConverter(from: compressedFormat, to: processingFormat) else {
             throw MatroskaAudioDecoderError.decoderUnavailable(track.codecID)
         }
 
-        self.compressedFormat = compressedFormat
-        self.processingFormat = processingFormat
-        self.converter = converter
+        path = .converter(converter, compressedFormat: compressedFormat)
     }
 
     /// Decodes up to `frameCapacity` frames, or `nil` once the track is exhausted.
@@ -324,6 +349,10 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
             throw MatroskaAudioDecoderError.bufferAllocationFailed
         }
 
+        guard case let .converter(converter, compressedFormat) = path else {
+            return try nextPCMBuffer(into: output)
+        }
+
         // `AVAudioConverter` calls the input block synchronously on this thread and is done with it
         // by the time `convert` returns -- nothing escapes and nothing runs concurrently. The block
         // is typed `@Sendable` regardless, which the compiler cannot reconcile with a decoder
@@ -335,7 +364,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
 
         let status = converter.convert(to: output, error: nil) { _, statusOut in
             do {
-                guard let packet = try source.nextPacket() else {
+                guard let packet = try source.nextPacket(format: compressedFormat) else {
                     statusOut.pointee = .endOfStream
                     return nil
                 }
@@ -354,9 +383,11 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
             throw demuxError
         }
 
+        producedFrameCount += AVAudioFramePosition(output.frameLength)
+
         switch status {
         case .endOfStream:
-            reachedEnd = true
+            try endOfStream()
             return output.frameLength > 0 ? output : nil
 
         case .error:
@@ -367,9 +398,22 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
         }
     }
 
-    /// The next compressed packet for this track, skipping the interleaved video and subtitle
-    /// frames the demuxer hands back alongside it.
-    private func nextPacket() throws -> AVAudioCompressedBuffer? {
+    /// Marks the track exhausted, refusing a run that decoded nothing out of packets that existed.
+    ///
+    /// Core Audio reports a stream description it cannot make sense of by consuming every packet
+    /// and producing no audio, with no error at any point — so silence is the only symptom, and this
+    /// is the only place it can be caught.
+    private func endOfStream() throws {
+        reachedEnd = true
+
+        guard suppliedPacketCount > 0, producedFrameCount == 0 else { return }
+
+        throw MatroskaAudioDecoderError.decodeFailed(url)
+    }
+
+    /// The next frame belonging to this track, skipping the interleaved video and subtitle frames
+    /// the demuxer hands back alongside it.
+    private func nextTrackFrame() throws -> MatroskaFrame? {
         while let frame = try reader.nextFrame() {
             guard frame.trackNumber == track.number, frame.data.isEmpty == false else {
                 continue
@@ -382,34 +426,105 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
                 runOriginFrame = AVAudioFramePosition((frame.timestamp * processingFormat.sampleRate).rounded())
             }
 
-            let byteCount = frame.data.count
-
-            let buffer = AVAudioCompressedBuffer(
-                format: compressedFormat,
-                packetCapacity: 1,
-                maximumPacketSize: byteCount
-            )
-
-            frame.data.withUnsafeBytes { bytes in
-                guard let base = bytes.baseAddress else { return }
-                buffer.data.copyMemory(from: base, byteCount: byteCount)
-            }
-
-            buffer.byteLength = UInt32(byteCount)
-            buffer.packetCount = 1
-
-            // Matroska stores one whole packet per frame with no framing header, so the description
-            // is the trivial one -- but it has to be present, or the converter reads a packet size
-            // of zero and produces nothing.
-            buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(
-                mStartOffset: 0,
-                mVariableFramesInPacket: 0,
-                mDataByteSize: UInt32(byteCount)
-            )
-
-            return buffer
+            return frame
         }
 
         return nil
+    }
+
+    /// The next compressed packet for this track.
+    private func nextPacket(format: AVAudioFormat) throws -> AVAudioCompressedBuffer? {
+        guard let frame = try nextTrackFrame() else { return nil }
+
+        let byteCount = frame.data.count
+
+        let buffer = AVAudioCompressedBuffer(
+            format: format,
+            packetCapacity: 1,
+            maximumPacketSize: byteCount
+        )
+
+        frame.data.withUnsafeBytes { bytes in
+            guard let base = bytes.baseAddress else { return }
+            buffer.data.copyMemory(from: base, byteCount: byteCount)
+        }
+
+        buffer.byteLength = UInt32(byteCount)
+        buffer.packetCount = 1
+
+        // Matroska stores one whole packet per frame with no framing header, so the description
+        // is the trivial one -- but it has to be present, or the converter reads a packet size
+        // of zero and produces nothing.
+        buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(
+            mStartOffset: 0,
+            mVariableFramesInPacket: 0,
+            mDataByteSize: UInt32(byteCount)
+        )
+
+        suppliedPacketCount += 1
+
+        return buffer
+    }
+
+    // MARK: - PCM
+
+    /// Bytes of a PCM block not yet emitted, and how many of its frames have been.
+    ///
+    /// A block holds whatever the muxer chose rather than a packet's worth, so it need not fit the
+    /// buffer a caller asked for.
+    private var pcmRemainder: (data: Data, consumedFrames: Int)?
+
+    /// Fills `output` from the PCM blocks directly, converting samples to float as it goes.
+    ///
+    /// No `AVAudioConverter`: the container's payload is already linear PCM, and the only work is
+    /// widening it to the processing format.
+    private func nextPCMBuffer(into output: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
+        guard case let .pcm(blockReader) = path else { return nil }
+
+        var written: AVAudioFrameCount = 0
+
+        while written < output.frameCapacity {
+            if pcmRemainder == nil {
+                guard let frame = try nextTrackFrame() else {
+                    try endOfStream()
+                    break
+                }
+
+                suppliedPacketCount += 1
+                pcmRemainder = (frame.data, 0)
+            }
+
+            guard let (data, consumedFrames) = pcmRemainder else { break }
+
+            let available = data.count / blockReader.bytesPerFrame - consumedFrames
+
+            guard available > 0 else {
+                pcmRemainder = nil
+                continue
+            }
+
+            let taken = min(Int(output.frameCapacity - written), available)
+
+            blockReader.write(
+                data,
+                sourceFrameOffset: consumedFrames,
+                to: output,
+                destinationFrameOffset: Int(written),
+                frameCount: taken
+            )
+
+            written += AVAudioFrameCount(taken)
+
+            if consumedFrames + taken >= data.count / blockReader.bytesPerFrame {
+                pcmRemainder = nil
+            } else {
+                pcmRemainder = (data, consumedFrames + taken)
+            }
+        }
+
+        output.frameLength = written
+        producedFrameCount += AVAudioFramePosition(written)
+
+        return written > 0 ? output : nil
     }
 }
