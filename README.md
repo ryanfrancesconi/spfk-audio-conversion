@@ -20,8 +20,12 @@ Audio file format conversion library supporting PCM and compressed formats via C
 
 | Direction | Formats |
 |-----------|---------|
-| **Input** | All `AudioFileType` cases (WAV, AIFF, CAF, M4A, MP3, MP4, FLAC, OGG, etc.) |
+| **Input** | Anything AVFoundation or libsndfile opens (WAV, AIFF, CAF, M4A, MP3, MP4, FLAC, OGG, etc.), plus Matroska via `MatroskaAudioDecoder` |
 | **Output** | WAV, AIFF, CAF, M4A, MP3, FLAC, OGG Opus |
+
+Matroska is not an `AVAudioFile` format — `.mka`/`.mkv`/`.webm` are absent from
+`AVURLAsset.audiovisualTypes()` and `AVAudioFile(forReading:)` throws `'fmt?'` on them. They are
+readable here only through the decoder below, and are not writable at all.
 
 ## Usage
 
@@ -150,6 +154,12 @@ SPFKAudioConverterC (ObjC target)
   |-- LameConverter      LAME encoder + mpg123 decoder
   |-- SndFileConverter   libsndfile for FLAC/OGG + file info queries
 
+Matroska/
+  |-- MatroskaAudioDecoder      Demuxed blocks --> PCM, seekable by frame
+  |-- MatroskaPCMBlockReader    Uncompressed tracks, widened to float with no converter
+  |-- +WaveformPCMSource        Conformance that lets a waveform parse a container
+                                AVFoundation cannot open
+
 BatchAudioFormatConverter
   |-- Structured concurrency with batchMap
   |-- Sliding window of 8 concurrent conversions
@@ -163,7 +173,7 @@ BatchAudioFormatConverter
 | [spfk-base](https://github.com/ryanfrancesconi/spfk-base) | Foundation extensions and utilities |
 | [spfk-audio-base](https://github.com/ryanfrancesconi/spfk-audio-base) | Audio type definitions (`AudioFileType`, `AudioDefaults`) |
 | [spfk-metadata](https://github.com/ryanfrancesconi/spfk-metadata) | Audio file metadata parsing |
-| [spfk-metadata-xmp](https://github.com/ryanfrancesconi/spfk-metadata-xmp) | XMP metadata reading/writing |
+| [spfk-matroska](https://github.com/ryanfrancesconi/spfk-matroska) | Matroska demuxing, for the decoder above |
 | [spfk-lame](https://github.com/ryanfrancesconi/spfk-lame) | LAME + mpg123 xcframeworks for MP3 encoding/decoding |
 | [spfk-utils](https://github.com/ryanfrancesconi/spfk-utils) | General utilities (`Entropy`, `Serializable`) |
 | [sndfile-binary-xcframework](https://github.com/sbooth/sndfile-binary-xcframework) | libsndfile for FLAC/OGG encoding |
