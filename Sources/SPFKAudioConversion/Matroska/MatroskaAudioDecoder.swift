@@ -4,6 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKBase
 import SPFKMatroska
+import SPFKVideo
 
 /// Decodes a Matroska or WebM file's audio track to PCM.
 ///
@@ -275,16 +276,25 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
         }
     }
 
-    /// Opens `url` and prepares to decode its first audio track.
+    /// Opens `url` and prepares to decode one of its audio tracks.
     ///
+    /// - Parameter audioTrack: which track to decode, or `nil` for the first stored — the muxer's
+    ///   ordering rather than a choice. An identifier the file does not carry falls back to the
+    ///   first rather than throwing: a selection can outlive the file it was made against, and a
+    ///   waveform of the wrong track beats no waveform at all.
     /// - Throws: ``MatroskaAudioDecoderError`` when the file has no audio, or its codec is one
     ///   macOS cannot decode.
-    public init(url: URL) throws {
+    public init(url: URL, audioTrack: AudioTrackDescription.ID? = nil) throws {
         self.url = url
 
-        reader = try MatroskaFrameReader(url: url)
+        // Bound locally before being stored: reaching for `self.reader` inside the closure below
+        // captures `self` while members are still uninitialized.
+        let frameReader = try MatroskaFrameReader(url: url)
+        reader = frameReader
 
-        guard let track = reader.file.audioTrack else {
+        let requested = audioTrack.flatMap { frameReader.file.audioTrack(id: $0) }
+
+        guard let track = requested ?? frameReader.file.audioTrack else {
             throw MatroskaAudioDecoderError.noAudioTrack(url)
         }
 
