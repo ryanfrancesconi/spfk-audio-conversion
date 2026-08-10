@@ -183,6 +183,35 @@ extension AudioFormatConverter {
         }
     }
 
+    /// Removes every marker from `url`, dispatching on `outputType`.
+    ///
+    /// The counterpart to ``writeMarkers(_:to:outputType:)`` for a set that came out empty.
+    /// Writing an empty set is not the same operation: it leaves whatever is already in the file,
+    /// and a trim render can arrive carrying the source's markers at their pre-trim times.
+    ///
+    /// Returns whether anything was removed — `false` also covers a file that had no markers, so
+    /// it is a poor error signal and is not treated as one.
+    @discardableResult
+    public static func removeMarkers(from url: URL, outputType: AudioFileType) -> Bool {
+        switch outputType {
+        case .wav, .w64, .aiff, .aifc:
+            return AudioMarkerUtil.remove(url)
+
+        case .mp3:
+            return MPEGChapterUtil.remove(url.path)
+
+        case .flac, .ogg, .opus:
+            return XiphChapterUtil.remove(url.path)
+
+        case .m4a, .mp4, .aac, .m4b, .mov, .m4v:
+            return MP4ChapterUtil.remove(url.path)
+
+        default:
+            Log.debug("Marker removal not supported for \(outputType.rawValue) — skipping")
+            return false
+        }
+    }
+
     // MARK: - Finder Tags
 
     private func copyFinderTags() {

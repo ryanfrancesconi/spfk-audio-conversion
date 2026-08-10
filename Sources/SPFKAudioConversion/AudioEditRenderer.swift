@@ -112,7 +112,8 @@ public actor AudioEditRenderer {
         // Re-write markers adjusted for the trim range, overwriting the unadjusted markers
         // that copyMetadata wrote above.
         if metadataCopyScheme.includesMarkers, edit.trim.inPoint > 0 || edit.trim.outPoint > 0 {
-            await adjustAndWriteMarkers(to: resolvedOutput)
+            let renderedDuration = Double(processed.frameLength) / processed.format.sampleRate
+            await adjustAndWriteMarkers(to: resolvedOutput, newDuration: renderedDuration)
         }
 
         return resolvedOutput
@@ -238,10 +239,12 @@ public actor AudioEditRenderer {
         AudioFileType(pathExtension: url.pathExtension)?.isAVAudioFileWritable ?? true
     }
 
-    /// Reads source markers, filters out those outside the trim range, shifts remaining times
-    /// by the in-point offset, and re-writes to `outputURL`, overwriting the unadjusted markers
-    /// that `copyMetadata` already wrote.
-    private func adjustAndWriteMarkers(to outputURL: URL) async {
+    /// Reads the source's markers, moves them onto the trimmed timeline, and re-writes them to
+    /// `outputURL`, overwriting the unadjusted markers `copyMetadata` already wrote.
+    ///
+    /// - Parameter newDuration: duration of the render, bounding a region that ran past the
+    ///   out-point.
+    private func adjustAndWriteMarkers(to outputURL: URL, newDuration: TimeInterval) async {
         guard let outputType = AudioFileType(pathExtension: outputURL.pathExtension) else { return }
 
         let collection: AudioMarkerDescriptionCollection
@@ -253,22 +256,20 @@ public actor AudioEditRenderer {
 
         guard collection.count > 0 else { return }
 
-        let inPoint = edit.trim.inPoint
-        let outPoint = edit.trim.outPoint // 0 means "keep to end"
+        let adjusted = AudioMarkerDescription.adjustedForTrim(
+            collection.markerDescriptions,
+            inPoint: edit.trim.inPoint,
+            outPoint: edit.trim.outPoint,
+            newDuration: newDuration
+        )
 
-        let adjusted: [AudioMarkerDescription] = collection.markerDescriptions.compactMap { desc in
-            guard desc.startTime >= inPoint else { return nil }
-            if outPoint > 0, desc.startTime >= outPoint { return nil }
-
-            var copy = desc
-            copy.startTime = max(0, desc.startTime - inPoint)
-            if let end = desc.endTime {
-                copy.endTime = max(0, end - inPoint)
-            }
-            return copy
+        // An empty set has to clear the file rather than skip it: `copyMetadata` already wrote the
+        // source's markers at their pre-trim times, and leaving them is worse than having none.
+        guard adjusted.isNotEmpty else {
+            AudioFormatConverter.removeMarkers(from: outputURL, outputType: outputType)
+            return
         }
 
-        guard adjusted.isNotEmpty else { return }
         AudioFormatConverter.writeMarkers(adjusted, to: outputURL, outputType: outputType)
     }
 }
