@@ -135,28 +135,17 @@ extension AudioFormatConverter {
             }
 
         case .mp3:
-            // ID3 CHAP frames via TagLib
-            let chapters = descriptions.map { desc in
-                ChapterMarker(
-                    name: desc.name ?? "Chapter",
-                    startTime: desc.startTime,
-                    endTime: desc.endTime ?? desc.startTime
-                )
-            }
+            // ID3 CHAP frames via TagLib. These carry endTime natively, so only the color needs
+            // encoding into the title.
+            let chapters = descriptions.map(\.colorEncodedChapterMarker)
 
             if !MPEGChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
             }
 
         case .flac, .ogg, .opus:
-            // Vorbis comment chapters via TagLib XiphComment
-            let chapters = descriptions.map { desc in
-                ChapterMarker(
-                    name: desc.name ?? "Chapter",
-                    startTime: desc.startTime,
-                    endTime: desc.endTime ?? desc.startTime
-                )
-            }
+            // Vorbis comment chapters via TagLib XiphComment. endTime is native here too.
+            let chapters = descriptions.map(\.colorEncodedChapterMarker)
 
             if !XiphChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
@@ -164,15 +153,12 @@ extension AudioFormatConverter {
 
         case .m4a, .mp4, .aac, .m4b, .mov, .m4v:
             // QuickTime chapter track via TagLib MP4ChapterList — the native marker format for
-            // mov as much as for the MP4 family. Kept in step with `saveMarkers()` in
-            // spfk-metadata and the reader in `AudioMarkerDescriptionCollection`.
-            let chapters = descriptions.map { desc in
-                ChapterMarker(
-                    name: desc.name ?? "Chapter",
-                    startTime: desc.startTime,
-                    endTime: desc.endTime ?? desc.startTime
-                )
-            }
+            // mov as much as for the MP4 family.
+            //
+            // The container has neither an endTime nor a color field, so the title's JSON suffix
+            // is the only carrier for both. Building a bare `ChapterMarker` here silently demotes
+            // every colored region to an uncolored point marker.
+            let chapters = descriptions.map(\.fileEncodedChapterMarker)
 
             if !MP4ChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")

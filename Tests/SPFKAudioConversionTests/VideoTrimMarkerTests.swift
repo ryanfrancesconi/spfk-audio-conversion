@@ -94,11 +94,39 @@ final class VideoTrimMarkerTests: BinTestCase {
 
         AudioFormatConverter.writeMarkers(adjusted, to: rendered, outputType: .mov)
 
-        let readBack = chapters(of: rendered)
+        // Read through the collection rather than the raw chapter list: the MP4 family has no
+        // endTime field, so a region's length rides in the title's JSON suffix and decoding it is
+        // part of the round trip this test is named for.
+        let readBack = try await AudioMarkerDescriptionCollection(url: rendered).markerDescriptions
         #expect(readBack.compactMap(\.name) == ["spans"])
 
         let start = try #require(readBack.first?.startTime)
         #expect(abs(start) < 0.05)
+
+        let end = try #require(readBack.first?.endTime)
+        #expect(abs(end - 0.7) < 0.05)
+    }
+
+    /// Color and region length survive a write, because nothing in the MP4 family stores either.
+    ///
+    /// Both ride in the chapter title's JSON suffix, so a writer building a bare `ChapterMarker`
+    /// demotes every colored region to an uncolored point — and the file still reads back as a
+    /// perfectly valid set of markers, which is what makes the loss silent.
+    @Test func writingMarkersToAVideoKeepsColorAndRegionLength() async throws {
+        let hex = try #require(HexColor(string: "AF77E9FF"))
+        let markers = [
+            AudioMarkerDescription(name: "colored", startTime: 0.25, endTime: 1.25, hexColor: hex),
+        ]
+
+        let source = try sourceCopy(named: "colored-source.mov", markers: markers)
+
+        let readBack = try await AudioMarkerDescriptionCollection(url: source).markerDescriptions
+        #expect(readBack.count == 1)
+        #expect(readBack.first?.name == "colored")
+        #expect(readBack.first?.hexColor?.stringValue == "AF77E9FF")
+
+        let end = try #require(readBack.first?.endTime)
+        #expect(abs(end - 1.25) < 0.05)
     }
 
     /// A trim that keeps no markers has to *clear* the render, not skip it.
