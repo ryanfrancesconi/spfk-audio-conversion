@@ -48,28 +48,25 @@ public actor BatchAudioFormatConverterData {
 
     /// Pre-resolves all `.unique` conflict scheme outputs before concurrent conversion begins.
     ///
-    /// Iterates sources serially. For each `.unique` source whose output URL is already taken
-    /// (on disk or claimed by an earlier source in this batch), the slot is advanced via
-    /// ``FileSystem/nextAvailableURL(_:delimiter:suffix:)``. Every resolved URL — including
-    /// ones that were not already taken — is immediately claimed with a zero-byte placeholder,
-    /// so the next iteration sees it as occupied. The conflict scheme is then downgraded to
-    /// `.overwrite` so the converter removes the placeholder and writes normally.
+    /// Iterates sources serially. For each `.unique` source whose output URL is already taken —
+    /// on disk, or handed to an earlier source in this batch — the slot is advanced via
+    /// ``FileSystem/nextAvailableURL(_:delimiter:suffix:excluding:)``. Resolved URLs are held in
+    /// memory rather than claimed on disk, so a source the converter later refuses leaves nothing
+    /// behind. The conflict scheme is then downgraded to `.overwrite`, since the slot is now
+    /// decided and a concurrent conversion must not renumber it again.
     public func resolveUniqueConflicts() {
-        for i in sources.indices where sources[i].options.conflictScheme == .unique {
-            let url = sources[i].output
-            let resolved = url.exists ? FileSystem.nextAvailableURL(url) : url
+        var claimed: Set<URL> = []
 
-            // Ensure the output directory exists before attempting to claim the slot.
-            let directory = resolved.deletingLastPathComponent()
+        for i in sources.indices where sources[i].options.conflictScheme == .unique {
+            let resolved = FileSystem.nextAvailableURL(sources[i].output, excluding: claimed)
+
+            // The converter writes into this directory and does not create it.
             try? FileManager.default.createDirectory(
-                at: directory,
+                at: resolved.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
 
-            let claimed = FileManager.default.createFile(atPath: resolved.path, contents: nil)
-            if !claimed {
-                Log.error("resolveUniqueConflicts: failed to claim placeholder at", resolved.path)
-            }
+            claimed.insert(resolved)
 
             sources[i].output = resolved
             sources[i].options.conflictScheme = .overwrite

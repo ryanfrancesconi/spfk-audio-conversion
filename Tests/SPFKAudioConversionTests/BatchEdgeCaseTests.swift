@@ -126,6 +126,41 @@ class BatchEdgeCaseTests: BinTestCase {
         }
     }
 
+    // MARK: - Rejected input claims no output slot
+
+    @Test func batchLeavesNoFileForRejectedInput() async throws {
+        deleteBinOnExit = true
+
+        let rejected = bin.appending(component: "notes.txt", directoryHint: .notDirectory)
+        try "not audio".write(to: rejected, atomically: true, encoding: .utf8)
+
+        let rejectedOutput = bin.appending(component: "notes.wav", directoryHint: .notDirectory)
+
+        let sources = [
+            AudioFormatConverterSource(
+                input: rejected,
+                output: rejectedOutput,
+                options: AudioFormatConverterOptions(format: .wav, conflictScheme: .unique)
+            ),
+            AudioFormatConverterSource(
+                input: TestBundleResources.shared.tabla_wav,
+                output: bin.appending(component: "\(#function).m4a", directoryHint: .notDirectory),
+                options: AudioFormatConverterOptions(format: .m4a, conflictScheme: .unique)
+            ),
+        ]
+
+        let converter = await BatchAudioFormatConverter(inputs: sources)
+        let results = try await converter.start()
+
+        let failure = results.first { $0.source.input == rejected }
+        #expect(failure?.error != nil)
+        #expect(!rejectedOutput.exists)
+
+        let success = results.first { $0.source.input != rejected }
+        #expect(success?.error == nil)
+        #expect(success?.source.output.exists == true)
+    }
+
     // MARK: - Single file batch
 
     @Test func singleFileBatch() async throws {
