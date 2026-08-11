@@ -3,6 +3,7 @@
 import AVFoundation
 import Foundation
 import SPFKAudioBase
+import SPFKVideo
 
 /// Describes the input file, output file, and options for a single conversion operation.
 public struct AudioFormatConverterSource: Sendable {
@@ -17,6 +18,14 @@ public struct AudioFormatConverterSource: Sendable {
 
     /// Copy or ignore source metadata
     public var metadataCopyScheme: MetadataCopyScheme
+
+    /// Which of the input's audio tracks to convert, or `nil` for the first stored — the muxer's
+    /// ordering rather than a choice.
+    ///
+    /// Consulted only where this package demuxes the container itself, which today means Matroska.
+    /// An identifier the file does not carry falls back to the first track rather than failing, so
+    /// a selection persisted against an earlier version of a file still converts.
+    public var audioTrack: AudioTrackDescription.ID?
 
     /// An `AVURLAsset` created from ``input``. A new instance is returned on each access.
     public var asset: AVURLAsset { AVURLAsset(url: input) }

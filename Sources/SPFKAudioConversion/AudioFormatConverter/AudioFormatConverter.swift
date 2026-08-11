@@ -67,6 +67,13 @@ public class AudioFormatConverter {
                 )
             }
 
+            // Matroska is opaque to both Core Audio and AVFoundation, so it is demuxed to an
+            // intermediate WAV and converted from there rather than routed below.
+            if inputFormat.isMatroska {
+                try await convertFromMatroska()
+                return
+            }
+
             if source.output.exists {
                 switch source.options.conflictScheme {
                 case .overwrite:
