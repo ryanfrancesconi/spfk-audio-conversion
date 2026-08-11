@@ -91,13 +91,31 @@ struct AssetWriterContainer: @unchecked Sendable {
                             break
                         }
 
-                        writerInput.append(buffer)
+                        // A rejected buffer leaves the reader completing normally, so nothing
+                        // below reports it.
+                        if !writerInput.append(buffer) {
+                            let error = writer.error ?? NSError(description: "The writer rejected a sample buffer")
+
+                            writerInput.markAsFinished()
+                            reader.cancelReading()
+                            writer.cancelWriting()
+
+                            if resumeGuard.tryResume() {
+                                continuation.resume(throwing: error)
+                            }
+
+                            return
+                        }
                     }
                 }
             )
         }
 
         await writer.finishWriting()
+
+        guard writer.status == .completed else {
+            throw writer.error ?? NSError(description: "Writing \(writer.outputURL.lastPathComponent) failed")
+        }
     }
 }
 
