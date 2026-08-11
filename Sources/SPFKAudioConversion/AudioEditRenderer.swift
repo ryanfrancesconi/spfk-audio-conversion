@@ -193,8 +193,6 @@ public actor AudioEditRenderer {
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("wav")
 
-        print("AudioEditRenderer.writeViaIntermediateWAV: buffer.frameLength=\(buffer.frameLength) sampleRate(fileFormat)=\(sampleRate) buffer.format.sampleRate=\(buffer.format.sampleRate) channels=\(buffer.format.channelCount) tempURL=\(tempURL.path)")
-
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
         // Scope tempFile so AVAudioFile is deallocated (and the WAV RIFF header finalized)
@@ -217,8 +215,6 @@ public actor AudioEditRenderer {
                 interleaved: false
             )
             try tempFile.write(from: buffer)
-
-            print("AudioEditRenderer.writeViaIntermediateWAV: tempFile.length=\(tempFile.length) tempURL.exists=\(tempURL.exists)")
         }
 
         let convSource = AudioFormatConverterSource(
@@ -228,11 +224,7 @@ public actor AudioEditRenderer {
             metadataCopyScheme: .ignore
         )
 
-        print("AudioEditRenderer.writeViaIntermediateWAV: starting converter input=\(tempURL.lastPathComponent) output=\(url.lastPathComponent)")
-
         try await AudioFormatConverter(source: convSource).start()
-
-        print("AudioEditRenderer.writeViaIntermediateWAV: converter done output.exists=\(url.exists)")
     }
 
     private static func isDirectlyWritable(url: URL) -> Bool {
