@@ -77,6 +77,13 @@ struct AudioFormatConverterOptionsTests {
         #expect(options?.channels != nil)
     }
 
+    /// `.aif` and `.wave` are spellings of a case rather than cases of their own, so the format
+    /// has to come from ``AudioFileType/init(pathExtension:)``.
+    @Test func initFromURLMapsAlternateExtension() {
+        let options = AudioFormatConverterOptions(url: TestBundleResources.shared.tabla_aif)
+        #expect(options?.format == .aiff)
+    }
+
     @Test func initFromURLReturnsNilForInvalidURL() {
         let url = URL(fileURLWithPath: "/nonexistent/file.wav")
         let options = AudioFormatConverterOptions(url: url)
