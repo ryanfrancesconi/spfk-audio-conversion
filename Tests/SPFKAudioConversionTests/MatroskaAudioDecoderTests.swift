@@ -95,13 +95,18 @@ final class MatroskaAudioDecoderTests {
     }
 
     /// WebM carries Opus rather than AAC, so this exercises a second codec through the same path.
+    ///
+    /// **Core Audio decodes Opus** — it is in `kAudioFormatProperty_DecodeFormatIDs` and needs no
+    /// bundled library, contrary to what was assumed while it sat outside the table.
     @Test func decodesWebMOpus() throws {
-        let url = TestBundleResources.shared.sample_webm
+        let (samples, format) = try decodeAll(TestBundleResources.shared.sample_webm)
 
-        // Opus is not in the supported set yet -- assert the refusal is explicit rather than a
-        // silent empty result, so the gap is visible when someone opens a .webm.
-        #expect(throws: MatroskaAudioDecoderError.unsupportedCodec("A_OPUS")) {
-            try MatroskaAudioDecoder(url: url)
-        }
+        #expect(format.sampleRate == 48000)
+        #expect(samples.isEmpty == false)
+
+        // This fixture's audio is silent by construction -- `sample.mov`, which every Matroska
+        // fixture descends from, measures -91 dB -- so the assertion is the frame count rather than
+        // energy: roughly 2 seconds at 48 kHz, which a decoder producing nothing would fail.
+        #expect(samples.count > 48000, "decoded \(samples.count) frames")
     }
 }
