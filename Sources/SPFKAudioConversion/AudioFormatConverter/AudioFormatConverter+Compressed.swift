@@ -67,7 +67,7 @@ extension AudioFormatConverter {
     }
 
     /// Formats handled by direct library calls (libsndfile / LAME).
-    static let directConversionFormats: Set<AudioFileType> = [.mp3, .flac, .ogg]
+    static let directConversionFormats: Set<AudioFileType> = [.mp3, .flac, .ogg, .opus]
 
     // MARK: - MP3 Conversion (LAME)
 
@@ -130,10 +130,19 @@ extension AudioFormatConverter {
         }
     }
 
-    // MARK: - OGG Conversion (libsndfile)
+    // MARK: - Ogg Conversion (libsndfile)
 
-    /// Convert to OGG Opus using libsndfile directly.
-    func convertToOGG() async throws {
+    /// Convert to Ogg Vorbis using libsndfile directly.
+    func convertToVorbis() async throws {
+        try await convertToOgg(isOpus: false)
+    }
+
+    /// Convert to Ogg Opus using libsndfile directly.
+    func convertToOpus() async throws {
+        try await convertToOgg(isOpus: true)
+    }
+
+    private func convertToOgg(isOpus: Bool) async throws {
         try Task.checkCancellation()
 
         let inputURL = try await prepareInput(source: source)
@@ -150,13 +159,13 @@ extension AudioFormatConverter {
         }
 
         let converter = SndFileConverter()
-        let status = converter.convert(
-            toOGG: inputURL.path,
-            output: source.output.path
-        )
+        let status = isOpus
+            ? converter.convert(toOpus: inputURL.path, output: source.output.path)
+            : converter.convert(toVorbis: inputURL.path, output: source.output.path)
 
         guard status == 0, source.output.exists else {
-            throw NSError(description: "Failed to convert to OGG: \(source.input.lastPathComponent)")
+            let codec = isOpus ? "Opus" : "Vorbis"
+            throw NSError(description: "Failed to convert to Ogg \(codec): \(source.input.lastPathComponent)")
         }
     }
 
@@ -177,20 +186,38 @@ extension AudioFormatConverter {
         // If sample rate conversion is requested, always create a temp file
         // since libsndfile doesn't do resampling.
         //
-        // OGG Opus only supports specific sample rates. If the output is OGG and the
-        // source rate isn't in the supported set, force a resample to 48000 Hz so
-        // libsndfile doesn't reject the input.
+        // Opus encodes only at these rates. If the output is Opus and the source rate
+        // isn't among them, force a resample to 48000 Hz so libsndfile doesn't reject
+        // the input. Vorbis has no such restriction.
         let supportedOpusRates: Set<Double> = [8000, 12000, 16000, 24000, 48000]
         let sourceRate = audioFile?.fileFormat.sampleRate ?? 0
         let outputFormat = AudioFileType(pathExtension: source.output.pathExtension)
 
         let needsResample: Bool
         if let targetRate = source.options.sampleRate {
-            needsResample = targetRate != sourceRate
-        } else if outputFormat == .ogg, !supportedOpusRates.contains(sourceRate) {
-            // No user-specified rate, but OGG Opus can't handle this source rate.
+            if outputFormat == .opus, !supportedOpusRates.contains(targetRate) {
+                // Opus cannot encode the requested rate. Snap to the nearest it supports,
+                // otherwise libsndfile rejects the write — most of `supportedSampleRates`
+                // is invalid for Opus.
+                let nearest = supportedOpusRates.min {
+                    abs($0 - targetRate) < abs($1 - targetRate)
+                }
+                self.source.options.sampleRate = nearest
+
+                if let nearest {
+                    self.source.adjustments.append(
+                        .sampleRate(requested: targetRate, applied: nearest, format: .opus)
+                    )
+                }
+            }
+            needsResample = self.source.options.sampleRate != sourceRate
+        } else if outputFormat == .opus, !supportedOpusRates.contains(sourceRate) {
+            // No user-specified rate, but Opus can't handle this source rate.
             // Inject 48000 Hz so createTempFile resamples to a valid Opus rate.
             self.source.options.sampleRate = 48000
+            self.source.adjustments.append(
+                .sampleRate(requested: sourceRate, applied: 48000, format: .opus)
+            )
             needsResample = true
         } else {
             needsResample = false
@@ -232,7 +259,10 @@ extension AudioFormatConverter {
             try await convertToFLAC()
             return
         case .ogg:
-            try await convertToOGG()
+            try await convertToVorbis()
+            return
+        case .opus:
+            try await convertToOpus()
             return
         default:
             break

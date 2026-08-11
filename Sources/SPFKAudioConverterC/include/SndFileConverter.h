@@ -17,12 +17,20 @@ NS_ASSUME_NONNULL_BEGIN
               output:(NSString *)output
             bitDepth:(int)bitDepth;
 
-/// Convert PCM audio (WAV/AIFF/FLAC) to OGG Opus.
+/// Convert PCM audio (WAV/AIFF/FLAC) to Ogg Vorbis.
 /// @param input Path to the input audio file.
-/// @param output Path for the output OGG file.
+/// @param output Path for the output Ogg file.
 /// @return 0 on success, non-zero on failure.
-- (int)convertToOGG:(NSString *)input
-             output:(NSString *)output;
+- (int)convertToVorbis:(NSString *)input
+                output:(NSString *)output;
+
+/// Convert PCM audio (WAV/AIFF/FLAC) to Ogg Opus.
+/// Opus encodes only at 8/12/16/24/48 kHz; resample the input before calling.
+/// @param input Path to the input audio file.
+/// @param output Path for the output Opus file.
+/// @return 0 on success, non-zero on failure.
+- (int)convertToOpus:(NSString *)input
+              output:(NSString *)output;
 
 /// Read audio file info via libsndfile.
 /// @param path Path to the audio file.

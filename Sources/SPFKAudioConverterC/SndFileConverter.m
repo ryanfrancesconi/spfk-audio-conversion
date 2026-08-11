@@ -70,8 +70,22 @@
     return 0;
 }
 
-- (int)convertToOGG:(NSString *)input
+- (int)convertToVorbis:(NSString *)input
+                output:(NSString *)output
+{
+    return [self convertToOgg:input output:output subformat:SF_FORMAT_VORBIS];
+}
+
+- (int)convertToOpus:(NSString *)input
+              output:(NSString *)output
+{
+    return [self convertToOgg:input output:output subformat:SF_FORMAT_OPUS];
+}
+
+/// Shared Ogg encode path. `subformat` selects the codec carried in the container.
+- (int)convertToOgg:(NSString *)input
              output:(NSString *)output
+          subformat:(int)subformat
 {
     SF_INFO inputInfo;
     memset(&inputInfo, 0, sizeof(inputInfo));
@@ -85,7 +99,7 @@
     memset(&outputInfo, 0, sizeof(outputInfo));
     outputInfo.samplerate = inputInfo.samplerate;
     outputInfo.channels = inputInfo.channels;
-    outputInfo.format = SF_FORMAT_OGG | SF_FORMAT_OPUS;
+    outputInfo.format = SF_FORMAT_OGG | subformat;
 
     SNDFILE *outFile = sf_open(output.UTF8String, SFM_WRITE, &outputInfo);
     if (outFile == NULL) {

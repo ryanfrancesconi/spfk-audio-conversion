@@ -53,7 +53,9 @@ public actor BatchAudioFormatConverter {
             do {
                 let converter = AudioFormatConverter(source: source)
                 try await converter.start()
-                result = .success(source: source)
+                // The converter's source carries the options actually applied, and any
+                // adjustments it had to make — the local copy predates both.
+                result = .success(source: converter.source)
             } catch {
                 result = .failed(source: source, error: error)
             }

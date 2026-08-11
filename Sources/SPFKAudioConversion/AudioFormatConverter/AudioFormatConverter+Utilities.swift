@@ -52,7 +52,7 @@ extension AudioFormatConverter {
         case "wav", "wave", "bwf", "aif", "aiff", "caf":
             return false
 
-        case "m4a", "mp3", "mp4", "m4v", "mpg", "flac", "ogg":
+        case "m4a", "mp3", "mp4", "m4v", "mpg", "flac", "ogg", "opus":
             return true
 
         default:

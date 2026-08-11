@@ -253,8 +253,6 @@ class ConversionPathTests: BinTestCase {
         let input = TestBundleResources.shared.tabla_wav
         let output = bin.appending(component: "\(#function).ogg", directoryHint: .notDirectory)
 
-        // Opus only supports specific sample rates (8000, 12000, 16000, 24000, 48000).
-        // Use 48000 to verify the resample path works with a valid Opus rate.
         var options = AudioFormatConverterOptions()
         options.format = .ogg
         options.sampleRate = 48000
@@ -268,6 +266,144 @@ class ConversionPathTests: BinTestCase {
         let status = SndFileConverter().fileInfo(output.path, sampleRate: &sampleRate, channels: &channels, bitDepth: &bitDepth)
         #expect(status == 0)
         #expect(sampleRate == 48000)
+    }
+
+    // MARK: - Ogg codec identity
+
+    /// The codec carried in an Ogg container, read from the identification header of the
+    /// first page. `.ogg` and `.opus` differ only here — both are Ogg, and every other
+    /// property a converted file exposes is identical.
+    private enum OggCodec {
+        case vorbis, opus, unknown
+
+        init(contentsOf url: URL) throws {
+            let head = try Data(contentsOf: url).prefix(1024)
+
+            // Vorbis identification header: packet type 0x01 followed by "vorbis".
+            let vorbisMagic = Data([0x01]) + Data("vorbis".utf8)
+            let opusMagic = Data("OpusHead".utf8)
+
+            if head.range(of: vorbisMagic) != nil {
+                self = .vorbis
+            } else if head.range(of: opusMagic) != nil {
+                self = .opus
+            } else {
+                self = .unknown
+            }
+        }
+    }
+
+    @Test func oggOutputIsVorbis() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).ogg", directoryHint: .notDirectory)
+        if output.exists { try? output.delete() }
+
+        var options = AudioFormatConverterOptions()
+        options.format = .ogg
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(output.exists)
+        #expect(try OggCodec(contentsOf: output) == .vorbis)
+    }
+
+    @Test func opusOutputIsOpus() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).opus", directoryHint: .notDirectory)
+        if output.exists { try? output.delete() }
+
+        var options = AudioFormatConverterOptions()
+        options.format = .opus
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(output.exists)
+        #expect(try OggCodec(contentsOf: output) == .opus)
+    }
+
+    /// Opus encodes only at 8/12/16/24/48 kHz, so a requested rate outside that set is
+    /// snapped to the nearest supported one rather than failing the write.
+    @Test func opusSnapsUnsupportedSampleRate() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).opus", directoryHint: .notDirectory)
+        if output.exists { try? output.delete() }
+
+        var options = AudioFormatConverterOptions()
+        options.format = .opus
+        options.sampleRate = 44100
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(output.exists)
+
+        var sampleRate: Int32 = 0, channels: Int32 = 0, bitDepth: Int32 = 0
+        let status = SndFileConverter().fileInfo(
+            output.path, sampleRate: &sampleRate, channels: &channels, bitDepth: &bitDepth
+        )
+        #expect(status == 0)
+        #expect(sampleRate == 48000)
+    }
+
+    /// The snap is silent to the audio but must not be silent to the caller — the UI reports it.
+    @Test func opusRecordsSampleRateAdjustment() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).opus", directoryHint: .notDirectory)
+        if output.exists { try? output.delete() }
+
+        var options = AudioFormatConverterOptions()
+        options.format = .opus
+        options.sampleRate = 44100
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(
+            converter.source.adjustments == [
+                .sampleRate(requested: 44100, applied: 48000, format: .opus)
+            ]
+        )
+    }
+
+    /// A rate the output format accepts is used as given, and reported as no adjustment.
+    @Test func opusAtSupportedRateRecordsNoAdjustment() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).opus", directoryHint: .notDirectory)
+        if output.exists { try? output.delete() }
+
+        var options = AudioFormatConverterOptions()
+        options.format = .opus
+        options.sampleRate = 48000
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(converter.source.adjustments.isEmpty)
+    }
+
+    /// Vorbis has no rate restriction, so a rate Opus would reject is preserved.
+    @Test func vorbisPreservesUnsupportedOpusSampleRate() async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        let output = bin.appending(component: "\(#function).ogg", directoryHint: .notDirectory)
+        if output.exists { try? output.delete() }
+
+        var options = AudioFormatConverterOptions()
+        options.format = .ogg
+        options.sampleRate = 44100
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
+
+        #expect(output.exists)
+
+        var sampleRate: Int32 = 0, channels: Int32 = 0, bitDepth: Int32 = 0
+        let status = SndFileConverter().fileInfo(
+            output.path, sampleRate: &sampleRate, channels: &channels, bitDepth: &bitDepth
+        )
+        #expect(status == 0)
+        #expect(sampleRate == 44100)
     }
 
     // MARK: - M4A with custom bit rate

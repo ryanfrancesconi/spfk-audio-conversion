@@ -21,6 +21,13 @@ public struct AudioFormatConverterSource: Sendable {
     /// An `AVURLAsset` created from ``input``. A new instance is returned on each access.
     public var asset: AVURLAsset { AVURLAsset(url: input) }
 
+    /// Changes the converter had to make to ``options`` for the output format to accept them.
+    /// Empty when the requested options were used as given.
+    ///
+    /// The conversion still succeeds; this is what lets a caller tell the user that what they
+    /// asked for was not what they got.
+    public var adjustments: [AudioFormatConverterAdjustment] = []
+
     /// Creates a conversion source.
     public init(
         input: URL,
@@ -33,4 +40,11 @@ public struct AudioFormatConverterSource: Sendable {
         self.options = options
         self.metadataCopyScheme = metadataCopyScheme
     }
+}
+
+/// A conversion option the output format could not honor, and what was used instead.
+public enum AudioFormatConverterAdjustment: Sendable, Equatable {
+    /// The output format does not encode at `requested`, so `applied` was used.
+    /// Opus is the case in practice: it accepts only 8/12/16/24/48 kHz.
+    case sampleRate(requested: Double, applied: Double, format: AudioFileType)
 }

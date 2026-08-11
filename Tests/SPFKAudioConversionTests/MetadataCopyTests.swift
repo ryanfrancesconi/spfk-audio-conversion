@@ -53,6 +53,37 @@ class MetadataCopyTests: BinTestCase {
         #expect(props[.artist] == "Spinal Tap")
     }
 
+    // MARK: - Rating Copy Tests
+
+    /// The rating does not travel through TagLib's PropertyMap — it has its own per-format
+    /// dispatch — so a tag round-trip on title and artist proves nothing about it.
+    @Test(arguments: ["wav", "flac", "mp3", "m4a", "ogg", "opus"])
+    func ratingSurvivesConversion(outputExtension: String) async throws {
+        let input = TestBundleResources.shared.rated_80_wav
+        let sourceRating = TagRating.read(input.path)
+        #expect(sourceRating > 0)
+
+        let output = try await convert(input: input, outputExtension: outputExtension)
+        #expect(TagRating.read(output.path) == sourceRating)
+    }
+
+    /// The app writes its own ratings through `TagRating.write`, which is a different storage
+    /// path from the externally-tooled fixtures — a rating written here has to survive too.
+    @Test(arguments: ["flac", "mp3", "m4a", "ogg", "opus"])
+    func appWrittenRatingSurvivesConversion(outputExtension: String) async throws {
+        let source = bin.appending(
+            component: "rated-\(outputExtension).wav", directoryHint: .notDirectory
+        )
+        if source.exists { try? source.delete() }
+        try FileManager.default.copyItem(at: TestBundleResources.shared.tabla_wav, to: source)
+
+        #expect(TagRating.write(5, toPath: source.path))
+        #expect(TagRating.read(source.path) == 5)
+
+        let output = try await convert(input: source, outputExtension: outputExtension)
+        #expect(TagRating.read(output.path) == 5)
+    }
+
     // MARK: - Image Copy Tests
 
     @Test func copyAllPreservesImage() async throws {
