@@ -142,6 +142,37 @@ final class ConversionInputMatrixTests: BinTestCase {
         #expect(japaneseFrequency > 660, "japanese track measured \(japaneseFrequency) Hz, expected near 880")
     }
 
+    /// `dualaudio.m4a` is the AVFoundation counterpart, same two tones. Nothing on that side
+    /// addresses a track — `AVAudioFile` and `ExtAudioFile` below it take whichever the container
+    /// lists first — so a non-first selection is decoded through `AVAssetReaderPCMSource` instead.
+    @Test func convertsTheAudioTrackItWasAskedForFromAnMP4() async throws {
+        let input = TestBundleResources.shared.dualaudio_m4a
+        let descriptions = await AudioTrackReader.read(from: input)
+
+        let english = try #require(descriptions.first { $0.language == "eng" })
+        let japanese = try #require(descriptions.first { $0.language == "jpn" })
+
+        var options = AudioFormatConverterOptions()
+        options.format = .wav
+
+        func convert(track: AudioTrackDescription.ID, named name: String) async throws -> Double {
+            let outputURL = bin.appending(component: "\(name).wav", directoryHint: .notDirectory)
+
+            var source = AudioFormatConverterSource(input: input, output: outputURL, options: options)
+            source.audioTrack = track
+
+            try await AudioFormatConverter(source: source).start()
+
+            return try dominantFrequency(of: outputURL)
+        }
+
+        let englishFrequency = try await convert(track: english.id, named: "english-m4a")
+        let japaneseFrequency = try await convert(track: japanese.id, named: "japanese-m4a")
+
+        #expect(englishFrequency < 660, "english track measured \(englishFrequency) Hz, expected near 440")
+        #expect(japaneseFrequency > 660, "japanese track measured \(japaneseFrequency) Hz, expected near 880")
+    }
+
     /// A selection can outlive the file it was made against, so an unknown identifier converts the
     /// first track rather than failing.
     @Test func fallsBackToTheFirstTrackForAnUnknownIdentifier() async throws {
