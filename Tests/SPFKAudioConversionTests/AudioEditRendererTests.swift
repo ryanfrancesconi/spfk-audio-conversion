@@ -45,6 +45,35 @@ class AudioEditRendererTests: BinTestCase {
         return (0 ..< Int(buffer.frameLength)).map { data[0][$0] }
     }
 
+    // MARK: - Matroska input
+
+    /// `AVAudioFile` throws `'fmt?'` on a Matroska container, so a pending edit on one used to fail
+    /// where converting the same file succeeded.
+    ///
+    /// `tabla_pcm_mka` holds `tabla.wav` uncompressed, so the render can be checked against the
+    /// source rather than only for existing.
+    @Test func renderTrimsAMatroskaSource() async throws {
+        let source = TestBundleResources.shared.tabla_pcm_mka
+        let output = bin.appending(component: "\(#function).wav", directoryHint: .notDirectory)
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 1, outPoint: 2)),
+            outputURL: output,
+            fileConflictScheme: .overwrite,
+            metadataCopyScheme: .ignore
+        )
+
+        try await renderer.render()
+
+        let rendered = try AVAudioFile(forReading: output)
+        let expected = rendered.processingFormat.sampleRate
+
+        #expect(rendered.length > 0)
+        // One second of it, within a decoder's block of the boundary either side.
+        #expect(abs(Double(rendered.length) - expected) < expected * 0.05)
+    }
+
     // MARK: - render()
 
     @Test func renderInOutPointReducesFrameLength() async throws {
