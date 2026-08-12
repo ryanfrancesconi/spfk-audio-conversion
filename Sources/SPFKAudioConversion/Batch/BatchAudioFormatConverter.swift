@@ -31,7 +31,8 @@ public actor BatchAudioFormatConverter {
         await data.update(sources: sources)
     }
 
-    /// Converts all sources, returning a result for each (success or failure with error).
+    /// Converts all sources, returning a result for each (success or failure with error) **in the
+    /// order the sources were given**, which is not the order they complete in.
     public func start() async throws -> [Result] {
         await data.resolveUniqueConflicts()
 
@@ -43,7 +44,11 @@ public actor BatchAudioFormatConverter {
             throw NSError(description: "No files to process")
         }
 
-        return try await batchMap(count: count, batchSize: batchSize) { [weak self] i -> Result? in
+        // batchMap appends as tasks finish, so each result carries the index it was asked for.
+        let completed: [(index: Int, result: Result)] = try await batchMap(
+            count: count,
+            batchSize: batchSize
+        ) { [weak self] i -> (index: Int, result: Result)? in
             guard collection.indices.contains(i) else { return nil }
 
             let source = collection[i]
@@ -55,15 +60,17 @@ public actor BatchAudioFormatConverter {
                 try await converter.start()
                 // The converter's source carries the options actually applied, and any
                 // adjustments it had to make — the local copy predates both.
-                result = .success(source: converter.source)
+                result = await .success(source: converter.source)
             } catch {
                 result = .failed(source: source, error: error)
             }
 
             await self?.sendProgress(for: result)
 
-            return result
+            return (index: i, result: result)
         }
+
+        return completed.sorted { $0.index < $1.index }.map(\.result)
     }
 
     private func sendProgress(for result: Result) async {

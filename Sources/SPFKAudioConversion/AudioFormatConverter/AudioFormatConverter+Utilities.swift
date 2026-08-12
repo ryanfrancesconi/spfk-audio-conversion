@@ -31,24 +31,22 @@ extension AudioFormatConverter {
     }
 
     /// Returns whether the file at `url` uses a compressed audio format.
+    ///
+    /// **`nil` means undetermined and a caller has to say what that means at its own site.** An
+    /// earlier non-optional spelling answered `false` there, so a container Core Audio cannot open
+    /// read as PCM — which is how Matroska input was routed to `AVAssetWriter`.
+    ///
     /// - Parameters:
     ///   - url: The file URL to inspect.
     ///   - ignorePathExtension: When `true`, opens the file to inspect the stream format
     ///     rather than relying on the path extension.
     /// - Returns: `true` for compressed, `false` for PCM/lossless, or `nil` if undetermined.
-    public static func isCompressed(url: URL, ignorePathExtension: Bool) -> Bool? {
+    public static func isCompressed(url: URL, ignorePathExtension: Bool = false) -> Bool? {
         guard !ignorePathExtension else {
             return isCompressedExt(url: url)
         }
 
-        return isCompressed(url: url)
-    }
-
-    /// Returns whether the file at `url` uses a compressed format, determined by path extension.
-    public static func isCompressed(url: URL) -> Bool {
-        let pathExtension = url.pathExtension.lowercased()
-
-        switch pathExtension {
+        switch url.pathExtension.lowercased() {
         case "wav", "wave", "bwf", "aif", "aiff", "caf":
             return false
 
@@ -57,7 +55,7 @@ extension AudioFormatConverter {
 
         default:
             // if the file extension is missing or unknown, open the file and check it
-            return isCompressedExt(url: url) ?? false
+            return isCompressedExt(url: url)
         }
     }
 

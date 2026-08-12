@@ -6,41 +6,6 @@ import SPFKAudioConverterC
 import SPFKBase
 import SPFKUtils
 
-extension AudioFormatConverter {
-    /// Example of the most simplistic AVFoundation conversion.
-    /// With this approach you can't really specify any settings other than the limited presets.
-    /// No sample rate conversion in this. This isn't used in the public methods but is here
-    /// for example.
-    ///
-    /// see `AVAssetExportSession`:
-    /// *Prior to initializing an instance of AVAssetExportSession, you can invoke
-    /// +allExportPresets to obtain the complete list of presets available. Use
-    /// +exportPresetsCompatibleWithAsset: to obtain a list of presets that are compatible
-    /// with a specific AVAsset.*
-
-    public func convert(with presetName: String) async throws -> URL {
-        guard let session = AVAssetExportSession(asset: source.asset, presetName: presetName) else {
-            throw NSError(description: "Failed to create export session")
-        }
-
-        let list = await session.compatibleFileTypes
-
-        guard let outputFileType: AVFileType = list.first else {
-            throw NSError(
-                description:
-                "Unable to determine a compatible file type from \(source.input.lastPathComponent) for \(presetName)"
-            )
-        }
-
-        session.outputURL = source.output
-        session.outputFileType = outputFileType
-
-        await session.export()
-
-        return source.output
-    }
-}
-
 // MARK: - internal helper functions
 
 extension AudioFormatConverter {

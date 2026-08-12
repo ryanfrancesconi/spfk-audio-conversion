@@ -78,26 +78,4 @@ class AudioFormatConverterTests: BinTestCase {
         try await convert(input: input, output: output, options: nil, expectedDuration: 4.39375)
     }
 
-    @Test func allExportPresetsToMP4() async throws {
-        let input = TestBundleResources.shared.tabla_mp4
-        let asset = AVURLAsset(url: input)
-
-        for preset in AVAssetExportSession.allExportPresets() {
-            let output = bin.appending(component: "\(preset).mp4", directoryHint: .notDirectory)
-
-            guard await AVAssetExportSession.compatibility(ofExportPreset: preset, with: asset, outputFileType: .mp4)
-            else {
-                Log.error("Incompatible preset", preset)
-                continue
-            }
-
-            let converter = AudioFormatConverter(inputURL: input, outputURL: output)
-
-            let result = try await converter.convert(with: preset)
-            #expect(result.exists)
-            Log.debug("✓ Wrote \(result.lastPathComponent)")
-        }
-
-        #expect(bin.directoryContents?.count == 13)
-    }
 }

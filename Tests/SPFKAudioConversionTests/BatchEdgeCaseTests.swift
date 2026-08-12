@@ -161,6 +161,39 @@ class BatchEdgeCaseTests: BinTestCase {
         #expect(success?.source.output.exists == true)
     }
 
+    // MARK: - Result order
+
+    /// The batch runs a sliding window of tasks and takes each result as it finishes, so a caller
+    /// pairing results with what it submitted needs them put back in order first. An MP3 leads:
+    /// LAME is the slowest target here, so completion order and input order differ.
+    @Test func resultsComeBackInInputOrder() async throws {
+        deleteBinOnExit = true
+
+        let inputs: [(url: URL, format: AudioFileType)] = [
+            (TestBundleResources.shared.tabla_wav, .mp3),
+            (TestBundleResources.shared.cowbell_wav, .wav),
+            (TestBundleResources.shared.pink_noise, .wav),
+            (TestBundleResources.shared.tabla_aif, .wav),
+        ]
+
+        let sources = inputs.enumerated().map { index, input in
+            AudioFormatConverterSource(
+                input: input.url,
+                output: bin.appending(
+                    component: "\(index)_ordered.\(input.format.pathExtension)",
+                    directoryHint: .notDirectory
+                ),
+                options: AudioFormatConverterOptions(format: input.format)
+            )
+        }
+
+        let converter = await BatchAudioFormatConverter(inputs: sources)
+        let results = try await converter.start()
+
+        #expect(results.map(\.source.input) == inputs.map(\.url))
+        #expect(results.compactMap(\.error).isEmpty)
+    }
+
     // MARK: - Single file batch
 
     @Test func singleFileBatch() async throws {

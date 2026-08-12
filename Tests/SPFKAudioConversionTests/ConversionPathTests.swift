@@ -360,8 +360,10 @@ class ConversionPathTests: BinTestCase {
         let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
         try await converter.start()
 
+        let adjustments = await converter.source.adjustments
+
         #expect(
-            converter.source.adjustments == [
+            adjustments == [
                 .sampleRate(requested: 44100, applied: 48000, format: .opus)
             ]
         )
@@ -380,7 +382,8 @@ class ConversionPathTests: BinTestCase {
         let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
         try await converter.start()
 
-        #expect(converter.source.adjustments.isEmpty)
+        let adjustments = await converter.source.adjustments
+        #expect(adjustments.isEmpty)
     }
 
     /// Vorbis has no rate restriction, so a rate Opus would reject is preserved.
