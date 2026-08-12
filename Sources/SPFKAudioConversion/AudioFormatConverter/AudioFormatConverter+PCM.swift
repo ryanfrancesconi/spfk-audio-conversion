@@ -10,7 +10,11 @@ extension AudioFormatConverter {
     ///
     /// If the input and output formats are identical, the file is copied instead of re-encoded.
     /// Files 2 GB or larger are automatically promoted to CAF format.
-    public func convertToPCM() async throws {
+    ///
+    /// Internal: ``start()`` routes here, and ``convertToWave(inputURL:outputURL:sampleRate:bitDepth:)``
+    /// is the supported way in. Reached directly, it fails on every input ``start()`` handles by
+    /// demuxing first.
+    func convertToPCM() async throws {
         guard let outputFormat = source.options.format else {
             throw NSError(description: "Options can't be nil.")
         }
@@ -19,21 +23,22 @@ extension AudioFormatConverter {
         let outputURL = source.output
 
         guard outputFormat == .aiff || outputFormat == .wav || outputFormat == .caf,
-              var format = outputFormat.audioFileTypeID
+              let format = outputFormat.audioFileTypeID
         else {
             throw NSError(description: "Output file must be caf, wav or aif but it is \(outputFormat)")
         }
 
-        // This might want to be an option or throw an error
+        // A RIFF file states its sizes in 32 bits, so a long enough source cannot be written as
+        // one. Writing CAF to the requested URL anyway would put a container at a path whose
+        // extension names a different one.
         if format != kAudioFileCAFType,
-           let fileSize = inputURL.regularFileAllocatedSize
+           let fileSize = inputURL.regularFileAllocatedSize,
+           fileSize / ByteCount.gigabyte.rawValue >= 2
         {
-            let gb = fileSize / ByteCount.gigabyte.rawValue
-
-            if gb >= 2 {
-                Log.error("The input file is 2GB or greater so the format is being set to CAF (64 bit)")
-                format = kAudioFileCAFType
-            }
+            throw NSError(
+                description:
+                "\(inputURL.lastPathComponent) is too large to write as \(outputFormat.pathExtension.uppercased()). Convert it to CAF instead."
+            )
         }
 
         var inputFile: ExtAudioFileRef?

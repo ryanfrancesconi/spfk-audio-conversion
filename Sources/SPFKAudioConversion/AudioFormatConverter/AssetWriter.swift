@@ -8,16 +8,16 @@ import SPFKBase
 /// Writes audio to compressed or PCM formats using AVFoundation's `AVAssetWriter` pipeline.
 ///
 /// Accepts PCM input only. For compressed input, first convert to an intermediate PCM file.
-public actor AssetWriter {
+actor AssetWriter {
     /// The conversion source describing input, output, and options.
-    public var source: AudioFormatConverterSource
+    var source: AudioFormatConverterSource
 
     init(source: AudioFormatConverterSource) {
         self.source = source
     }
 
     /// The AVFoundation way. *This doesn't currently handle compressed input - only compressed output.*
-    public func start() async throws {
+    func start() async throws {
         guard let outputFormat = source.options.format else {
             throw NSError(description: "Options format can't be nil.")
         }
@@ -104,6 +104,9 @@ public actor AssetWriter {
         // Note: AVAssetReaderOutput does not currently support compressed audio
         if formatKey == kAudioFormatMPEG4AAC {
             if sampleRate > 48000 {
+                source.adjustments.append(
+                    .sampleRate(requested: sampleRate, applied: 48000, format: outputFormat)
+                )
                 sampleRate = 48000
             }
 

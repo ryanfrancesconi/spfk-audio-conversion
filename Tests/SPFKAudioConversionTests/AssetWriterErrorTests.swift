@@ -63,6 +63,28 @@ class AssetWriterErrorTests: BinTestCase {
         let outputFile = try AVAudioFile(forReading: output)
         // M4A should cap at 48kHz
         #expect(outputFile.fileFormat.sampleRate <= 48000)
+
+        // supportedSampleRates offers 88200 and 96000, so a caller can ask for a rate .m4a will
+        // not encode. What it got instead has to reach them.
+        let adjustments = await converter.source.adjustments
+        #expect(adjustments == [.sampleRate(requested: 96000, applied: 48000, format: .m4a)])
+    }
+
+    // MARK: - An output format the converter cannot write
+
+    @Test func unwritableOutputFormatNamesItself() async throws {
+        let output = bin.appending(component: "\(#function).mkv", directoryHint: .notDirectory)
+
+        let converter = AudioFormatConverter(
+            inputURL: TestBundleResources.shared.tabla_wav,
+            outputURL: output
+        )
+
+        let error = await #expect(throws: Error.self) {
+            try await converter.start()
+        }
+
+        #expect(error?.localizedDescription.contains("MKV") == true)
     }
 
     // MARK: - A failed writer is reported

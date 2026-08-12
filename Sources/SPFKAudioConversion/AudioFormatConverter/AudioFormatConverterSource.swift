@@ -54,6 +54,6 @@ public struct AudioFormatConverterSource: Sendable {
 /// A conversion option the output format could not honor, and what was used instead.
 public enum AudioFormatConverterAdjustment: Sendable, Equatable {
     /// The output format does not encode at `requested`, so `applied` was used.
-    /// Opus is the case in practice: it accepts only 8/12/16/24/48 kHz.
+    /// Opus is the case in practice: it accepts only 8/12/16/24/48 kHz, and AAC nothing above 48.
     case sampleRate(requested: Double, applied: Double, format: AudioFileType)
 }
