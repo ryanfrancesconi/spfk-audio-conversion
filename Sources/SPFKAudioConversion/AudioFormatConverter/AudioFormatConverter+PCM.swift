@@ -162,13 +162,18 @@ extension AudioFormatConverter {
         let bufferByteSize: UInt32 = 32768
         var srcBuffer = [UInt8](repeating: 0, count: Int(bufferByteSize))
         var sourceFrameOffset: UInt32 = 0
+        var iteration = 0
 
         var error: Error?
 
         srcBuffer.withUnsafeMutableBytes { srcBufferPtr in
             while true {
-                // Check cancellation periodically (every ~3 MB)
-                if sourceFrameOffset > 0, sourceFrameOffset % 100 == 0, Task.isCancelled {
+                // Counted in iterations rather than frames: how often a frame offset lands on a
+                // given multiple depends on the frame size, so the same test fires every 25th
+                // read at 16-bit stereo and every 100th at 24-bit.
+                iteration += 1
+
+                if iteration % 32 == 0, Task.isCancelled {
                     error = CancellationError()
                     break
                 }
