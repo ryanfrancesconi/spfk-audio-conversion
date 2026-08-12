@@ -11,7 +11,12 @@ let package = Package(
         .library(
             name: "SPFKAudioConversion",
             targets: ["SPFKAudioConversion"]
-        )
+        ),
+
+        // Timings for the read paths -- see Sources/AudioConversionBench.
+        // An executable rather than a test suite because the numbers only mean anything compiled
+        // `-O`, and `-configuration Release` cannot run tests that use `@testable`.
+        .executable(name: "spfk-audio-conversion-bench", targets: ["AudioConversionBench"]),
     ],
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "1.2.2"),
@@ -53,6 +58,15 @@ let package = Package(
                 .product(name: "SPFKMatroska", package: "spfk-matroska"),
                 .product(name: "SPFKVideo", package: "spfk-video"),
                 .product(name: "SPFKMetadata", package: "spfk-metadata"),
+                .product(name: "SPFKUtils", package: "spfk-utils"),
+            ],
+        ),
+
+        .executableTarget(
+            name: "AudioConversionBench",
+            dependencies: [
+                "SPFKAudioConversion",
+                .product(name: "SPFKAudioBase", package: "spfk-audio-base"),
                 .product(name: "SPFKUtils", package: "spfk-utils"),
             ],
         ),
