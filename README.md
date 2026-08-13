@@ -94,14 +94,6 @@ for result in results {
 ### Convenience Functions
 
 ```swift
-// Quick WAV conversion
-try await AudioFormatConverter.convertToWave(
-    inputURL: inputURL,
-    outputURL: outputURL,
-    sampleRate: 44100,
-    bitDepth: 16
-)
-
 // Format detection
 let isPCM = AudioFormatConverter.isPCM(url: fileURL)
 let isCompressed = AudioFormatConverter.isCompressed(url: fileURL)

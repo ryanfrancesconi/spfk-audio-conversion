@@ -11,9 +11,8 @@ extension AudioFormatConverter {
     /// If the input and output formats are identical, the file is copied instead of re-encoded.
     /// WAV output past 4 GiB becomes RF64; AIFF output has no long form and is refused above 2 GiB.
     ///
-    /// Internal: ``start()`` routes here, and ``convertToWave(inputURL:outputURL:sampleRate:bitDepth:)``
-    /// is the supported way in. Reached directly, it fails on every input ``start()`` handles by
-    /// demuxing first.
+    /// Internal: ``start()`` is the supported way in. Reached directly, it fails on every input
+    /// ``start()`` handles by demuxing first, and skips conflict handling and metadata copying.
     func convertToPCM() async throws {
         guard let outputFormat = source.options.format else {
             throw NSError(description: "Options can't be nil.")

@@ -14,19 +14,20 @@ import SPFKAudioConverterC
 
 @Suite(.tags(.file))
 class ConversionPathTests: BinTestCase {
-    // MARK: - convertToWave convenience
+    // MARK: - Compressed input to WAV
 
-    @Test func convertToWaveConvenience() async throws {
+    @Test func compressedInputConvertsToWave() async throws {
         let input = TestBundleResources.shared.tabla_m4a
         let output = bin.appending(component: "\(#function).wav", directoryHint: .notDirectory)
         if output.exists { try? output.delete() }
-        
-        try await AudioFormatConverter.convertToWave(
-            inputURL: input,
-            outputURL: output,
-            sampleRate: 44100,
-            bitDepth: 16
-        )
+
+        var options = AudioFormatConverterOptions()
+        options.format = .wav
+        options.sampleRate = 44100
+        options.bitsPerChannel = 16
+
+        let converter = AudioFormatConverter(inputURL: input, outputURL: output, options: options)
+        try await converter.start()
 
         #expect(output.exists)
 

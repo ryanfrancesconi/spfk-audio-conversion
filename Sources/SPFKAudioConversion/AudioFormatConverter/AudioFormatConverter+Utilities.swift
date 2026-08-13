@@ -120,34 +120,3 @@ extension AudioFormatConverter {
     }
 }
 
-extension AudioFormatConverter {
-    /// Convenience method that converts any supported input to WAV.
-    /// - Parameters:
-    ///   - inputURL: The source audio file.
-    ///   - outputURL: The destination WAV file.
-    ///   - sampleRate: Target sample rate, or `nil` to preserve the source rate.
-    ///   - bitDepth: Bits per channel (default 16).
-    /// - Returns: The output URL.
-    @discardableResult
-    public static func convertToWave(
-        inputURL: URL,
-        outputURL: URL,
-        sampleRate: Double?,
-        bitDepth: UInt32 = 16,
-    ) async throws -> URL {
-        var options = AudioFormatConverterOptions()
-        options.bitsPerChannel = bitDepth
-        options.sampleRate = sampleRate
-        options.format = .wav
-
-        let converter = AudioFormatConverter(
-            inputURL: inputURL,
-            outputURL: outputURL,
-            options: options,
-        )
-
-        try await converter.convertToPCM()
-
-        return outputURL
-    }
-}

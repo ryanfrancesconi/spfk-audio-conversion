@@ -243,12 +243,16 @@ if let buffer = AVAudioPCMBuffer(pcmFormat: scanFormat, frameCapacity: 16384) {
 section("3.3 ExtAudioFile — PCM to PCM, 32 KB per round trip")
 
 await measure("convert to 16-bit WAV") {
-    _ = try? await AudioFormatConverter.convertToWave(
+    var options = AudioFormatConverterOptions()
+    options.format = .wav
+    options.bitsPerChannel = 16
+
+    let converter = AudioFormatConverter(
         inputURL: sourceURL,
         outputURL: directory.appending(component: "converted.wav", directoryHint: .notDirectory),
-        sampleRate: nil,
-        bitDepth: 16
+        options: options
     )
+    _ = try? await converter.start()
 }
 
 print("\nscratch: \(directory.path)")
