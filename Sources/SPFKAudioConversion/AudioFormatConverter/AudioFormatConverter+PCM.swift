@@ -9,7 +9,7 @@ extension AudioFormatConverter {
     /// Converts the source file to PCM (WAV, AIFF, or CAF) using CoreAudio's `ExtAudioFile` API.
     ///
     /// If the input and output formats are identical, the file is copied instead of re-encoded.
-    /// Files 2 GB or larger are automatically promoted to CAF format.
+    /// WAV output past 4 GiB becomes RF64; AIFF output has no long form and is refused above 2 GiB.
     ///
     /// Internal: ``start()`` routes here, and ``convertToWave(inputURL:outputURL:sampleRate:bitDepth:)``
     /// is the supported way in. Reached directly, it fails on every input ``start()`` handles by
@@ -26,19 +26,6 @@ extension AudioFormatConverter {
               let format = outputFormat.audioFileTypeID
         else {
             throw NSError(description: "Output file must be caf, wav or aif but it is \(outputFormat)")
-        }
-
-        // A RIFF file states its sizes in 32 bits, so a long enough source cannot be written as
-        // one. Writing CAF to the requested URL anyway would put a container at a path whose
-        // extension names a different one.
-        if format != kAudioFileCAFType,
-           let fileSize = inputURL.regularFileAllocatedSize,
-           fileSize / ByteCount.gigabyte.rawValue >= 2
-        {
-            throw NSError(
-                description:
-                "\(inputURL.lastPathComponent) is too large to write as \(outputFormat.pathExtension.uppercased()). Convert it to CAF instead."
-            )
         }
 
         var inputFile: ExtAudioFileRef?
@@ -95,6 +82,29 @@ extension AudioFormatConverter {
             inputDescription: inputDescription
         )
 
+        // AIFF states its chunk sizes in a signed 32-bit field and Core Audio has no long-form
+        // AIFF to promote to, so this is a real ceiling rather than a courtesy. WAV promotes to
+        // RF64 below and CAF is 64-bit throughout, so neither needs a limit.
+        //
+        // Keyed on the estimated output size: an input size test misses a small file that grows
+        // under a sample-rate or bit-depth increase, and refuses a large one that shrinks.
+        if format == kAudioFileAIFFType {
+            let estimatedBytes = AudioFormatConverter.estimatedOutputBytes(
+                file: strongInputFile,
+                inputDescription: inputDescription,
+                outputDescription: outputDescription
+            )
+
+            if estimatedBytes >= ByteCount.gigabyte.rawValue * 2 {
+                let size = ByteCount.toString(Int64(estimatedBytes)) ?? "\(estimatedBytes) bytes"
+
+                throw NSError(
+                    description:
+                    "\(inputURL.lastPathComponent) would be \(size) as AIFF, past the 2 GB limit of the format. Convert it to WAV or CAF instead."
+                )
+            }
+        }
+
         let inputFileType = AudioFileType(pathExtension: inputURL.pathExtension)
 
         guard
@@ -110,10 +120,20 @@ extension AudioFormatConverter {
             return
         }
 
-        // Create destination file
+        // Create destination file.
+        //
+        // RF64 rather than WAVE for `.wav`: Core Audio emits a plain RIFF/WAVE with a 28-byte
+        // JUNK placeholder at offset 12 until the data actually crosses 4 GiB, and only then
+        // writes RF64 magic and fills that placeholder in as ds64. So short output is unchanged
+        // in kind, and the write that used to fail with kAudioFileDoesNotAllow64BitDataSizeError
+        // produces a valid file instead. The extension stays `wav` either way, which is why
+        // `AudioFileType.audioFileTypeID` is left alone — this is a writer choice, not the
+        // container's identity, and `format` above still decides the sample layout.
+        let writerFileType = format == kAudioFileWAVEType ? kAudioFileRF64Type : format
+
         status = ExtAudioFileCreateWithURL(
             outputURL as CFURL,
-            format,
+            writerFileType,
             &outputDescription,
             nil,
             AudioFileFlags.eraseFile.rawValue, // overwrite old file if present
@@ -229,6 +249,35 @@ extension AudioFormatConverter {
 }
 
 extension AudioFormatConverter {
+    /// Estimates the size in bytes of the PCM the conversion will write.
+    ///
+    /// Frame count is scaled by the sample-rate ratio, so a resample is accounted for. Returns 0
+    /// when the input's length or sample rate cannot be read, which leaves any size limit unenforced
+    /// rather than failing a conversion on a number that could not be established.
+    static func estimatedOutputBytes(
+        file: ExtAudioFileRef,
+        inputDescription: AudioStreamBasicDescription,
+        outputDescription: AudioStreamBasicDescription
+    ) -> UInt64 {
+        var frames: Int64 = 0
+        var size = UInt32(MemoryLayout<Int64>.size)
+
+        guard noErr
+            == ExtAudioFileGetProperty(file, kExtAudioFileProperty_FileLengthFrames, &size, &frames),
+            frames > 0,
+            inputDescription.mSampleRate > 0,
+            outputDescription.mBytesPerFrame > 0
+        else {
+            return 0
+        }
+
+        let ratio = outputDescription.mSampleRate > 0
+            ? outputDescription.mSampleRate / inputDescription.mSampleRate
+            : 1
+
+        return UInt64(Double(frames) * ratio * Double(outputDescription.mBytesPerFrame))
+    }
+
     /// Builds a linear PCM `AudioStreamBasicDescription` from the given options and input description.
     ///
     /// Options values override the input description; `nil` options adopt the input's values.
