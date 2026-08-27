@@ -19,7 +19,7 @@ extension AudioFormatConverter {
     ///
     /// Metadata is copied from the original rather than the intermediate, which carries none.
     func convertViaIntermediate(
-        pcmSource: some WaveformPCMSource,
+        pcmSource: some SequentialPCMSource,
         sampleFormat: (bitDepth: Int, isFloat: Bool)
     ) async throws {
         let intermediate = try writeIntermediateWAV(
@@ -53,7 +53,7 @@ extension AudioFormatConverter {
 
     /// Writes everything `pcmSource` decodes into a WAV in `directory`.
     private func writeIntermediateWAV(
-        from pcmSource: some WaveformPCMSource,
+        from pcmSource: some SequentialPCMSource,
         sampleFormat: (bitDepth: Int, isFloat: Bool),
         directory: URL
     ) throws -> URL {

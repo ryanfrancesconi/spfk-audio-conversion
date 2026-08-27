@@ -170,6 +170,8 @@ AVFoundation cannot open.
 | [spfk-matroska](https://github.com/ryanfrancesconi/spfk-matroska) | Matroska demuxing, for the decoder above |
 | [spfk-lame](https://github.com/ryanfrancesconi/spfk-lame) | LAME + mpg123 xcframeworks for MP3 encoding/decoding |
 | [spfk-utils](https://github.com/ryanfrancesconi/spfk-utils) | General utilities (`Entropy`, `Serializable`) |
+| [spfk-waveform](https://github.com/ryanfrancesconi/spfk-waveform) | Waveform scanning, for the intermediate PCM path |
+| [spfk-video](https://github.com/ryanfrancesconi/spfk-video) | Video track reading and frame extraction |
 | [sndfile-binary-xcframework](https://github.com/sbooth/sndfile-binary-xcframework) | libsndfile for FLAC/OGG encoding |
 | [ogg-binary-xcframework](https://github.com/sbooth/ogg-binary-xcframework) | Ogg container library |
 | [flac-binary-xcframework](https://github.com/sbooth/flac-binary-xcframework) | FLAC codec |

@@ -5,6 +5,7 @@ import Foundation
 import SPFKAudioBase
 import SPFKBase
 import SPFKTesting
+import SPFKWaveform
 import Testing
 
 @testable import SPFKAudioConversion
