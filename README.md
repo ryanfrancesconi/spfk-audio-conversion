@@ -27,77 +27,29 @@ Matroska is not an `AVAudioFile` format — `.mka`/`.mkv`/`.webm` are absent fro
 `AVURLAsset.audiovisualTypes()` and `AVAudioFile(forReading:)` throws `'fmt?'` on them. They are
 readable here only through the decoder below, and are not writable at all.
 
-## Usage
+## Key types
 
-### Single File Conversion
+| Type | Description |
+|------|-------------|
+| **`AudioFormatConverter`** | One conversion, dispatching to the right encoder for the output format |
+| **`AudioFormatConverterSource`** | The input file, output file and options for one operation |
+| **`AudioFormatConverterAdjustment`** | A change the converter had to make to the requested options, so the caller can report it |
+| **`BatchAudioFormatConverter`** | The above under structured concurrency, with a sliding window of 8 and per-file progress through its delegate |
+| **`BatchAudioFormatConverterResult`** | What one file in a batch produced |
+| **`AudioEditRenderer`** | Applies a pending edit — trim, reverse, fade — and writes the result |
+| **`SegmentDivider`** / **`SegmentDividerOptions`** | Splitting a file into its detected segments |
+| **`BatchSegmentRenderer`** | That split across many files at once |
+| **`MetadataPaster`** | Pastes a filtered subset of metadata from one file to another |
+| **`MatroskaAudioDecoder`** | Demuxed Matroska blocks as PCM, seekable by frame |
+| **`AVAssetReaderPCMSource`** | The same shape over an AVFoundation asset |
 
-```swift
-import SPFKAudioConversion
+`AudioEditRenderer` loads the whole source file into memory as a PCM buffer, applies the edit and
+writes the output, copying text metadata and markers across afterward. PCM formats and AAC are
+written directly through `AVAudioFile`; MP3, FLAC and OGG go through an intermediate WAV and the
+converter. **The whole file is in memory** — fine for sample libraries and short clips, and not for
+very long recordings.
 
-// Basic conversion (options inferred from output extension)
-let converter = AudioFormatConverter(inputURL: inputURL, outputURL: outputURL)
-try await converter.start()
-
-// With explicit options
-var options = AudioFormatConverterOptions()
-options.format = .wav
-options.sampleRate = 44100
-options.bitsPerChannel = 16
-options.channels = 2
-
-let converter = AudioFormatConverter(inputURL: inputURL, outputURL: outputURL, options: options)
-try await converter.start()
-```
-
-### Conversion Options
-
-```swift
-// PCM options with bit depth rule
-let options = try AudioFormatConverterOptions(
-    pcmFormat: .wav,
-    sampleRate: 48000,
-    bitsPerChannel: 24,
-    channels: 2,
-    bitDepthRule: .lessThanOrEqual // won't upsample beyond source bit depth
-)
-
-// Compressed output with bit rate
-var options = AudioFormatConverterOptions(format: .m4a)
-options.bitRate = 256_000 // bits per second (clamped to 64k-320k)
-```
-
-### Batch Conversion
-
-```swift
-let sources = inputURLs.map { url in
-    AudioFormatConverterSource(
-        input: url,
-        output: outputDir.appending(component: "\(url.stem).m4a"),
-        options: AudioFormatConverterOptions(format: .m4a)
-    )
-}
-
-let batch = await BatchAudioFormatConverter(inputs: sources)
-await batch.update(delegate: self) // optional progress reporting
-let results = try await batch.start()
-
-for result in results {
-    switch result {
-    case .success(let source):
-        print("Converted: \(source.output.lastPathComponent)")
-    case .failed(let source, let error):
-        print("Failed: \(source.input.lastPathComponent) - \(error)")
-    }
-}
-```
-
-### Convenience Functions
-
-```swift
-// Format detection
-let isPCM = AudioFormatConverter.isPCM(url: fileURL)
-let isCompressed = AudioFormatConverter.isCompressed(url: fileURL)
-```
+`MetadataPaster`'s operations are all best-effort: a failure in one section does not stop the rest.
 
 ## Metadata Copying
 
@@ -110,15 +62,6 @@ Metadata is automatically copied from source to output after conversion, control
 | `.copyText` | yes | yes | yes | -- | -- |
 | `.copyMarkers` | -- | -- | -- | yes | -- |
 | `.ignore` | -- | -- | -- | -- | -- |
-
-```swift
-let source = AudioFormatConverterSource(
-    input: inputURL,
-    output: outputURL,
-    options: options,
-    metadataCopyScheme: .copyText // default is .copyAll
-)
-```
 
 **Marker format mapping** — markers are written in the native chapter/cue format of the output:
 
