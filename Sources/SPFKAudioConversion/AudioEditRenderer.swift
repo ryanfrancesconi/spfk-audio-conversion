@@ -73,6 +73,17 @@ public actor AudioEditRenderer {
             return try await finish(processed, fileFormat: fileFormat, to: resolvedOutput)
         }
 
+        // MXF decodes fine through `AVAssetReaderPCMSource`, but **nothing here can write one**:
+        // the render replaces the source in place, so the output carries the source's extension,
+        // and no writer in this app or in AVFoundation produces MXF. Refused with a reason rather
+        // than left to `AVAudioFile`, which throws a bare `'fmt?'` the user sees as a failed save
+        // with no cause.
+        if AudioFileType(pathExtension: sourceURL.pathExtension) == .mxf {
+            throw NSError(
+                description: "Audio edits cannot be rendered into \(sourceURL.lastPathComponent): MXF cannot be written"
+            )
+        }
+
         let audioFile = try AVAudioFile(forReading: sourceURL)
 
         // AVAudioFile.length returns 0 for some compressed formats (e.g. MP3) because
