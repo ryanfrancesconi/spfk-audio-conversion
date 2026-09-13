@@ -27,6 +27,10 @@ public struct AudioFormatConverterSource: Sendable {
     /// a selection persisted against an earlier version of a file still converts.
     public var audioTrack: AudioTrackDescription.ID?
 
+    /// The file ``input`` stands in for, when it is a render of that file with pending edits
+    /// applied. The output may not replace this file any more than it may replace ``input``.
+    public var originalInput: URL?
+
     /// An `AVURLAsset` created from ``input``. A new instance is returned on each access.
     public var asset: AVURLAsset { AVURLAsset(url: input) }
 
@@ -42,12 +46,14 @@ public struct AudioFormatConverterSource: Sendable {
         input: URL,
         output: URL,
         options: AudioFormatConverterOptions,
-        metadataCopyScheme: MetadataCopyScheme = .copyAll
+        metadataCopyScheme: MetadataCopyScheme = .copyAll,
+        originalInput: URL? = nil
     ) {
         self.input = input
         self.output = output
         self.options = options
         self.metadataCopyScheme = metadataCopyScheme
+        self.originalInput = originalInput
     }
 }
 
