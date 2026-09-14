@@ -56,7 +56,7 @@ public actor AudioFormatConverter {
         try await inputURL.withSecurityScopedAccess {
             // Ahead of every branch: each one deletes or replaces an existing output.
             for protected in [source.input, source.originalInput].compactMap({ $0 })
-                where Self.isSameFile(source.output, protected)
+                where FileSystem.isSameFile(source.output, protected)
             {
                 throw AudioFormatConverterError.outputReplacesInput(protected)
             }
@@ -167,25 +167,5 @@ public actor AudioFormatConverter {
                 await copyMetadata()
             }
         }
-    }
-
-    // MARK: - File identity
-
-    /// Whether two URLs name the same file on disk, however each path is spelled.
-    ///
-    /// Compared by file identity, so a symlinked directory or a case difference on a
-    /// case-insensitive volume still matches. A URL naming no file matches nothing.
-    static func isSameFile(_ lhs: URL, _ rhs: URL) -> Bool {
-        guard let lhsID = fileIdentifier(of: lhs), let rhsID = fileIdentifier(of: rhs) else { return false }
-
-        return lhsID.isEqual(rhsID)
-    }
-
-    private static func fileIdentifier(of url: URL) -> (any NSObjectProtocol)? {
-        // A cached identifier survives the file being replaced at the same path.
-        var url = url
-        url.removeCachedResourceValue(forKey: .fileResourceIdentifierKey)
-
-        return try? url.resourceValues(forKeys: [.fileResourceIdentifierKey]).fileResourceIdentifier
     }
 }
