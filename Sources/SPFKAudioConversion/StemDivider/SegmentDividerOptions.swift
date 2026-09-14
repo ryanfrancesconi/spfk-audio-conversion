@@ -2,6 +2,7 @@
 
 import Foundation
 import SPFKAudioBase
+import SPFKFileSystem
 
 /// Options controlling per-segment processing and output format for ``SegmentDivider``.
 public struct SegmentDividerOptions: Sendable, Codable {

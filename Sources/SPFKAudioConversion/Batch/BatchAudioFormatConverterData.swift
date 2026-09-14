@@ -2,7 +2,6 @@
 
 import Foundation
 import SPFKBase
-import SPFKFileSystem
 
 /// Mutable state for a ``BatchAudioFormatConverter``, tracking sources and progress.
 public actor BatchAudioFormatConverterData {
@@ -44,32 +43,5 @@ public actor BatchAudioFormatConverterData {
     /// Advances the completed count by one.
     public func increment() {
         completed += 1
-    }
-
-    /// Pre-resolves all `.unique` conflict scheme outputs before concurrent conversion begins.
-    ///
-    /// Iterates sources serially. For each `.unique` source whose output URL is already taken —
-    /// on disk, or handed to an earlier source in this batch — the slot is advanced via
-    /// ``FileSystem/nextAvailableURL(_:delimiter:suffix:excluding:)``. Resolved URLs are held in
-    /// memory rather than claimed on disk, so a source the converter later refuses leaves nothing
-    /// behind. The conflict scheme is then downgraded to `.overwrite`, since the slot is now
-    /// decided and a concurrent conversion must not renumber it again.
-    public func resolveUniqueConflicts() {
-        var claimed: Set<URL> = []
-
-        for i in sources.indices where sources[i].options.conflictScheme == .unique {
-            let resolved = FileSystem.nextAvailableURL(sources[i].output, excluding: claimed)
-
-            // The converter writes into this directory and does not create it.
-            try? FileManager.default.createDirectory(
-                at: resolved.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-
-            claimed.insert(resolved)
-
-            sources[i].output = resolved
-            sources[i].options.conflictScheme = .overwrite
-        }
     }
 }

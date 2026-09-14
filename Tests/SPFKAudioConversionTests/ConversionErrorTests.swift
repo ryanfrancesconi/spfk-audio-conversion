@@ -3,6 +3,7 @@
 import AVFoundation
 import SPFKAudioBase
 import SPFKBase
+import SPFKFileSystem
 import SPFKTesting
 import SPFKVideo
 import Testing

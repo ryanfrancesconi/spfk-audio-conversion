@@ -7,7 +7,8 @@ import SPFKUtils
 /// Converts multiple audio files concurrently using a sliding window of up to 8 tasks.
 ///
 /// Create with an array of ``AudioFormatConverterSource`` values, optionally assign a
-/// ``BatchAudioFormatConverterDelegate`` for progress, then call ``start()``.
+/// ``BatchAudioFormatConverterDelegate`` for progress, then call ``start()``. The batching itself is
+/// `BatchFileConverter`'s.
 public actor BatchAudioFormatConverter {
     /// Convenience alias for ``BatchAudioFormatConverterResult``.
     public typealias Result = BatchAudioFormatConverterResult
@@ -34,51 +35,36 @@ public actor BatchAudioFormatConverter {
     /// Converts all sources, returning a result for each (success or failure with error) **in the
     /// order the sources were given**, which is not the order they complete in.
     public func start() async throws -> [Result] {
-        await data.resolveUniqueConflicts()
+        let sources = await data.sources
+        let batchSize = await data.batchSize
 
-        let collection: [AudioFormatConverterSource] = await data.sources
-        let count = await data.count
-        let batchSize: Int = await data.batchSize
-
-        guard collection.isNotEmpty else {
-            throw NSError(description: "No files to process")
-        }
-
-        // batchMap appends as tasks finish, so each result carries the index it was asked for.
-        let completed: [(index: Int, result: Result)] = try await batchMap(
-            count: count,
-            batchSize: batchSize
-        ) { [weak self] i -> (index: Int, result: Result)? in
-            guard collection.indices.contains(i) else { return nil }
-
-            let source = collection[i]
-
-            var result: Result
-
-            do {
+        let results = try await BatchFileConverter(sources, batchSize: batchSize).start(
+            progress: { [weak self] _, _, result in
+                await self?.sendProgress(for: result.work)
+            },
+            convert: { source in
                 let converter = AudioFormatConverter(source: source)
                 try await converter.start()
                 // The converter's source carries the options actually applied, and any
                 // adjustments it had to make — the local copy predates both.
-                result = await .success(source: converter.source)
-            } catch {
-                result = .failed(source: source, error: error)
+                return await converter.source
             }
+        )
 
-            await self?.sendProgress(for: result)
-
-            return (index: i, result: result)
+        return results.map { result in
+            switch result {
+            case let .success(source): .success(source: source)
+            case let .failed(source, error): .failed(source: source, error: error)
+            }
         }
-
-        return completed.sorted { $0.index < $1.index }.map(\.result)
     }
 
-    private func sendProgress(for result: Result) async {
+    private func sendProgress(for source: AudioFormatConverterSource) async {
         guard let delegate else { return }
 
         await data.increment()
         let progress: UnitInterval = await data.percent
-        let string = "Converted \(result.source.output.lastPathComponent)"
+        let string = "Converted \(source.output.lastPathComponent)"
 
         await delegate.batchProgress(progressEvent: .loading(string: string, progress: progress))
     }
