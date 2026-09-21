@@ -36,7 +36,7 @@ class BatchAudioFormatConverterTests: BinTestCase {
             Log.error(errors)
         }
 
-        #expect(bin.directoryContents?.count == 6)
+        #expect(bin.directoryContents?.count == sources.count)
 
         for result in results {
             switch result {
