@@ -24,6 +24,10 @@ public actor AudioEditRenderer {
     /// The source audio file to read.
     public let sourceURL: URL
 
+    /// The audio track to render, or `nil` for the container's first. An identifier the file does
+    /// not carry falls back to the first.
+    public let audioTrack: AudioTrackDescription.ID?
+
     /// The edit operations to apply.
     public let edit: AudioEditDescription
 
@@ -38,12 +42,14 @@ public actor AudioEditRenderer {
 
     public init(
         sourceURL: URL,
+        audioTrack: AudioTrackDescription.ID? = nil,
         edit: AudioEditDescription,
         outputURL: URL,
         fileConflictScheme: FileConflictScheme = .error,
         metadataCopyScheme: MetadataCopyScheme = .copyAll
     ) {
         self.sourceURL = sourceURL
+        self.audioTrack = audioTrack
         self.edit = edit
         self.outputURL = outputURL
         self.fileConflictScheme = fileConflictScheme
@@ -69,8 +75,9 @@ public actor AudioEditRenderer {
         // Matroska is opaque to AVAudioFile, which throws `'fmt?'` on one. It decodes through the
         // same reader the conversion path uses.
         if AudioFileType(pathExtension: sourceURL.pathExtension)?.isMatroska == true {
-            let (processed, fileFormat) = try readAndApplyEditFromMatroska()
-            return try await finish(processed, fileFormat: fileFormat, to: resolvedOutput)
+            let decoder = try MatroskaAudioDecoder(url: sourceURL, audioTrack: audioTrack)
+            let processed = try readAndApplyEdit(from: decoder)
+            return try await finish(processed, fileFormat: decoder.processingFormat, to: resolvedOutput)
         }
 
         // MXF decodes fine through `AVAssetReaderPCMSource`, but **nothing here can write one**:
@@ -82,6 +89,12 @@ public actor AudioEditRenderer {
             throw NSError(
                 description: "Audio edits cannot be rendered into \(sourceURL.lastPathComponent): MXF cannot be written"
             )
+        }
+
+        // `AVAudioFile` reads the first audio track and cannot be pointed at another.
+        if let reader = try await selectedTrackReader() {
+            let processed = try readAndApplyEdit(from: reader)
+            return try await finish(processed, fileFormat: try await fileFormat(of: reader), to: resolvedOutput)
         }
 
         let audioFile = try AVAudioFile(forReading: sourceURL)
@@ -167,59 +180,12 @@ public actor AudioEditRenderer {
         return resolvedOutput
     }
 
-    /// Decodes the trim window of a Matroska source and applies the edit to it.
-    ///
-    /// The decoder reports what the container declares, which a lossless track undershoots and a
-    /// lossy one overshoots, so the read stops at the first empty chunk rather than at a count.
-    private func readAndApplyEditFromMatroska() throws -> (AVAudioPCMBuffer, AVAudioFormat) {
-        let decoder = try MatroskaAudioDecoder(url: sourceURL)
-
-        let format = decoder.processingFormat
-        let totalFrames = AVAudioFrameCount(max(0, decoder.totalFrameCount))
-
-        guard totalFrames > 0 else {
-            throw NSError(description: "No audio could be decoded from \(sourceURL.lastPathComponent)")
-        }
-
-        let safeEdit = edit.clampingFadesToTrim(fileDuration: Double(totalFrames) / format.sampleRate)
-        let window = Self.window(for: safeEdit.trim, totalFrames: totalFrames, sampleRate: format.sampleRate)
-
-        if window.offset > 0 {
-            try decoder.seek(toFrame: AVAudioFramePosition(window.offset))
-        }
-
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: window.frameCount),
-              let chunk = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: Self.decodeChunkFrames)
-        else {
-            throw NSError(description: "Failed to allocate PCM buffer for \(sourceURL.lastPathComponent)")
-        }
-
-        while buffer.frameLength < window.frameCount {
-            try Task.checkCancellation()
-
-            let wanted = min(Self.decodeChunkFrames, window.frameCount - buffer.frameLength)
-            let read = try decoder.readNextChunk(into: chunk, frameCount: wanted)
-
-            guard read > 0 else { break }
-
-            try buffer.copy(from: chunk, frames: read)
-        }
-
-        guard buffer.frameLength > 0 else {
-            throw NSError(description: "Read 0 frames from \(sourceURL.lastPathComponent)")
-        }
-
-        let isPreTrimmed = window.offset > 0 || window.frameCount < totalFrames
-
-        return (try buffer.applying(safeEdit, isPreTrimmed: isPreTrimmed), format)
-    }
-
     /// Frames per decoder read while filling the window.
-    private static let decodeChunkFrames: AVAudioFrameCount = 16384
+    static let decodeChunkFrames: AVAudioFrameCount = 16384
 
     /// The frames a trim covers, in the same rounding `AVAudioPCMBuffer.extract(from:to:)` uses —
     /// the two have to agree, since either can produce the rendered buffer.
-    private static func window(
+    static func window(
         for trim: TrimDescription,
         totalFrames: AVAudioFrameCount,
         sampleRate: Double

@@ -132,15 +132,7 @@ extension AudioFormatConverter {
     func requiresTrackDemux() async -> Bool {
         guard let audioTrack = source.audioTrack else { return false }
 
-        let tracks = (try? await source.asset.loadTracks(withMediaType: .audio)) ?? []
-
-        guard let first = tracks.first,
-              AudioTrackDescription.ID(persistentTrackID: first.trackID) != audioTrack
-        else {
-            return false
-        }
-
-        return tracks.contains { AudioTrackDescription.ID(persistentTrackID: $0.trackID) == audioTrack }
+        return await source.asset.holdsAudioTrackOtherThanTheFirst(audioTrack)
     }
 
     /// Converts the selected audio track of an AVFoundation-readable container.
@@ -152,5 +144,21 @@ extension AudioFormatConverter {
         // A track reached this way is a dub or a commentary, which is lossy in every file seen;
         // 24-bit is what the Matroska path writes for a codec that states no depth of its own.
         try await convertViaIntermediate(pcmSource: reader, sampleFormat: (24, false))
+    }
+}
+
+extension AVAsset {
+    /// Whether this asset carries the audio track `id` and it is not the first, which is all the
+    /// ordinary decode path reaches.
+    func holdsAudioTrackOtherThanTheFirst(_ id: AudioTrackDescription.ID) async -> Bool {
+        let tracks = (try? await loadTracks(withMediaType: .audio)) ?? []
+
+        guard let first = tracks.first,
+              AudioTrackDescription.ID(persistentTrackID: first.trackID) != id
+        else {
+            return false
+        }
+
+        return tracks.contains { AudioTrackDescription.ID(persistentTrackID: $0.trackID) == id }
     }
 }
