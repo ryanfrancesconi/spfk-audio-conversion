@@ -95,7 +95,7 @@ class BatchEdgeCaseTests: BinTestCase {
 
         let inputs = TestBundleResources.shared.formats
 
-        // Pre-create an output file for each input so every job encounters a conflict
+        // Every input shares one base name, so all but the first output collide with another in the batch.
         var sources: [AudioFormatConverterSource] = []
 
         for input in inputs {
@@ -124,6 +124,9 @@ class BatchEdgeCaseTests: BinTestCase {
         for result in results {
             #expect(result.source.output.exists)
         }
+
+        #expect(Set(results.map(\.source.output)).count == inputs.count)
+        #expect(results.allSatisfy { $0.source.options.conflictScheme == .overwrite })
     }
 
     // MARK: - Rejected input claims no output slot
