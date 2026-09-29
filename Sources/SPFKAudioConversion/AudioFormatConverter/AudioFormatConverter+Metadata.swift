@@ -120,14 +120,9 @@ extension AudioFormatConverter {
     ) {
         switch outputType {
         case .wav, .w64, .aiff, .aifc:
-            // RIFF cue points via AudioToolbox
+            // Cue points via AudioToolbox; endTime and color travel in the name suffix.
             let audioMarkers = descriptions.enumerated().map { i, desc in
-                AudioMarker(
-                    name: desc.name ?? "Marker",
-                    time: desc.startTime,
-                    sampleRate: desc.sampleRate ?? 0,
-                    markerID: Int32(i)
-                )
+                desc.audioMarker(markerID: i, fileType: outputType)
             }
 
             if !AudioMarkerUtil.write(audioMarkers, to: url) {
