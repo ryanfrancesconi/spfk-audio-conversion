@@ -50,20 +50,45 @@
         return -1;
     }
 
-    // Copy audio data in chunks using integer format for lossless precision
-    int *buffer = (int *)malloc(BUFFER_FRAMES * inputInfo.channels * sizeof(int));
-    if (buffer == NULL) {
-        sf_close(outFile);
-        sf_close(inFile);
-        return -1;
-    }
+    // Integer sources are copied as int, which is exact. libsndfile does not scale float samples
+    // into the int range on an int read, so a float source read that way arrives as silence; it
+    // is copied as float instead, clipped to full scale by the encoder.
+    int sourceSubformat = inputInfo.format & SF_FORMAT_SUBMASK;
+    BOOL isFloatSource = sourceSubformat == SF_FORMAT_FLOAT || sourceSubformat == SF_FORMAT_DOUBLE;
 
     sf_count_t readCount;
-    while ((readCount = sf_readf_int(inFile, buffer, BUFFER_FRAMES)) > 0) {
-        sf_writef_int(outFile, buffer, readCount);
+
+    if (isFloatSource) {
+        sf_command(outFile, SFC_SET_CLIPPING, NULL, SF_TRUE);
+
+        float *buffer = (float *)malloc(BUFFER_FRAMES * inputInfo.channels * sizeof(float));
+        if (buffer == NULL) {
+            sf_close(outFile);
+            sf_close(inFile);
+            return -1;
+        }
+
+        while ((readCount = sf_readf_float(inFile, buffer, BUFFER_FRAMES)) > 0) {
+            sf_writef_float(outFile, buffer, readCount);
+        }
+
+        free(buffer);
+
+    } else {
+        int *buffer = (int *)malloc(BUFFER_FRAMES * inputInfo.channels * sizeof(int));
+        if (buffer == NULL) {
+            sf_close(outFile);
+            sf_close(inFile);
+            return -1;
+        }
+
+        while ((readCount = sf_readf_int(inFile, buffer, BUFFER_FRAMES)) > 0) {
+            sf_writef_int(outFile, buffer, readCount);
+        }
+
+        free(buffer);
     }
 
-    free(buffer);
     sf_close(outFile);
     sf_close(inFile);
 
