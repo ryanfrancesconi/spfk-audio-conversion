@@ -3,6 +3,7 @@
 import AVFoundation
 import Foundation
 import SPFKAudioBase
+import SPFKAudioConverterC
 import SPFKBase
 import SPFKTesting
 import Testing
@@ -45,5 +46,27 @@ class LosslessSourceDepthTests: BinTestCase {
         try await AudioFormatConverter(inputURL: input, outputURL: output, options: options).start()
 
         #expect(try Self.holdsMoreThan16Bits(output))
+    }
+
+    @Test func lessThanOrEqualKeepsA16BitSourceAt16BitsInFLAC() async throws {
+        let input = bin.appending(component: "source16.wav", directoryHint: .notDirectory)
+        try await AudioFormatConverter(
+            inputURL: TestBundleResources.shared.tabla_wav,
+            outputURL: input,
+            options: AudioFormatConverterOptions(pcmFormat: .wav, bitsPerChannel: 16)
+        ).start()
+
+        let output = bin.appending(component: "\(#function).flac", directoryHint: .notDirectory)
+        var options = AudioFormatConverterOptions(format: .flac)
+        options.bitsPerChannel = 24
+        options.bitDepthRule = .lessThanOrEqual
+
+        try await AudioFormatConverter(inputURL: input, outputURL: output, options: options).start()
+
+        var sampleRate: Int32 = 0
+        var channels: Int32 = 0
+        var bitDepth: Int32 = 0
+        #expect(SndFileConverter().fileInfo(output.path, sampleRate: &sampleRate, channels: &channels, bitDepth: &bitDepth) == 0)
+        #expect(bitDepth == 16)
     }
 }

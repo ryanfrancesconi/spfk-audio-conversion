@@ -86,7 +86,7 @@ extension AudioFormatConverter {
         try Task.checkCancellation()
 
         let converter = SndFileConverter()
-        let bitDepth = Int32(source.options.bitsPerChannel ?? 0)
+        let bitDepth = Int32(flacBitDepth())
         let status = converter.convert(
             toFLAC: inputURL.path,
             output: source.output.path,
@@ -96,6 +96,22 @@ extension AudioFormatConverter {
         guard status == 0, source.output.exists else {
             throw NSError(description: "Failed to convert to FLAC: \(source.input.lastPathComponent)")
         }
+    }
+
+    /// The requested depth after ``AudioFormatConverterOptions/bitDepthRule``, or 0 to keep the
+    /// source's.
+    private func flacBitDepth() -> UInt32 {
+        guard let requested = source.options.bitsPerChannel else { return 0 }
+
+        guard source.options.bitDepthRule == .lessThanOrEqual,
+              let format = try? AVAudioFile(forReading: source.input).fileFormat,
+              let sourceBits = format.streamDescription.pointee.sourceBitsPerChannel,
+              requested > sourceBits
+        else {
+            return requested
+        }
+
+        return UInt32(sourceBits)
     }
 
     // MARK: - Ogg Conversion (libsndfile)
@@ -191,7 +207,9 @@ extension AudioFormatConverter {
             needsResample = false
         }
 
-        if supportedInput, supportedChannels, !needsResample {
+        let needsChannelChange = source.options.channels.map { $0 != channelCount } ?? false
+
+        if supportedInput, supportedChannels, !needsResample, !needsChannelChange {
             return source.input
         }
 

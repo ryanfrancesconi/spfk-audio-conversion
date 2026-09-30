@@ -188,11 +188,38 @@ class MultichannelConversionTests: BinTestCase {
             options: AudioFormatConverterOptions(format: format)
         ).start()
 
+        #expect(try Self.channelCount(of: output) == 6)
+    }
+
+    @Test(arguments: [AudioFileType.mp3, .flac, .ogg])
+    func aChannelCountIsHonoredOnTheDirectEncoders(format: AudioFileType) async throws {
+        let input = TestBundleResources.shared.tabla_wav
+        #expect(try AVAudioFile(forReading: input).fileFormat.channelCount == 2)
+
+        let output = bin.appending(component: "\(#function).\(format.pathExtension)", directoryHint: .notDirectory)
+        var options = AudioFormatConverterOptions(format: format)
+        options.channels = 1
+
+        try await AudioFormatConverter(inputURL: input, outputURL: output, options: options).start()
+
+        #expect(try Self.channelCount(of: output) == 1)
+    }
+
+    /// libsndfile has no MP3 reader here and Core Audio no Ogg one, so each is read by the other.
+    static func channelCount(of url: URL) throws -> Int {
+        guard url.pathExtension == "ogg" || url.pathExtension == "opus" else {
+            return Int(try AVAudioFile(forReading: url).fileFormat.channelCount)
+        }
+
         var sampleRate: Int32 = 0
         var channels: Int32 = 0
         var bitDepth: Int32 = 0
-        #expect(SndFileConverter().fileInfo(output.path, sampleRate: &sampleRate, channels: &channels, bitDepth: &bitDepth) == 0)
-        #expect(channels == 6)
+
+        guard SndFileConverter().fileInfo(url.path, sampleRate: &sampleRate, channels: &channels, bitDepth: &bitDepth) == 0 else {
+            throw NSError(description: "libsndfile could not open \(url.lastPathComponent)")
+        }
+
+        return Int(channels)
     }
 
     /// Writes 16-bit PCM with the 16-byte `fmt ` chunk, which carries no channel layout.
