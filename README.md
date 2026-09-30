@@ -9,11 +9,11 @@ Audio file format conversion library supporting PCM and compressed formats via C
 ## Features
 
 - Convert between PCM formats (WAV, AIFF, CAF) with sample rate, bit depth, and channel count options
-- Encode to compressed formats (M4A/AAC, MP3, FLAC, OGG Opus)
+- Encode to compressed formats (M4A/AAC, MP3, FLAC, Ogg Vorbis, Ogg Opus)
 - Decode compressed formats to PCM
 - Transcode between compressed formats via intermediate PCM
 - Batch conversion with configurable concurrency and progress reporting
-- Automatic >=2GB file promotion to CAF (64-bit container)
+- WAV output past 4 GiB is written as RF64; AIFF output of 2 GB or more is refused
 - Bit depth rule enforcement to prevent unnecessary upsampling
 
 ## Supported Formats
@@ -21,7 +21,7 @@ Audio file format conversion library supporting PCM and compressed formats via C
 | Direction | Formats |
 |-----------|---------|
 | **Input** | Anything AVFoundation or libsndfile opens (WAV, AIFF, CAF, M4A, MP3, MP4, FLAC, OGG, etc.), plus Matroska via `MatroskaAudioDecoder` |
-| **Output** | WAV, AIFF, CAF, M4A, MP3, FLAC, OGG Opus |
+| **Output** | WAV, AIFF, CAF, M4A, MP3, FLAC, Ogg Vorbis, Ogg Opus |
 
 Matroska is not an `AVAudioFile` format — `.mka`/`.mkv`/`.webm` are absent from
 `AVURLAsset.audiovisualTypes()` and `AVAudioFile(forReading:)` throws `'fmt?'` on them. They are
@@ -42,43 +42,46 @@ readable here only through the decoder below, and are not writable at all.
 | **`MatroskaAudioDecoder`** | Demuxed Matroska blocks as PCM, seekable by frame |
 | **`AVAssetReaderPCMSource`** | The same shape over an AVFoundation asset |
 
-`AudioEditRenderer` loads the whole source file into memory as a PCM buffer, applies the edit and
-writes the output, copying text metadata and markers across afterward. PCM formats and AAC are
-written directly through `AVAudioFile`; MP3, FLAC and OGG go through an intermediate WAV and the
-converter. **The whole file is in memory** — fine for sample libraries and short clips, and not for
-very long recordings.
+`AudioEditRenderer` reads only the trim window as a PCM buffer (a file that cannot state its length
+is read whole), applies the edit and writes the output, copying text metadata and markers across
+afterward. PCM formats and AAC are written directly through `AVAudioFile`; MP3, FLAC and OGG go
+through an intermediate WAV and the converter.
 
 ## Metadata Copying
 
 Metadata is automatically copied from source to output after conversion, controlled by `MetadataCopyScheme` (default: `.copyAll`):
 
-| Scheme | Tags | BEXT/iXML | XMP | Markers | Artwork |
-|--------|:----:|:---------:|:---:|:-------:|:-------:|
-| `.copyAll` | yes | yes | yes | yes | yes |
-| `.copyTextAndMarkers` | yes | yes | yes | yes | -- |
-| `.copyText` | yes | yes | yes | -- | -- |
-| `.copyMarkers` | -- | -- | -- | yes | -- |
-| `.ignore` | -- | -- | -- | -- | -- |
+| Scheme | Tags | BEXT/iXML | Markers | Artwork |
+|--------|:----:|:---------:|:-------:|:-------:|
+| `.copyAll` | yes | yes | yes | yes |
+| `.copyTextAndMarkers` | yes | yes | yes | -- |
+| `.copyText` | yes | yes | -- | -- |
+| `.copyMarkers` | -- | -- | yes | -- |
+| `.ignore` | -- | -- | -- | -- |
 
 **Marker format mapping** — markers are written in the native chapter/cue format of the output:
 
 | Output format | Marker format |
 |---------------|---------------|
-| WAV, AIFF | RIFF cue points (AudioToolbox) |
+| WAV | RIFF cue points (AudioToolbox) |
+| AIFF | `MARK` chunk (AudioToolbox) |
 | MP3 | ID3v2 CHAP frames |
 | FLAC, OGG, Opus | Vorbis comment chapters |
-| M4A, MP4, M4B | Nero `chpl` chapters |
+| M4A, MP4, M4B | QuickTime chapter track |
 
-BEXT and iXML are WAV-to-WAV only. XMP copy is best-effort (silently skipped if not present).
+BEXT and iXML copy between WAV and FLAC, in either direction.
 
 ## Architecture
 
 ```
 AudioFormatConverter.start()
+  |-- Matroska or MXF input, or a non-first audio track
+  |                     --> decoded to an intermediate WAV, then converted from that
   |-- PCM output        --> convertToPCM()         [CoreAudio ExtAudioFile]
   |-- MP3 output        --> convertToMP3()         [LAME via LameConverter]
   |-- FLAC output       --> convertToFLAC()        [libsndfile via SndFileConverter]
-  |-- OGG Opus output   --> convertToOGG()         [libsndfile via SndFileConverter]
+  |-- Ogg Vorbis output --> convertToVorbis()      [libsndfile via SndFileConverter]
+  |-- Ogg Opus output   --> convertToOpus()        [libsndfile via SndFileConverter]
   |-- PCM in, M4A out   --> AssetWriter            [AVFoundation]
   |-- Compressed in/out --> convertCompressed()     [intermediate PCM + target encoder]
 
