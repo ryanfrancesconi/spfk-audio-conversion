@@ -23,8 +23,6 @@ class AudioFormatConverterTests: BinTestCase {
         #expect(
             outputAVFile.duration.isApproximatelyEqual(to: expectedDuration, relativeTolerance: 0.05)
         )
-
-        Log.debug("✓ Wrote \(output.lastPathComponent)")
     }
 
     // MARK: - Tests

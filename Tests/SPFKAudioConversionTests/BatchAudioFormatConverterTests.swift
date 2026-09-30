@@ -37,16 +37,6 @@ class BatchAudioFormatConverterTests: BinTestCase {
         }
 
         #expect(bin.directoryContents?.count == sources.count)
-
-        for result in results {
-            switch result {
-            case let .success(source: source):
-                Log.debug("✅ \(source)")
-
-            case let .failed(source: source, error: error):
-                Log.debug("❌ \(source), \(error)")
-            }
-        }
     }
 
     // MARK: - Stress test: concurrent conversion to all output formats
@@ -116,7 +106,5 @@ class BatchAudioFormatConverterTests: BinTestCase {
 }
 
 extension BatchAudioFormatConverterTests: @unchecked Sendable, BatchAudioFormatConverterDelegate {
-    func batchProgress(progressEvent: LoadStateEvent) async {
-        Log.debug(progressEvent)
-    }
+    func batchProgress(progressEvent: LoadStateEvent) async {}
 }

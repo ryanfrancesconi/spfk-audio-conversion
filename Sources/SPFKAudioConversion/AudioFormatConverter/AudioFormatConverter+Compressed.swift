@@ -230,7 +230,6 @@ extension AudioFormatConverter {
     /// Removes temp file if it differs from the original.
     private func cleanUpTempFile(inputURL: URL, originalURL: URL) {
         guard inputURL != originalURL else { return }
-        Log.debug("Removing temp file at", inputURL.path)
         try? inputURL.delete()
     }
 
@@ -276,7 +275,6 @@ extension AudioFormatConverter {
         )
 
         defer {
-            Log.debug("Removing \(tempFile)")
             try? FileManager.default.removeItem(at: tempFile)
         }
 

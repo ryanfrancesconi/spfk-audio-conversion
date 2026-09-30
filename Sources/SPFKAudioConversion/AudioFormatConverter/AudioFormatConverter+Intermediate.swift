@@ -29,7 +29,6 @@ extension AudioFormatConverter {
         )
 
         defer {
-            Log.debug("Removing intermediate file at", intermediate.path)
             try? intermediate.delete()
         }
 
