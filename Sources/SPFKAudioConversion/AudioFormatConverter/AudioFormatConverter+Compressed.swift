@@ -236,7 +236,7 @@ extension AudioFormatConverter {
         let inputURL = source.input
         let outputURL = source.output
 
-        let tempName = outputURL.deletingPathExtension().lastPathComponent + "_tmp.wav"
+        let tempName = outputURL.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
         let tempFile = outputURL.deletingLastPathComponent().appendingPathComponent(tempName)
 
         var tempOptions = AudioFormatConverterOptions()

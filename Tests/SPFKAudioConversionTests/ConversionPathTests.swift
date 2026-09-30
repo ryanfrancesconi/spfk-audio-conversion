@@ -116,6 +116,23 @@ class ConversionPathTests: BinTestCase {
         #expect(outputFile.duration > 0)
     }
 
+    @Test func convertingToM4AKeepsAFileNamedLikeTheTempFile() async throws {
+        let input = TestBundleResources.shared.tabla_mp3
+        let output = bin.appending(component: "bystander.m4a", directoryHint: .notDirectory)
+        let bystander = output.deletingLastPathComponent().appending(
+            component: output.deletingPathExtension().lastPathComponent + "_tmp.wav",
+            directoryHint: .notDirectory
+        )
+        let bystanderData = Data("bystander".utf8)
+        try bystanderData.write(to: bystander)
+
+        try await AudioFormatConverter(inputURL: input, outputURL: output).start()
+
+        #expect(output.exists)
+        #expect(bystander.exists)
+        #expect(try Data(contentsOf: bystander) == bystanderData)
+    }
+
     // MARK: - FLAC / OGG cross-format
 
     @Test func convertFLACToMP3() async throws {
