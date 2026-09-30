@@ -126,4 +126,43 @@ final class MatroskaAudioDecoderTests {
         // energy: roughly 2 seconds at 48 kHz, which a decoder producing nothing would fail.
         #expect(samples.count > 48000, "decoded \(samples.count) frames")
     }
+
+    /// Each block of this fixture holds 66,666 frames, several decode buffers' worth, and both
+    /// files are 24-bit PCM, so the decode has to match the WAV sample for sample.
+    @Test func pcmBlocksLongerThanOneBufferDecodeWhole() throws {
+        let reference = try AVAudioFile(forReading: TestBundleResources.shared.tabla_wav)
+        let decoder = try MatroskaAudioDecoder(url: TestBundleResources.shared.tabla_pcm_long_blocks_mka)
+
+        let chunkFrames: AVAudioFrameCount = 16384
+        let chunk = try #require(AVAudioPCMBuffer(pcmFormat: decoder.processingFormat, frameCapacity: chunkFrames))
+        let expected = try #require(AVAudioPCMBuffer(
+            pcmFormat: reference.processingFormat,
+            frameCapacity: AVAudioFrameCount(reference.length)
+        ))
+        try reference.read(into: expected)
+
+        var decoded: [[Float]] = Array(repeating: [], count: Int(decoder.processingFormat.channelCount))
+
+        while try decoder.readNextChunk(into: chunk, frameCount: chunkFrames) > 0 {
+            let channels = try #require(chunk.floatChannelData)
+
+            for channel in decoded.indices {
+                decoded[channel].append(
+                    contentsOf: UnsafeBufferPointer(start: channels[channel], count: Int(chunk.frameLength))
+                )
+            }
+        }
+
+        #expect(decoded[0].count == Int(reference.length))
+
+        let expectedChannels = try #require(expected.floatChannelData)
+
+        for channel in decoded.indices {
+            let reference = Array(UnsafeBufferPointer(
+                start: expectedChannels[channel],
+                count: Int(expected.frameLength)
+            ))
+            #expect(decoded[channel] == reference, "channel \(channel)")
+        }
+    }
 }

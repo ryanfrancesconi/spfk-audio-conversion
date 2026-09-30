@@ -156,8 +156,11 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
             pendingOffset += taken
             runConsumedFrames += AVAudioFramePosition(taken)
 
+            // Only the spent buffer goes: the rest of a PCM block longer than one buffer is still
+            // waiting in the remainder.
             if pendingOffset >= pending.frameLength {
-                clearPending()
+                self.pending = nil
+                pendingOffset = 0
             }
         }
 
