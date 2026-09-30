@@ -161,20 +161,17 @@ public actor AudioEditRenderer {
         }
 
         try await write(processed, fileFormat: fileFormat, to: resolvedOutput)
-
-        let convSource = AudioFormatConverterSource(
-            input: sourceURL,
-            output: resolvedOutput,
-            options: AudioFormatConverterOptions(),
-            metadataCopyScheme: metadataCopyScheme
-        )
-        await AudioFormatConverter(source: convSource).copyMetadata()
+        try await carryMetadata(to: resolvedOutput)
 
         // Re-write markers adjusted for the trim range, overwriting the unadjusted markers
         // that copyMetadata wrote above.
         if metadataCopyScheme.includesMarkers, edit.trim.inPoint > 0 || edit.trim.outPoint > 0 {
             let renderedDuration = Double(processed.frameLength) / processed.format.sampleRate
-            await adjustAndWriteMarkers(to: resolvedOutput, newDuration: renderedDuration)
+
+            guard await adjustAndWriteMarkers(to: resolvedOutput, newDuration: renderedDuration) else {
+                try? FileManager.default.removeItem(at: resolvedOutput)
+                throw NSError(description: "The markers of \(sourceURL.lastPathComponent) could not be written to the render")
+            }
         }
 
         return resolvedOutput
@@ -355,39 +352,5 @@ public actor AudioEditRenderer {
 
     private static func isDirectlyWritable(url: URL) -> Bool {
         AudioFileType(pathExtension: url.pathExtension)?.isAVAudioFileWritable ?? true
-    }
-
-    /// Reads the source's markers, moves them onto the trimmed timeline, and re-writes them to
-    /// `outputURL`, overwriting the unadjusted markers `copyMetadata` already wrote.
-    ///
-    /// - Parameter newDuration: duration of the render, bounding a region that ran past the
-    ///   out-point.
-    private func adjustAndWriteMarkers(to outputURL: URL, newDuration: TimeInterval) async {
-        guard let outputType = AudioFileType(pathExtension: outputURL.pathExtension) else { return }
-
-        let collection: AudioMarkerDescriptionCollection
-        do {
-            collection = try await AudioMarkerDescriptionCollection(url: sourceURL)
-        } catch {
-            return
-        }
-
-        guard collection.count > 0 else { return }
-
-        let adjusted = AudioMarkerDescription.adjustedForTrim(
-            collection.markerDescriptions,
-            inPoint: edit.trim.inPoint,
-            outPoint: edit.trim.outPoint,
-            newDuration: newDuration
-        )
-
-        // An empty set has to clear the file rather than skip it: `copyMetadata` already wrote the
-        // source's markers at their pre-trim times, and leaving them is worse than having none.
-        guard adjusted.isNotEmpty else {
-            AudioFormatConverter.removeMarkers(from: outputURL, outputType: outputType)
-            return
-        }
-
-        AudioFormatConverter.writeMarkers(adjusted, to: outputURL, outputType: outputType)
     }
 }

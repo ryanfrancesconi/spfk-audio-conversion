@@ -456,4 +456,27 @@ class AudioEditRendererTests: BinTestCase {
 
         return bitDepth
     }
+
+    // MARK: - Metadata that cannot be carried refuses the render
+
+    /// A render replaces the user's file on Save, so one that lost the file's tags must not be
+    /// handed back as a success.
+    @Test func aRenderWhoseMetadataCannotBeCopiedThrows() async throws {
+        let source = TestBundleResources.shared.mp3_id3
+        let output = bin.appending(component: "readOnly.mp3", directoryHint: .notDirectory)
+        try FileManager.default.copyItem(at: TestBundleResources.shared.tabla_mp3, to: output)
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: output.path)
+
+        let renderer = AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 0.5, outPoint: 1.5)),
+            outputURL: output
+        )
+
+        await #expect(throws: (any Error).self) {
+            try await renderer.carryMetadata(to: output)
+        }
+
+        #expect(!output.exists)
+    }
 }
