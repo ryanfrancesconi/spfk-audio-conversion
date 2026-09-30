@@ -18,6 +18,13 @@ extension AudioFormatConverter {
 
         guard scheme != .ignore else { return }
 
+        // Finder tags are an extended attribute, so they are copied whatever the container.
+        defer {
+            if scheme.includesFinderTags {
+                copyFinderTags()
+            }
+        }
+
         let outputType = AudioFileType(pathExtension: source.output.pathExtension)
 
         // Skip formats with no metadata support (e.g. CAF)
@@ -37,10 +44,6 @@ extension AudioFormatConverter {
 
         if scheme.includesImage {
             copyImage()
-        }
-
-        if scheme.includesFinderTags {
-            copyFinderTags()
         }
     }
 

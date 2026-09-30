@@ -3,6 +3,7 @@
 import Foundation
 import SPFKAudioBase
 import SPFKBase
+import SPFKFileSystem
 import SPFKMetadata
 import SPFKMetadataBase
 import SPFKMetadataC
@@ -230,5 +231,18 @@ class MetadataCopyTests: BinTestCase {
 
         let failures = await converter.source.metadataFailures
         #expect(failures.contains { $0.category == .tags }, "\(failures)")
+    }
+
+    // MARK: - CAF
+
+    /// Finder tags live in an extended attribute, so they travel whatever the container.
+    @Test func finderTagsReachACAFOutput() async throws {
+        let input = bin.appending(component: "tagged.wav", directoryHint: .notDirectory)
+        try FileManager.default.copyItem(at: TestBundleResources.shared.tabla_wav, to: input)
+        try input.set(tagNames: ["Keeper"])
+
+        let output = try await convert(input: input, outputExtension: "caf")
+
+        #expect(output.tagNames.contains("Keeper"))
     }
 }
