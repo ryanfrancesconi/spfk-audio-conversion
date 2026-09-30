@@ -32,9 +32,7 @@ extension AudioFormatConverter {
 
     /// Returns whether the file at `url` uses a compressed audio format.
     ///
-    /// **`nil` means undetermined and a caller has to say what that means at its own site.** An
-    /// earlier non-optional spelling answered `false` there, so a container Core Audio cannot open
-    /// read as PCM — which is how Matroska input was routed to `AVAssetWriter`.
+    /// **`nil` means undetermined and a caller has to say what that means at its own site.**
     ///
     /// - Parameters:
     ///   - url: The file URL to inspect.

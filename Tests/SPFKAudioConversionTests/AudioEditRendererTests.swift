@@ -48,8 +48,8 @@ class AudioEditRendererTests: BinTestCase {
 
     // MARK: - Matroska input
 
-    /// `AVAudioFile` throws `'fmt?'` on a Matroska container, so a pending edit on one used to fail
-    /// where converting the same file succeeded.
+    /// `AVAudioFile` throws `'fmt?'` on a Matroska container, so a pending edit on one has to render
+    /// without it, as conversion does.
     ///
     /// `tabla_pcm_mka` holds `tabla.wav` uncompressed, so the render can be checked against the
     /// source rather than only for existing.

@@ -26,8 +26,7 @@ import SPFKVideo
 /// interleave their reads. The conformance exists so a player can hand it to a feed `Task`, and is a
 /// statement of that invariant rather than a claim of thread safety.
 public final class MatroskaAudioDecoder: @unchecked Sendable {
-    /// The codec table moved to `spfk-matroska` (2026-08-06) once the sample-buffer path needed
-    /// the same mapping — one table rather than two that drift.
+    /// The codec table is `spfk-matroska`'s, shared with its sample-buffer path.
     public typealias Codec = MatroskaAudioCodec
 
     public let url: URL

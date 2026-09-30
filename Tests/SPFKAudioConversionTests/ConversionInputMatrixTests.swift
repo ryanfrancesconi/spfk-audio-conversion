@@ -13,8 +13,8 @@ import Testing
 
 /// Which containers the converter accepts as *input*, asserted per format.
 ///
-/// The rest of the suite converts from `tabla.wav` almost exclusively, which is how the whole
-/// Matroska family became unconvertible with every test green.
+/// The rest of the suite converts from `tabla.wav` almost exclusively, so per-container input
+/// coverage lives here.
 @Suite(.tags(.file), .serialized)
 final class ConversionInputMatrixTests: BinTestCase {
     /// Every committed fixture that names a container the app lets a user import.
@@ -94,8 +94,7 @@ final class ConversionInputMatrixTests: BinTestCase {
         #expect(audioTracks.count == 1)
     }
 
-    /// A codec that does not decode has to fail naming the *codec*. Every Matroska failure used to
-    /// read `Unable to open the input file.`, which names neither the codec nor the container.
+    /// A codec that does not decode has to fail naming the *codec*.
     @Test func refusesAnUndecodableCodecByName() async throws {
         let input = bin.appending(component: "undecodable.mka", directoryHint: .notDirectory)
         try retagCodec(of: TestBundleResources.shared.tabla_mka, as: "A_DTS", to: input)

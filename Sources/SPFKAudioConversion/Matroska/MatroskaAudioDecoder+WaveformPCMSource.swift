@@ -4,8 +4,7 @@ import AVFoundation
 import Foundation
 import SPFKAudioBase
 
-/// Lets a waveform scan read Matroska audio, which is the whole reason ShadowTag wants the format:
-/// an audio application showing no waveform for a file is not usable whatever else works.
+/// Lets a waveform scan read Matroska audio.
 ///
 /// ``SeekablePCMSource`` is the same samples with a movable playhead, which is what makes the file
 /// playable rather than only drawable. Both are the adapter's whole job — the decoder emits

@@ -9,8 +9,8 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-/// The audio half of MXF support: `AVAudioFile` refuses the container, so everything ShadowTag does
-/// with an MXF's audio comes through this source.
+/// The audio half of MXF support: `AVAudioFile` refuses the container, so every read of an MXF's
+/// audio comes through this source.
 ///
 /// Gated on the plug-ins being installed — Apple ships MXF support as a separate download, so on a
 /// machine without it there is nothing to read.

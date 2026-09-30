@@ -10,9 +10,6 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-/// The milestone that makes ShadowTag want Matroska at all: an audio application showing no
-/// waveform for a file is not usable whatever else works.
-///
 /// `tabla.mka` is `tabla.m4a`'s AAC remuxed with `-c copy`, so the same scan run through
 /// AVFoundation is the reference for what the Matroska path should produce.
 @Suite(.tags(.file), .serialized)

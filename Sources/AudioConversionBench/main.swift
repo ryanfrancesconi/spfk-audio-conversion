@@ -11,14 +11,13 @@ import SPFKBase
 // same.
 //
 // An executable, not a test suite, for two reasons: the numbers only mean anything compiled `-O`,
-// and `-configuration Release` cannot run a test target that uses `@testable`. It asserts nothing —
-// what counts as too slow is a judgement for `plans/spfk-audio-conversion-audit.md` Part 3.
+// and `-configuration Release` cannot run a test target that uses `@testable`. It asserts nothing.
 //
 // Run:
 //   xcodebuild -workspace Spongefork.xcworkspace -scheme spfk-audio-conversion-bench \
 //     -configuration Release -destination 'platform=macOS' \
-//     -derivedDataPath /Users/rf/Documents/Dev/xcodebuild/cli-derived-data build
-//   /Users/rf/Documents/Dev/xcodebuild/cli-derived-data/Build/Products/Release/spfk-audio-conversion-bench
+//     -derivedDataPath <DerivedData> build
+//   <DerivedData>/Build/Products/Release/spfk-audio-conversion-bench
 //
 // Takes minutes and one source duration as an optional argument:
 //   spfk-audio-conversion-bench 600

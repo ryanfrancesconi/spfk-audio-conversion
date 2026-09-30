@@ -11,17 +11,7 @@ import SPFKBase
 /// overwhelming I/O; within each file, ``SegmentDivider`` processes up to 4 segments concurrently.
 ///
 /// ```swift
-/// let items = selectedElements.compactMap { element -> BatchSegmentRenderer.Item? in
-///     let allMarkers = element.mafDescription.markerCollection.markerDescriptions
-///     let segments = allMarkers
-///         .filter { $0.markerType == .region }
-///         .compactMap { desc -> TrimDescription? in
-///             guard let end = desc.endTime else { return nil }
-///             return TrimDescription(inPoint: desc.startTime, outPoint: end)
-///         }
-///     guard !segments.isEmpty else { return nil }
-///     return BatchSegmentRenderer.Item(sourceURL: element.url, segments: segments, markers: allMarkers)
-/// }
+/// let items = [BatchSegmentRenderer.Item(sourceURL: url, segments: segments, markers: markers)]
 /// let renderer = BatchSegmentRenderer(items: items, outputDirectory: dir, options: opts)
 /// let total = try await renderer.render()
 /// ```

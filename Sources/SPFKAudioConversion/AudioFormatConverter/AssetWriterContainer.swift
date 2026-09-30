@@ -25,11 +25,9 @@ struct AssetWriterContainer: @unchecked Sendable {
         self.readerOutput = readerOutput
     }
 
-    // TODO: macOS 26 adds async AVAssetWriter APIs (outputProvider(for:), inputReceiver(for:),
-    // SampleBufferReceiver.append). Initial attempts to use them here resulted in either a crash
-    // ("Must start a session") or an indefinite hang at receiver.append(). The legacy
-    // requestMediaDataWhenReady path works correctly on all platforms including macOS 26,
-    // so we use it unconditionally until the new APIs stabilize.
+    // Uses `requestMediaDataWhenReady` rather than the macOS 26 async writer APIs
+    // (`outputProvider(for:)`, `inputReceiver(for:)`), which crashed ("Must start a session") or
+    // hung at `append()` here.
     func start() async throws {
         try await _startLegacy()
     }
