@@ -290,11 +290,14 @@ extension AudioFormatConverter {
 
         let mSampleRate = options.sampleRate ?? inputDescription.mSampleRate
         let mChannelsPerFrame = options.channels ?? inputDescription.mChannelsPerFrame
-        var mBitsPerChannel = options.bitsPerChannel ?? inputDescription.mBitsPerChannel
+        // Rounded up to whole bytes, so a 20-bit lossless source is written as 24.
+        let sourceBits = inputDescription.sourceBitsPerChannel.map { UInt32(($0 + 7) / 8 * 8) }
+        var mBitsPerChannel = options.bitsPerChannel ?? sourceBits ?? 0
 
-        // For example: don't allow upsampling to 24bit if the src is 16
-        if options.bitDepthRule == .lessThanOrEqual, mBitsPerChannel > inputDescription.mBitsPerChannel {
-            mBitsPerChannel = inputDescription.mBitsPerChannel
+        // For example: don't allow upsampling to 24bit if the src is 16. A source with no depth of
+        // its own, such as AAC, sets no ceiling.
+        if options.bitDepthRule == .lessThanOrEqual, let sourceBits, mBitsPerChannel > sourceBits {
+            mBitsPerChannel = sourceBits
         }
 
         var mBytesPerFrame = mBitsPerChannel * mChannelsPerFrame / 8
