@@ -47,9 +47,9 @@ public actor AudioFormatConverter {
     /// - Matroska or MXF input, or an audio track that is not the container's first → decoded here
     ///   to an intermediate WAV and converted from that
     /// - PCM output → `ExtAudioFile` (CoreAudio)
-    /// - FLAC / OGG / MP3 output → libsndfile / LAME (direct)
+    /// - FLAC / Vorbis / Opus / MP3 output → libsndfile / LAME (direct)
     /// - PCM-to-compressed → `AVAssetWriter` (AVFoundation)
-    /// - Compressed-to-compressed → intermediate PCM then `AVAssetWriter`
+    /// - Compressed-to-M4A → intermediate PCM then `AVAssetWriter`
     public func start() async throws {
         try Task.checkCancellation()
 
@@ -71,7 +71,7 @@ public actor AudioFormatConverter {
                     AudioFileType(pathExtension: source.input.pathExtension)
                 }
 
-            // verify inputFormat, only allow files with path extensions for speed?
+            // Only formats in `inputFormats` are accepted.
             guard let inputFormat, AudioFormatConverter.inputFormats.contains(inputFormat) else {
                 throw NSError(
                     description:
@@ -138,8 +138,6 @@ public actor AudioFormatConverter {
             }
 
             let outputFormat = AudioFileType(pathExtension: source.output.pathExtension)
-
-            // Format checks are necessary as AVAssetReader has opinions about compressed
 
             do {
                 // PCM output, any supported input

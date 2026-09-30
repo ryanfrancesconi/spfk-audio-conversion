@@ -112,9 +112,6 @@ extension AudioFormatConverter {
         }
     }
 
-    /// Writes an array of marker descriptions to the given URL using the format-appropriate
-    /// marker writing utility. Called by `copyMarkers` and by `AudioEditRenderer` after
-    /// adjusting marker times to account for trim operations.
     /// Writes markers to an existing file, dispatching on `outputType`.
     ///
     /// Public because it is the one entry point that writes markers *without* touching anything

@@ -11,16 +11,13 @@ import SPFKVideo
 
 /// Applies an ``AudioEditDescription`` to an audio file and writes the result to an output URL.
 ///
-/// The entire source file is loaded into memory as a PCM buffer, the edit is applied
-/// (trim → reverse → fade), and the result is written to the output URL. Text metadata
+/// The trim window is read as a PCM buffer (a file that cannot state its length is read whole),
+/// the edit is applied (trim → reverse → fade), and the result is written to the output URL. Text metadata
 /// and markers are copied from the source to the output after writing.
 ///
 /// PCM formats (WAV, AIFF, CAF) and AAC (M4A) are written directly via `AVAudioFile`.
 /// Formats unsupported by `AVAudioFile` (MP3, FLAC, OGG) are written via an intermediate
 /// WAV file passed through ``AudioFormatConverter``.
-///
-/// - Note: The entire file is loaded into memory. Suitable for sample libraries and
-///   short clips. Very long recordings may exhaust available RAM.
 public actor AudioEditRenderer {
     /// The source audio file to read.
     public let sourceURL: URL

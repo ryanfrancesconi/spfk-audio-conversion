@@ -8,7 +8,7 @@ import SPFKMetadata
 // MARK: - Definitions
 
 extension AudioFormatConverter {
-    /// Formats that this class can write: WAV, AIFF, CAF, M4A, MP3.
+    /// Formats this class can write.
     public static let outputFormats: [AudioFileType] = AudioFormatConverterOptions.supportedOutputFormats
 
     /// File extensions corresponding to ``outputFormats``.
