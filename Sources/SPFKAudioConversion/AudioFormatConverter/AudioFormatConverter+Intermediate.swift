@@ -47,6 +47,7 @@ extension AudioFormatConverter {
         // gets the intermediate run's answer only if they are carried back.
         source.output = await converter.source.output
         source.adjustments = await converter.source.adjustments
+        source.metadataFailures = await converter.source.metadataFailures
 
         await copyMetadata()
     }

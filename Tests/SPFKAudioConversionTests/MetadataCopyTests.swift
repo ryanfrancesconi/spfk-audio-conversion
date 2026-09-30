@@ -207,4 +207,28 @@ class MetadataCopyTests: BinTestCase {
         #expect(outputID3.load())
         #expect(outputID3[id3: .private] == nil, "XMP PRIV frame is stripped — TagLibBridge.copyTags only copies the PropertyMap")
     }
+
+    // MARK: - Failures reach the caller
+
+    @Test func aMetadataCopyThatFailsIsReported() async throws {
+        let input = TestBundleResources.shared.mp3_id3
+        #expect(try TagProperties(url: input)[.title] != nil)
+
+        let output = bin.appending(component: "readOnly.mp3", directoryHint: .notDirectory)
+        try FileManager.default.copyItem(at: TestBundleResources.shared.tabla_mp3, to: output)
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: output.path)
+
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: output.path)
+        }
+
+        let converter = AudioFormatConverter(
+            source: AudioFormatConverterSource(input: input, output: output, options: AudioFormatConverterOptions())
+        )
+
+        await converter.copyMetadata()
+
+        let failures = await converter.source.metadataFailures
+        #expect(failures.contains { $0.category == .tags }, "\(failures)")
+    }
 }

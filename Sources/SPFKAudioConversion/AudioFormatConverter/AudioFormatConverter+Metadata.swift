@@ -52,6 +52,7 @@ extension AudioFormatConverter {
             try TagProperties.copyTags(from: source.input, to: source.output)
         } catch {
             Log.error("Failed to copy tags from \(source.input.lastPathComponent):", error)
+            recordMetadataFailure(.tags, error)
         }
     }
 
@@ -68,6 +69,7 @@ extension AudioFormatConverter {
             try MetadataPaster.writeBEXT(bext, to: source.output, type: outputType)
         } catch {
             Log.error("Failed to copy BEXT to \(source.output.lastPathComponent):", error)
+            recordMetadataFailure(.bext, error)
         }
     }
 
@@ -84,6 +86,7 @@ extension AudioFormatConverter {
             try MetadataPaster.writeIXML(ixml, to: source.output, type: outputType)
         } catch {
             Log.error("Failed to copy iXML to \(source.output.lastPathComponent):", error)
+            recordMetadataFailure(.ixml, error)
         }
     }
 
@@ -101,7 +104,9 @@ extension AudioFormatConverter {
 
         guard collection.count > 0 else { return }
 
-        AudioFormatConverter.writeMarkers(collection.markerDescriptions, to: source.output, outputType: outputType)
+        if !AudioFormatConverter.writeMarkers(collection.markerDescriptions, to: source.output, outputType: outputType) {
+            recordMetadataFailure(.markers, "\(collection.count) markers could not be written")
+        }
     }
 
     /// Writes an array of marker descriptions to the given URL using the format-appropriate
@@ -113,11 +118,15 @@ extension AudioFormatConverter {
     /// else — going through `MetaAudioFileDescription.save(dirtyFlags: [.markers])` instead would
     /// run `tagProperties.save` on the way, and a caller that only has markers in hand would
     /// strip the file's tags doing it.
+    ///
+    /// - Returns: `false` when the write failed. A format with no marker support returns `true`:
+    ///   there was nothing it could have written.
+    @discardableResult
     public static func writeMarkers(
         _ descriptions: [AudioMarkerDescription],
         to url: URL,
         outputType: AudioFileType
-    ) {
+    ) -> Bool {
         switch outputType {
         case .wav, .w64, .aiff, .aifc:
             // Cue points via AudioToolbox; endTime and color travel in the name suffix.
@@ -127,6 +136,7 @@ extension AudioFormatConverter {
 
             if !AudioMarkerUtil.write(audioMarkers, to: url) {
                 Log.error("Failed to write markers to \(url.lastPathComponent)")
+                return false
             }
 
         case .mp3:
@@ -136,6 +146,7 @@ extension AudioFormatConverter {
 
             if !MPEGChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
+                return false
             }
 
         case .flac, .ogg, .opus:
@@ -144,6 +155,7 @@ extension AudioFormatConverter {
 
             if !XiphChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
+                return false
             }
 
         case .m4a, .mp4, .aac, .m4b, .mov, .m4v:
@@ -157,11 +169,14 @@ extension AudioFormatConverter {
 
             if !MP4ChapterUtil.write(chapters, to: url.path) {
                 Log.error("Failed to write chapters to \(url.lastPathComponent)")
+                return false
             }
 
         default:
             Log.debug("Marker writing not supported for \(outputType.rawValue) — skipping")
         }
+
+        return true
     }
 
     /// Removes every marker from `url`, dispatching on `outputType`.
@@ -200,6 +215,7 @@ extension AudioFormatConverter {
             try source.input.copyFinderTags(to: source.output)
         } catch {
             Log.error("Failed to copy Finder tags to \(source.output.lastPathComponent):", error)
+            recordMetadataFailure(.finderTags, error)
         }
     }
 
@@ -211,10 +227,21 @@ extension AudioFormatConverter {
 
             guard TagPicture.write(pictureRef, path: source.output.path) else {
                 Log.error("Failed to write image to \(source.output.lastPathComponent)")
+                recordMetadataFailure(.image, "The image could not be written")
                 return
             }
         } catch {
             // Source has no embedded image — expected for many files
         }
+    }
+
+    // MARK: - Failures
+
+    private func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ error: Error) {
+        recordMetadataFailure(category, error.localizedDescription)
+    }
+
+    private func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ reason: String) {
+        source.metadataFailures.append(AudioFormatConverterMetadataFailure(category: category, reason: reason))
     }
 }
