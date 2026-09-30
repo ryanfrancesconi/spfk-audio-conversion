@@ -62,7 +62,6 @@ extension AudioFormatConverter {
 
         func closeFiles() {
             if let strongFile = inputFile {
-                // Log.error("🗑 Disposing input", inputURL.path)
                 if noErr != ExtAudioFileDispose(strongFile) {
                     Log.error("Error disposing input file, could have a memory leak")
                 }
