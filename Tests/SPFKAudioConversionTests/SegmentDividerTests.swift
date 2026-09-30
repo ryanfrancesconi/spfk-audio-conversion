@@ -199,6 +199,38 @@ class SegmentDividerTests: BinTestCase {
         #expect(seg3.count == 0)
     }
 
+    @Test("A converted segment whose name is taken writes its markers to the new file")
+    func convertedSegmentWithATakenNameWritesToTheNewFile() async throws {
+        let sourceURL = try makeSourceFile()
+
+        var firstOptions = SegmentDividerOptions()
+        firstOptions.outputFormat = .aiff
+        firstOptions.fileConflictScheme = .overwrite
+
+        let first = try await SegmentDivider(
+            sourceURL: sourceURL,
+            segments: segments,
+            outputDirectory: bin,
+            options: firstOptions
+        ).divide()
+        let firstData = try Data(contentsOf: first[1])
+
+        var secondOptions = SegmentDividerOptions()
+        secondOptions.outputFormat = .aiff
+
+        let second = try await SegmentDivider(
+            sourceURL: sourceURL,
+            segments: segments,
+            outputDirectory: bin,
+            options: secondOptions,
+            markers: [AudioMarkerDescription(name: "Cue A", startTime: 0.35)]
+        ).divide()
+
+        #expect(second[1] != first[1])
+        #expect(try Data(contentsOf: first[1]) == firstData)
+        #expect(try await AudioMarkerDescriptionCollection(url: second[1]).count == 1)
+    }
+
     @Test("divide() writes cue markers to converted output format (WAV → AIFF)")
     func cueMarkersWrittenToConvertedOutput() async throws {
         let sourceURL = try makeSourceFile()

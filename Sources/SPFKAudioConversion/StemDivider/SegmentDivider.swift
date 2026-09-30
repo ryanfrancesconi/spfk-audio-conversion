@@ -179,8 +179,10 @@ public actor SegmentDivider {
         )
         let converter = AudioFormatConverter(source: convSource)
         try await converter.start()
-        writeNonSegmentMarkers(segment: segment, to: convSource.output, sourceSampleRate: sourceSampleRate)
-        return convSource.output
+
+        let output = await converter.source.output
+        writeNonSegmentMarkers(segment: segment, to: output, sourceSampleRate: sourceSampleRate)
+        return output
     }
 
     /// Filters ``markers`` to cue markers (no `endTime`) within `segment`'s time window,
