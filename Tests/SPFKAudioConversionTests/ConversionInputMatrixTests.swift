@@ -266,4 +266,38 @@ final class ConversionInputMatrixTests: BinTestCase {
         #expect(error?.localizedDescription.contains("incompatible format") == true, "\(String(describing: error))")
         #expect(!outputURL.exists)
     }
+
+    // MARK: - Damaged input
+
+    /// A Matroska file cut short converts up to where it stops, rather than failing or coming out
+    /// empty.
+    @Test func aTruncatedMatroskaFileConvertsWhatItHolds() async throws {
+        let intact = TestBundleResources.shared.tabla_mka
+        let data = try Data(contentsOf: intact)
+
+        let truncated = bin.appending(component: "truncated.mka", directoryHint: .notDirectory)
+        try data.prefix(data.count * 97 / 100).write(to: truncated)
+
+        func convertedFrames(_ input: URL) async throws -> AVAudioFramePosition {
+            let output = bin.appending(
+                component: input.deletingPathExtension().lastPathComponent + ".wav",
+                directoryHint: .notDirectory
+            )
+
+            try await AudioFormatConverter(
+                inputURL: input,
+                outputURL: output,
+                options: AudioFormatConverterOptions(format: .wav)
+            ).start()
+
+            return try AVAudioFile(forReading: output).length
+        }
+
+        let whole = try await convertedFrames(intact)
+        let cut = try await convertedFrames(truncated)
+
+        // 3% of the bytes is about 3% of the packets of this AAC stream, plus the partial block.
+        #expect(cut < whole)
+        #expect(Double(cut) > Double(whole) * 0.9, "\(cut) of \(whole) frames")
+    }
 }
