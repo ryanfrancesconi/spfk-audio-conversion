@@ -53,6 +53,7 @@ struct AssetWriterContainer: @unchecked Sendable {
         // The block below runs on AVFoundation's queue, outside any task, where `Task.isCancelled`
         // is always false; the flag is how a cancellation reaches it.
         let cancellation = CancellationFlag()
+        let appended = AppendedFrames()
 
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -85,6 +86,11 @@ struct AssetWriterContainer: @unchecked Sendable {
                                         writer.cancelWriting()
                                         continuation.resume(
                                             throwing: reader.error ?? NSError(description: "Conversion failed with error"))
+                                    } else if appended.count == 0 {
+                                        // The encoder still writes its priming, so an empty source would otherwise come
+                                        // out as a short silent file.
+                                        writer.cancelWriting()
+                                        continuation.resume(throwing: NSError(description: "No audio could be read from the input file"))
                                     } else {
                                         continuation.resume()
                                     }
@@ -95,6 +101,8 @@ struct AssetWriterContainer: @unchecked Sendable {
 
                             // A rejected buffer leaves the reader completing normally, so nothing
                             // below reports it.
+                            appended.add(CMSampleBufferGetNumSamples(buffer))
+
                             if !writerInput.append(buffer) {
                                 let error = writer.error ?? NSError(description: "The writer rejected a sample buffer")
 
@@ -154,5 +162,23 @@ private final class CancellationFlag: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         cancelled = true
+    }
+}
+
+/// Frames handed to the writer, counted on AVFoundation's queue.
+private final class AppendedFrames: @unchecked Sendable {
+    private let lock = NSLock()
+    private var total = 0
+
+    var count: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return total
+    }
+
+    func add(_ frames: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        total += frames
     }
 }

@@ -119,6 +119,15 @@ extension AudioFormatConverter {
         else {
             Log.error("No conversion is needed, formats are the same. Copying to", outputURL)
 
+            var frames: Int64 = 0
+            var size = UInt32(MemoryLayout<Int64>.size)
+
+            guard noErr == ExtAudioFileGetProperty(strongInputFile, kExtAudioFileProperty_FileLengthFrames, &size, &frames),
+                  frames > 0
+            else {
+                throw NSError(description: "No audio could be read from \(inputURL.lastPathComponent)")
+            }
+
             didFileCopy = true
             try FileManager.default.copyItem(at: inputURL, to: outputURL)
             return
@@ -190,6 +199,7 @@ extension AudioFormatConverter {
         let bufferByteSize: UInt32 = 32768
         var srcBuffer = [UInt8](repeating: 0, count: Int(bufferByteSize))
         var iteration = 0
+        var framesWritten: Int64 = 0
 
         var error: Error?
 
@@ -239,7 +249,14 @@ extension AudioFormatConverter {
                     error = NSError(code: Int(writeError), description: "Error writing to the output file.")
                     break
                 }
+
+                framesWritten += Int64(frameCount)
             }
+        }
+
+        // A description Core Audio cannot use reads as an immediate end of file, with no error.
+        if error == nil, framesWritten == 0 {
+            error = NSError(description: "No audio could be read from \(inputURL.lastPathComponent)")
         }
 
         if let error {

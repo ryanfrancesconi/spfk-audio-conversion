@@ -300,4 +300,24 @@ final class ConversionInputMatrixTests: BinTestCase {
         #expect(cut < whole)
         #expect(Double(cut) > Double(whole) * 0.9, "\(cut) of \(whole) frames")
     }
+
+    /// A WAV with no `data` chunk holds no audio, and no route may report it as converted.
+    @Test(arguments: [AudioFileType.wav, .flac, .mp3, .m4a])
+    func aWAVWithoutAudioIsNotReportedAsConverted(output: AudioFileType) async throws {
+        let outputURL = bin.appending(component: "no-data.\(output.pathExtension)", directoryHint: .notDirectory)
+
+        do {
+            try await AudioFormatConverter(
+                inputURL: TestBundleResources.shared.no_data_chunk,
+                outputURL: outputURL,
+                options: AudioFormatConverterOptions(format: output)
+            ).start()
+        } catch {
+            #expect(!outputURL.exists)
+            return
+        }
+
+        let frames = (try? AVAudioFile(forReading: outputURL).length) ?? 0
+        Issue.record("converted to \(output.pathExtension) with \(frames) frames")
+    }
 }
