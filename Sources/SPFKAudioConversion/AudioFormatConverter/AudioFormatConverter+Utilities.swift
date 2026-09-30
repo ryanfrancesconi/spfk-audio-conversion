@@ -14,8 +14,8 @@ extension AudioFormatConverter {
     /// File extensions corresponding to ``outputFormats``.
     public static let outputPathExtensions: [String] = outputFormats.map(\.pathExtension)
 
-    /// Formats that this class can read
-    public static let inputFormats: [AudioFileType] = AudioFileType.allCases
+    /// Formats that this class can read. MPEG-TS is left out: nothing here decodes it.
+    public static let inputFormats: [AudioFileType] = AudioFileType.allCases.filter { $0 != .ts }
 }
 
 extension AudioFormatConverter {

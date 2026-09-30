@@ -148,6 +148,30 @@ extension AudioFormatConverter {
     }
 }
 
+// MARK: - MXF
+
+extension AudioFormatConverter {
+    /// Converts the audio of an MXF file, which `AVAssetReader` decodes and `ExtAudioFile` cannot
+    /// open.
+    func convertFromMXF() async throws {
+        try Task.checkCancellation()
+
+        guard ProVideoFormats.isAvailable else {
+            throw NSError(description: "\(source.input.lastPathComponent): \(ProVideoFormats.installMessage)")
+        }
+
+        let reader = try await AVAssetReaderPCMSource(url: source.input, audioTrack: source.audioTrack)
+
+        // PCM essence states its depth; anything else is written at 24, as a lossy track is.
+        let description = try await reader.track.load(.formatDescriptions).first
+        let depth = description
+            .flatMap { CMAudioFormatDescriptionGetStreamBasicDescription($0)?.pointee.sourceBitsPerChannel }
+            .flatMap { [16, 24, 32].contains($0) ? $0 : nil }
+
+        try await convertViaIntermediate(pcmSource: reader, sampleFormat: (depth ?? 24, false))
+    }
+}
+
 extension AVAsset {
     /// Whether this asset carries the audio track `id` and it is not the first, which is all the
     /// ordinary decode path reaches.

@@ -39,6 +39,8 @@ final class ConversionInputMatrixTests: BinTestCase {
             resources.sample_mkv,
             resources.sample_webm,
         ]
+        // MXF is readable only where Apple's Pro Video Formats are installed.
+        + (ProVideoFormats.isAvailable ? [resources.sample_mxf] : [])
     }()
 
     /// One target per route out of ``AudioFormatConverter/start()``: `ExtAudioFile` for `.wav`,
@@ -245,5 +247,23 @@ final class ConversionInputMatrixTests: BinTestCase {
         data.replaceSubrange(range, with: replacement)
 
         try data.write(to: destination)
+    }
+
+    /// Nothing here decodes MPEG-TS, so it is refused before anything is written, naming the file.
+    @Test func mpegTSIsRefusedUpFront() async throws {
+        let input = TestBundleResources.shared.sine_ts
+        let outputURL = bin.appending(component: "sine-ts.wav", directoryHint: .notDirectory)
+
+        let error = await #expect(throws: (any Error).self) {
+            try await AudioFormatConverter(
+                inputURL: input,
+                outputURL: outputURL,
+                options: AudioFormatConverterOptions(format: .wav)
+            ).start()
+        }
+
+        #expect(error?.localizedDescription.contains(input.lastPathComponent) == true, "\(String(describing: error))")
+        #expect(error?.localizedDescription.contains("incompatible format") == true, "\(String(describing: error))")
+        #expect(!outputURL.exists)
     }
 }

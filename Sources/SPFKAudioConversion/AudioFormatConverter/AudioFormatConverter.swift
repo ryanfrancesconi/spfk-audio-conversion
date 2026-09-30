@@ -44,8 +44,8 @@ public actor AudioFormatConverter {
 
     /// Performs the conversion, routing through the appropriate pipeline based on input/output formats.
     ///
-    /// - Matroska input, or an audio track that is not the container's first → decoded here to an
-    ///   intermediate WAV and converted from that
+    /// - Matroska or MXF input, or an audio track that is not the container's first → decoded here
+    ///   to an intermediate WAV and converted from that
     /// - PCM output → `ExtAudioFile` (CoreAudio)
     /// - FLAC / OGG / MP3 output → libsndfile / LAME (direct)
     /// - PCM-to-compressed → `AVAssetWriter` (AVFoundation)
@@ -83,6 +83,11 @@ public actor AudioFormatConverter {
             // intermediate WAV and converted from there rather than routed below.
             if inputFormat.isMatroska {
                 try await convertFromMatroska()
+                return
+            }
+
+            if inputFormat == .mxf {
+                try await convertFromMXF()
                 return
             }
 
