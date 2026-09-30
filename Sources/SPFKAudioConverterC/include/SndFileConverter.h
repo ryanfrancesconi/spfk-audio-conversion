@@ -20,17 +20,23 @@ NS_ASSUME_NONNULL_BEGIN
 /// Convert PCM audio (WAV/AIFF/FLAC) to Ogg Vorbis.
 /// @param input Path to the input audio file.
 /// @param output Path for the output Ogg file.
+/// @param bitRate Target stereo bit rate in bits per second, approximate since Vorbis is variable
+///                rate. Pass 0 for the encoder's default.
 /// @return 0 on success, non-zero on failure.
 - (int)convertToVorbis:(NSString *)input
-                output:(NSString *)output;
+                output:(NSString *)output
+               bitRate:(int)bitRate;
 
 /// Convert PCM audio (WAV/AIFF/FLAC) to Ogg Opus.
 /// Opus encodes only at 8/12/16/24/48 kHz; resample the input before calling.
 /// @param input Path to the input audio file.
 /// @param output Path for the output Opus file.
+/// @param bitRate Target stereo bit rate in bits per second, halved per channel for mono. Pass 0
+///                for the encoder's default.
 /// @return 0 on success, non-zero on failure.
 - (int)convertToOpus:(NSString *)input
-              output:(NSString *)output;
+              output:(NSString *)output
+             bitRate:(int)bitRate;
 
 /// Read audio file info via libsndfile.
 /// @param path Path to the audio file.

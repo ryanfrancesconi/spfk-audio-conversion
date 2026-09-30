@@ -143,9 +143,10 @@ extension AudioFormatConverter {
         }
 
         let converter = SndFileConverter()
+        let bitRate = Int32(source.options.bitRate)
         let status = isOpus
-            ? converter.convert(toOpus: inputURL.path, output: source.output.path)
-            : converter.convert(toVorbis: inputURL.path, output: source.output.path)
+            ? converter.convert(toOpus: inputURL.path, output: source.output.path, bitRate: bitRate)
+            : converter.convert(toVorbis: inputURL.path, output: source.output.path, bitRate: bitRate)
 
         guard status == 0, source.output.exists else {
             let codec = isOpus ? "Opus" : "Vorbis"

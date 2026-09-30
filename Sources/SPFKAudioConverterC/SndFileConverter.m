@@ -118,20 +118,52 @@ static int finishConversion(SNDFILE *inFile, SNDFILE *outFile, int result) {
 
 - (int)convertToVorbis:(NSString *)input
                 output:(NSString *)output
+               bitRate:(int)bitRate
 {
-    return [self convertToOgg:input output:output subformat:SF_FORMAT_VORBIS];
+    return [self convertToOgg:input output:output subformat:SF_FORMAT_VORBIS bitRate:bitRate];
 }
 
 - (int)convertToOpus:(NSString *)input
               output:(NSString *)output
+             bitRate:(int)bitRate
 {
-    return [self convertToOgg:input output:output subformat:SF_FORMAT_OPUS];
+    return [self convertToOgg:input output:output subformat:SF_FORMAT_OPUS bitRate:bitRate];
+}
+
+/// libsndfile's Vorbis quality (0...1) for a stereo bit rate. The encoder takes a quality rather
+/// than a rate, so this interpolates between rates measured from a 48 kHz stereo encode; 83 kbps
+/// is the lowest it produces.
+static double vorbisQuality(int bitRate) {
+    static const double kbps[] = {83, 124, 183, 299, 499};
+    static const double quality[] = {0, 0.25, 0.5, 0.75, 1};
+    double target = bitRate / 1000.0;
+
+    if (target <= kbps[0]) return quality[0];
+
+    for (int i = 1; i < 5; i++) {
+        if (target <= kbps[i]) {
+            double t = (target - kbps[i - 1]) / (kbps[i] - kbps[i - 1]);
+            return quality[i - 1] + t * (quality[i] - quality[i - 1]);
+        }
+    }
+
+    return quality[4];
+}
+
+/// libsndfile's Opus compression level (0...1) for a stereo bit rate. The level runs linearly from
+/// 256 kbps down to 6 kbps per channel.
+static double opusCompressionLevel(int bitRate) {
+    double perChannel = bitRate / 2.0;
+    double level = (256000.0 - perChannel) / (256000.0 - 6000.0);
+
+    return level < 0 ? 0 : level > 1 ? 1 : level;
 }
 
 /// Shared Ogg encode path. `subformat` selects the codec carried in the container.
 - (int)convertToOgg:(NSString *)input
              output:(NSString *)output
           subformat:(int)subformat
+            bitRate:(int)bitRate
 {
     SF_INFO inputInfo;
     memset(&inputInfo, 0, sizeof(inputInfo));
@@ -151,6 +183,25 @@ static int finishConversion(SNDFILE *inFile, SNDFILE *outFile, int result) {
     if (outFile == NULL) {
         sf_close(inFile);
         return -1;
+    }
+
+    // Before the first write, which is when the encoder is configured.
+    if (bitRate > 0) {
+        BOOL applied;
+
+        if (subformat == SF_FORMAT_VORBIS) {
+            double quality = vorbisQuality(bitRate);
+            applied = sf_command(outFile, SFC_SET_VBR_ENCODING_QUALITY, &quality, sizeof(quality)) == SF_TRUE;
+        } else {
+            double level = opusCompressionLevel(bitRate);
+            applied = sf_command(outFile, SFC_SET_COMPRESSION_LEVEL, &level, sizeof(level)) == SF_TRUE;
+        }
+
+        if (!applied) {
+            sf_close(outFile);
+            sf_close(inFile);
+            return -1;
+        }
     }
 
     // Use float buffers for lossy encoding
