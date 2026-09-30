@@ -34,6 +34,8 @@ public actor BatchAudioFormatConverter {
 
     /// Converts all sources, returning a result for each (success or failure with error) **in the
     /// order the sources were given**, which is not the order they complete in.
+    ///
+    /// - Throws: `CancellationError` when cancelled, even if some sources finished first.
     public func start() async throws -> [Result] {
         let sources = await data.sources
         let batchSize = await data.batchSize
@@ -50,6 +52,10 @@ public actor BatchAudioFormatConverter {
                 return await converter.source
             }
         )
+
+        if results.contains(where: { $0.error is CancellationError }) {
+            throw CancellationError()
+        }
 
         return results.map { result in
             switch result {
