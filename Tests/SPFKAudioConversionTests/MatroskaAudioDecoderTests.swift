@@ -94,6 +94,23 @@ final class MatroskaAudioDecoderTests {
         #expect(samples.isEmpty == false)
     }
 
+    /// PCM is read without a stream description, so the track's own refusal has to be asked for.
+    @Test func aCompressedPCMTrackIsRefused() throws {
+        var track = MatroskaTestFile.Track.pcm(number: 1, uid: 1)
+        track.contentEncoding = .zlib()
+
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("spfk-zlib-pcm-\(UUID().uuidString).mka")
+        try MatroskaTestFile(
+            tracks: [track],
+            clusters: [.init(timecode: 0, blocks: [.init(track: 1, frames: [Data(repeating: 0, count: 8)])])]
+        ).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        #expect(throws: MatroskaAudioDecoderError.unsupportedCodec("A_PCM/INT/LIT")) {
+            try MatroskaAudioDecoder(url: url)
+        }
+    }
+
     /// WebM carries Opus rather than AAC, so this exercises a second codec through the same path.
     ///
     /// **Core Audio decodes Opus** — it is in `kAudioFormatProperty_DecodeFormatIDs` and needs no

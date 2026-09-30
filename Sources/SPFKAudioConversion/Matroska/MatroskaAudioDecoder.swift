@@ -318,7 +318,9 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
         self.processingFormat = processingFormat
 
         if codec.pcmSampleFormat != nil {
-            guard let blockReader = MatroskaPCMBlockReader(track: track) else {
+            guard track.hasUnsupportedContentEncoding == false,
+                  let blockReader = MatroskaPCMBlockReader(track: track)
+            else {
                 throw MatroskaAudioDecoderError.unsupportedCodec(track.codecID)
             }
 
