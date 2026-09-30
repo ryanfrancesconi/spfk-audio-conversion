@@ -92,7 +92,7 @@ class AssetWriterErrorTests: BinTestCase {
     /// Runs the conversion onto a volume with less free space than the output needs.
     ///
     /// The reader completes normally in this case and `append` keeps returning `true` — only
-    /// `finishWriting()` reports the failure, and it leaves a file at the destination either way.
+    /// `finishWriting()` reports the failure, and the file it leaves at the destination is removed.
     @Test func fullDiskConversionThrows() async throws {
         deleteBinOnExit = true
 
@@ -115,15 +115,19 @@ class AssetWriterErrorTests: BinTestCase {
         options.format = .m4a
         options.bitRate = 320_000
 
+        let output = mount.appending(component: "out.m4a", directoryHint: .notDirectory)
+
         let converter = AudioFormatConverter(
             inputURL: TestBundleResources.shared.tabla_wav,
-            outputURL: mount.appending(component: "out.m4a", directoryHint: .notDirectory),
+            outputURL: output,
             options: options
         )
 
         await #expect(throws: Error.self) {
             try await converter.start()
         }
+
+        #expect(!output.exists)
     }
 
     @discardableResult

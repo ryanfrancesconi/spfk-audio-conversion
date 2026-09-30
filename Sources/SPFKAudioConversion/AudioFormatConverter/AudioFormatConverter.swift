@@ -154,13 +154,14 @@ public actor AudioFormatConverter {
                     throw NSError(description: "Unable to determine formats for conversion")
                 }
 
-            } catch is CancellationError {
-                // Clean up partial output file
+            } catch {
+                // Conflict handling above has already cleared this path, so whatever is here is
+                // this conversion's partial output.
                 if source.output.exists {
                     try? FileManager.default.removeItem(at: source.output)
                 }
 
-                throw CancellationError()
+                throw error
             }
 
             if !didFileCopy {
