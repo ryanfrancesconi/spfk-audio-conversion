@@ -309,10 +309,9 @@ extension AVAssetReaderPCMSource: SeekablePCMSource {
 
     /// Repositions by rebuilding the reader, then discarding the difference.
     ///
-    /// **Landing exactly is the contract**, and `AVAssetReader.timeRange` does not honor it for a
-    /// compressed track: it starts at the packet boundary at or before the requested time. So the
-    /// reader is built slightly early and the surplus decoded and thrown away, which is what
-    /// `MatroskaAudioDecoder` does for the same reason.
+    /// **Landing exactly is the contract.** The reader is built slightly early and the surplus
+    /// decoded and thrown away, as `MatroskaAudioDecoder` does, so the landing does not depend on
+    /// where `AVAssetReader.timeRange` starts for a given codec.
     public func seek(toFrame frame: AVAudioFramePosition) throws {
         let target = max(0, frame)
 

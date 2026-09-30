@@ -110,15 +110,67 @@ struct AVAssetReaderPCMSourceTests {
         #expect(abs(source.totalFrameCount - 91_110) < 3000)
     }
 
-    /// `SeekablePCMSource` says landing exactly is the contract: a compressed track restarts at a
-    /// packet boundary, and a caller scrubbing a waveform cannot compensate for "approximately".
-    @Test func seekingLandsExactlyWhereAsked() async throws {
-        let source = try await AVAssetReaderPCMSource(url: url)
+    /// `SeekablePCMSource` says landing exactly is the contract, and a caller scrubbing a waveform
+    /// cannot compensate for "approximately". Asserted on the samples, since the position is only
+    /// what the seek recorded: the audio after the seek is found in a full decode, searched near
+    /// the target, and has to sit at it.
+    @Test(arguments: [0.5, 1.0, 1.37])
+    func seekingLandsExactlyWhereAsked(seconds: Double) async throws {
+        let reference = try await decode(try await AVAssetReaderPCMSource(url: url))
 
-        let target = AVAudioFramePosition(source.processingFormat.sampleRate * 1.0)
+        let source = try await AVAssetReaderPCMSource(url: url)
+        let target = AVAudioFramePosition(source.processingFormat.sampleRate * seconds)
         try source.seek(toFrame: target)
 
-        #expect(source.framePosition == target)
+        let window = 2048
+        let buffer = try #require(AVAudioPCMBuffer(
+            pcmFormat: source.processingFormat,
+            frameCapacity: AVAudioFrameCount(window)
+        ))
+        #expect(try source.readNextChunk(into: buffer, frameCount: AVAudioFrameCount(window)) == AVAudioFrameCount(window))
+
+        let afterSeek = Array(UnsafeBufferPointer(start: try #require(buffer.floatChannelData)[0], count: window))
+
+        // Within a packet either side; AAC decodes in 1024-frame packets.
+        let search = 1024
+        let offsets = (-search ... search).filter {
+            Int(target) + $0 >= 0 && Int(target) + $0 + window <= reference.count
+        }
+
+        let best = try #require(offsets.min { lhs, rhs in
+            squaredDifference(afterSeek, reference, at: Int(target) + lhs)
+                < squaredDifference(afterSeek, reference, at: Int(target) + rhs)
+        })
+
+        #expect(best == 0, "landed \(best) frames from \(target)")
+    }
+
+    private func decode(_ source: AVAssetReaderPCMSource) throws -> [Float] {
+        let chunk: AVAudioFrameCount = 4096
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: source.processingFormat, frameCapacity: chunk))
+        var samples: [Float] = []
+
+        while try source.readNextChunk(into: buffer, frameCount: chunk) > 0 {
+            let channel = try #require(buffer.floatChannelData)[0]
+            samples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+        }
+
+        return samples
+    }
+
+    private func squaredDifference(_ samples: [Float], _ reference: [Float], at start: Int) -> Float {
+        samples.withUnsafeBufferPointer { samples in
+            reference.withUnsafeBufferPointer { reference in
+                var sum: Float = 0
+
+                for index in 0 ..< samples.count {
+                    let difference = samples[index] - reference[start + index]
+                    sum += difference * difference
+                }
+
+                return sum
+            }
+        }
     }
 
     /// And the samples after a seek are still the right track's, so the reposition did not quietly
