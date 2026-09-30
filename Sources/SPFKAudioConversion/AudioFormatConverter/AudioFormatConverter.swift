@@ -79,6 +79,17 @@ public actor AudioFormatConverter {
                 )
             }
 
+            // Routing reads the extension and the encoders read the format, so the two have to
+            // name the same type. Checked before anything below can remove an existing output.
+            if let requested = source.options.format,
+               AudioFileType(pathExtension: source.output.pathExtension) != requested
+            {
+                throw NSError(
+                    description:
+                    "\(source.output.lastPathComponent) does not have the extension of the requested format, \(requested.pathExtension.uppercased())."
+                )
+            }
+
             // Matroska is opaque to both Core Audio and AVFoundation, so it is demuxed to an
             // intermediate WAV and converted from there rather than routed below.
             if inputFormat.isMatroska {

@@ -199,4 +199,20 @@ class ConversionErrorTests: BinTestCase {
             try await converter.start()
         }
     }
+
+    // MARK: - Format and extension must agree
+
+    @Test func aFormatTheExtensionContradictsIsRefused() async throws {
+        let output = bin.appending(component: "\(#function).aif", directoryHint: .notDirectory)
+
+        await #expect(throws: (any Error).self) {
+            try await AudioFormatConverter(
+                inputURL: TestBundleResources.shared.tabla_wav,
+                outputURL: output,
+                options: AudioFormatConverterOptions(format: .wav)
+            ).start()
+        }
+
+        #expect(!output.exists)
+    }
 }
