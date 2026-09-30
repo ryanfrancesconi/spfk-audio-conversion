@@ -50,65 +50,70 @@ struct AssetWriterContainer: @unchecked Sendable {
             throw reader.error ?? NSError(description: "Failed to start reading")
         }
 
-        // Capture the current task's cancellation handle so the DispatchQueue callback can check it
-        let taskCancellationCheck: @Sendable () -> Bool = { Task.isCancelled }
+        // The block below runs on AVFoundation's queue, outside any task, where `Task.isCancelled`
+        // is always false; the flag is how a cancellation reaches it.
+        let cancellation = CancellationFlag()
 
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let queue = DispatchQueue(label: "com.spongefork.AudioFormatConverter")
-            let resumeGuard = ContinuationResumeGuard()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                let queue = DispatchQueue(label: "com.spongefork.AudioFormatConverter")
+                let resumeGuard = ContinuationResumeGuard()
 
-            writerInput.requestMediaDataWhenReady(
-                on: queue,
-                using: {
-                    while writerInput.isReadyForMoreMediaData {
-                        if taskCancellationCheck() {
-                            writerInput.markAsFinished()
-                            reader.cancelReading()
-                            writer.cancelWriting()
+                writerInput.requestMediaDataWhenReady(
+                    on: queue,
+                    using: {
+                        while writerInput.isReadyForMoreMediaData {
+                            if cancellation.isCancelled {
+                                writerInput.markAsFinished()
+                                reader.cancelReading()
+                                writer.cancelWriting()
 
-                            if resumeGuard.tryResume() {
-                                continuation.resume(throwing: CancellationError())
-                            }
-
-                            return
-                        }
-
-                        guard reader.status == .reading,
-                            let buffer = readerOutput.copyNextSampleBuffer()
-                        else {
-                            writerInput.markAsFinished()
-
-                            if resumeGuard.tryResume() {
-                                if reader.status != .completed {
-                                    writer.cancelWriting()
-                                    continuation.resume(
-                                        throwing: reader.error ?? NSError(description: "Conversion failed with error"))
-                                } else {
-                                    continuation.resume()
+                                if resumeGuard.tryResume() {
+                                    continuation.resume(throwing: CancellationError())
                                 }
+
+                                return
                             }
 
-                            break
-                        }
+                            guard reader.status == .reading,
+                                let buffer = readerOutput.copyNextSampleBuffer()
+                            else {
+                                writerInput.markAsFinished()
 
-                        // A rejected buffer leaves the reader completing normally, so nothing
-                        // below reports it.
-                        if !writerInput.append(buffer) {
-                            let error = writer.error ?? NSError(description: "The writer rejected a sample buffer")
+                                if resumeGuard.tryResume() {
+                                    if reader.status != .completed {
+                                        writer.cancelWriting()
+                                        continuation.resume(
+                                            throwing: reader.error ?? NSError(description: "Conversion failed with error"))
+                                    } else {
+                                        continuation.resume()
+                                    }
+                                }
 
-                            writerInput.markAsFinished()
-                            reader.cancelReading()
-                            writer.cancelWriting()
-
-                            if resumeGuard.tryResume() {
-                                continuation.resume(throwing: error)
+                                break
                             }
 
-                            return
+                            // A rejected buffer leaves the reader completing normally, so nothing
+                            // below reports it.
+                            if !writerInput.append(buffer) {
+                                let error = writer.error ?? NSError(description: "The writer rejected a sample buffer")
+
+                                writerInput.markAsFinished()
+                                reader.cancelReading()
+                                writer.cancelWriting()
+
+                                if resumeGuard.tryResume() {
+                                    continuation.resume(throwing: error)
+                                }
+
+                                return
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
+        } onCancel: {
+            cancellation.cancel()
         }
 
         await writer.finishWriting()
@@ -131,5 +136,23 @@ private final class ContinuationResumeGuard: @unchecked Sendable {
         guard !didResume else { return false }
         didResume = true
         return true
+    }
+}
+
+/// A cancellation raised on one thread and read on another.
+private final class CancellationFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cancelled = false
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+
+    func cancel() {
+        lock.lock()
+        defer { lock.unlock() }
+        cancelled = true
     }
 }

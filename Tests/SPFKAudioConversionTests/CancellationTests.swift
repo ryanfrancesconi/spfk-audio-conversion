@@ -123,4 +123,55 @@ class CancellationTests: BinTestCase {
         // If it completed before cancellation took effect, the file will exist (which is also valid).
         // This test verifies the cleanup path doesn't crash.
     }
+
+    // MARK: - Cancelling an encode already under way
+
+    /// The encode runs in AVFoundation's own callbacks, outside any task, so only a cancellation
+    /// that reaches them can stop it.
+    @Test func m4aConversionStopsWhenCancelledPartway() async throws {
+        let input = bin.appending(component: "long.wav", directoryHint: .notDirectory)
+        let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2))
+        let seconds: AVAudioFrameCount = 120
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 48000))
+        buffer.frameLength = 48000
+
+        let channels = try #require(buffer.floatChannelData)
+        for frame in 0 ..< 48000 {
+            let value = Float(0.2 * sin(2 * .pi * 440 * Double(frame) / 48000))
+            channels[0][frame] = value
+            channels[1][frame] = value
+        }
+
+        do {
+            let file = try AVAudioFile(forWriting: input, settings: [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: 48000,
+                AVNumberOfChannelsKey: 2,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsFloatKey: false,
+            ])
+            for _ in 0 ..< seconds { try file.write(from: buffer) }
+        }
+
+        let output = bin.appending(component: "\(#function).m4a", directoryHint: .notDirectory)
+        let converter = AudioFormatConverter(
+            inputURL: input,
+            outputURL: output,
+            options: AudioFormatConverterOptions(format: .m4a)
+        )
+
+        let task = Task { try await converter.start() }
+
+        while !output.exists {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+
+        task.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+
+        #expect(!output.exists)
+    }
 }
