@@ -39,7 +39,6 @@ readable here only through the decoder below, and are not writable at all.
 | **`AudioEditRenderer`** | Applies a pending edit — trim, reverse, fade — and writes the result |
 | **`SegmentDivider`** / **`SegmentDividerOptions`** | Splitting a file into its detected segments |
 | **`BatchSegmentRenderer`** | That split across many files at once |
-| **`MetadataPaster`** | Pastes a filtered subset of metadata from one file to another |
 | **`MatroskaAudioDecoder`** | Demuxed Matroska blocks as PCM, seekable by frame |
 | **`AVAssetReaderPCMSource`** | The same shape over an AVFoundation asset |
 
@@ -48,8 +47,6 @@ writes the output, copying text metadata and markers across afterward. PCM forma
 written directly through `AVAudioFile`; MP3, FLAC and OGG go through an intermediate WAV and the
 converter. **The whole file is in memory** — fine for sample libraries and short clips, and not for
 very long recordings.
-
-`MetadataPaster`'s operations are all best-effort: a failure in one section does not stop the rest.
 
 ## Metadata Copying
 
