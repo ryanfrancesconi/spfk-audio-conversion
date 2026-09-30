@@ -112,25 +112,40 @@
             break;
         }
 
-        if (mp3Bytes > 0) {
-            fwrite(mp3Buffer, 1, mp3Bytes, mp3File);
+        if (mp3Bytes > 0 && fwrite(mp3Buffer, 1, mp3Bytes, mp3File) != (size_t)mp3Bytes) {
+            result = -1;
+            break;
         }
+    }
+
+    // A read error ends the loop exactly as the end of the file does.
+    if (sf_error(inFile) != SF_ERR_NO_ERROR) {
+        result = -1;
     }
 
     // Flush remaining MP3 data
     if (result == 0) {
         int flushBytes = lame_encode_flush(lame, mp3Buffer, MP3_BUFFER_SIZE);
-        if (flushBytes > 0) {
-            fwrite(mp3Buffer, 1, flushBytes, mp3File);
+        if (flushBytes < 0) {
+            result = -1;
+        } else if (flushBytes > 0 && fwrite(mp3Buffer, 1, flushBytes, mp3File) != (size_t)flushBytes) {
+            result = -1;
         }
+    }
 
+    if (result == 0) {
         // Write VBR/Xing header for accurate seeking
         lame_mp3_tags_fid(lame, mp3File);
     }
 
     free(pcmBuffer);
     free(mp3Buffer);
-    fclose(mp3File);
+
+    // fclose flushes stdio's buffer, so a full disk can surface here and nowhere earlier.
+    if (fclose(mp3File) != 0) {
+        result = -1;
+    }
+
     lame_close(lame);
     sf_close(inFile);
 

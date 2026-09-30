@@ -130,6 +130,41 @@ class AssetWriterErrorTests: BinTestCase {
         #expect(!output.exists)
     }
 
+    /// libsndfile and LAME write through their own file handles, so a short write is theirs to
+    /// report.
+    @Test(arguments: [AudioFileType.flac, .mp3, .ogg])
+    func fullDiskDirectConversionThrows(format: AudioFileType) async throws {
+        deleteBinOnExit = true
+
+        let image = bin.appending(component: "tiny.dmg", directoryHint: .notDirectory)
+        let mount = bin.appending(component: "tiny", directoryHint: .isDirectory)
+
+        try hdiutil(["create", "-size", "8m", "-fs", "HFS+", "-volname", "tiny", "-quiet", image.path])
+        try hdiutil(["attach", image.path, "-nobrowse", "-quiet", "-mountpoint", mount.path])
+
+        defer { _ = try? hdiutil(["detach", mount.path, "-force", "-quiet"]) }
+
+        // Each of these encodes tabla.wav to well over 16 KB.
+        let available = try mount.resourceValues(forKeys: [.volumeAvailableCapacityKey])
+            .volumeAvailableCapacity ?? 0
+        let filler = mount.appending(component: "filler", directoryHint: .notDirectory)
+        try Data(count: max(0, available - 16 * 1024)).write(to: filler)
+
+        let output = mount.appending(component: "out.\(format.pathExtension)", directoryHint: .notDirectory)
+
+        let converter = AudioFormatConverter(
+            inputURL: TestBundleResources.shared.tabla_wav,
+            outputURL: output,
+            options: AudioFormatConverterOptions(format: format)
+        )
+
+        await #expect(throws: Error.self) {
+            try await converter.start()
+        }
+
+        #expect(!output.exists)
+    }
+
     @discardableResult
     private func hdiutil(_ args: [String]) throws -> String {
         let handler = ProcessHandler(url: URL(fileURLWithPath: "/usr/bin/hdiutil"), args: args)

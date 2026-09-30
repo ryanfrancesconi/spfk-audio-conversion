@@ -5,6 +5,23 @@
 
 #define BUFFER_FRAMES 8192
 
+/// Closes both files and folds in what the loop could not see: a read that stopped on an error
+/// rather than at the end, a write the encoder reported as complete although the file write under
+/// it failed, and an encoder that could not flush its last block on close.
+static int finishConversion(SNDFILE *inFile, SNDFILE *outFile, int result) {
+    if (sf_error(inFile) != SF_ERR_NO_ERROR || sf_error(outFile) != SF_ERR_NO_ERROR) {
+        result = -1;
+    }
+
+    if (sf_close(outFile) != 0) {
+        result = -1;
+    }
+
+    sf_close(inFile);
+
+    return result;
+}
+
 @implementation SndFileConverter
 
 - (int)convertToFLAC:(NSString *)input
@@ -57,6 +74,7 @@
     BOOL isFloatSource = sourceSubformat == SF_FORMAT_FLOAT || sourceSubformat == SF_FORMAT_DOUBLE;
 
     sf_count_t readCount;
+    int result = 0;
 
     if (isFloatSource) {
         sf_command(outFile, SFC_SET_CLIPPING, NULL, SF_TRUE);
@@ -69,7 +87,10 @@
         }
 
         while ((readCount = sf_readf_float(inFile, buffer, BUFFER_FRAMES)) > 0) {
-            sf_writef_float(outFile, buffer, readCount);
+            if (sf_writef_float(outFile, buffer, readCount) != readCount) {
+                result = -1;
+                break;
+            }
         }
 
         free(buffer);
@@ -83,16 +104,16 @@
         }
 
         while ((readCount = sf_readf_int(inFile, buffer, BUFFER_FRAMES)) > 0) {
-            sf_writef_int(outFile, buffer, readCount);
+            if (sf_writef_int(outFile, buffer, readCount) != readCount) {
+                result = -1;
+                break;
+            }
         }
 
         free(buffer);
     }
 
-    sf_close(outFile);
-    sf_close(inFile);
-
-    return 0;
+    return finishConversion(inFile, outFile, result);
 }
 
 - (int)convertToVorbis:(NSString *)input
@@ -141,15 +162,18 @@
     }
 
     sf_count_t readCount;
+    int result = 0;
+
     while ((readCount = sf_readf_float(inFile, buffer, BUFFER_FRAMES)) > 0) {
-        sf_writef_float(outFile, buffer, readCount);
+        if (sf_writef_float(outFile, buffer, readCount) != readCount) {
+            result = -1;
+            break;
+        }
     }
 
     free(buffer);
-    sf_close(outFile);
-    sf_close(inFile);
 
-    return 0;
+    return finishConversion(inFile, outFile, result);
 }
 
 - (int)fileInfo:(NSString *)path
