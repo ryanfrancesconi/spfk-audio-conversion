@@ -106,8 +106,13 @@ extension AudioFormatConverter {
 
         let inputFileType = AudioFileType(pathExtension: inputURL.pathExtension)
 
+        // A copy carries all of the source's metadata, and CAF's cannot be removed afterwards, so
+        // a CAF that has to leave some out is re-encoded, which is bit-exact at these settings.
+        let mustLeaveMetadataBehind = outputFormat == .caf && source.metadataCopyScheme != .copyAll
+
         guard
-            inputFileType != outputFormat
+            mustLeaveMetadataBehind
+            || inputFileType != outputFormat
             || outputDescription.mSampleRate != inputDescription.mSampleRate
             || outputDescription.mChannelsPerFrame != inputDescription.mChannelsPerFrame
             || outputDescription.mBitsPerChannel != inputDescription.mBitsPerChannel

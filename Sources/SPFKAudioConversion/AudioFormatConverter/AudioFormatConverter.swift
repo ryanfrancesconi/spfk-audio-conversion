@@ -35,8 +35,9 @@ public actor AudioFormatConverter {
     }
 
     // Set to true by convertToPCM() when it takes the same-format copy path instead of
-    // re-encoding. A verbatim file copy already contains all source metadata, so
-    // copyMetadata() must be skipped to avoid TagLib rewriting (and altering) the output.
+    // re-encoding. A verbatim file copy already contains all source metadata, so rather than
+    // copyMetadata(), which would have TagLib rewrite (and alter) the output, only what the
+    // scheme excludes is removed.
     var didFileCopy = false
 
     // MARK: -
@@ -164,7 +165,9 @@ public actor AudioFormatConverter {
                 throw error
             }
 
-            if !didFileCopy {
+            if didFileCopy {
+                removeExcludedMetadata()
+            } else {
                 await copyMetadata()
             }
         }

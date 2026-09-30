@@ -245,4 +245,49 @@ class MetadataCopyTests: BinTestCase {
 
         #expect(output.tagNames.contains("Keeper"))
     }
+
+    // MARK: - A straight copy honors the scheme
+
+    /// A WAV carrying tags, markers, BEXT and a Finder tag, at settings a WAV output would copy
+    /// as it is.
+    private func makeFullyTaggedWAV() async throws -> URL {
+        let input = bin.appending(component: "tagged.wav", directoryHint: .notDirectory)
+
+        try await AudioFormatConverter(
+            source: AudioFormatConverterSource(
+                input: TestBundleResources.shared.mp3_id3,
+                output: input,
+                options: AudioFormatConverterOptions(format: .wav)
+            )
+        ).start()
+
+        let bext = try #require(MetadataPaster.readBEXT(from: TestBundleResources.shared.cowbell_bext_wav, type: .wav))
+        try MetadataPaster.writeBEXT(bext, to: input, type: .wav)
+        try input.set(tagNames: ["Private"])
+
+        #expect(try TagProperties(url: input)[.title] == "Stonehenge")
+        #expect(try await AudioMarkerDescriptionCollection(url: input).count > 0)
+        #expect(MetadataPaster.readBEXT(from: input, type: .wav) != nil)
+
+        return input
+    }
+
+    @Test func ignoreLeavesEverythingOutOfASameFormatCopy() async throws {
+        let input = try await makeFullyTaggedWAV()
+        let output = try await convert(input: input, outputExtension: "wav", scheme: .ignore)
+
+        #expect(try TagProperties(url: output)[.title] == nil)
+        #expect(MetadataPaster.readBEXT(from: output, type: .wav) == nil)
+        #expect((try? await AudioMarkerDescriptionCollection(url: output).count) ?? 0 == 0)
+        #expect(!output.tagNames.contains("Private"))
+    }
+
+    @Test func copyMarkersKeepsOnlyMarkersInASameFormatCopy() async throws {
+        let input = try await makeFullyTaggedWAV()
+        let output = try await convert(input: input, outputExtension: "wav", scheme: .copyMarkers)
+
+        #expect(try TagProperties(url: output)[.title] == nil)
+        #expect(MetadataPaster.readBEXT(from: output, type: .wav) == nil)
+        #expect(try await AudioMarkerDescriptionCollection(url: output).count > 0)
+    }
 }

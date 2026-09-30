@@ -240,11 +240,11 @@ extension AudioFormatConverter {
 
     // MARK: - Failures
 
-    private func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ error: Error) {
+    func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ error: Error) {
         recordMetadataFailure(category, error.localizedDescription)
     }
 
-    private func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ reason: String) {
+    func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ reason: String) {
         source.metadataFailures.append(AudioFormatConverterMetadataFailure(category: category, reason: reason))
     }
 }
