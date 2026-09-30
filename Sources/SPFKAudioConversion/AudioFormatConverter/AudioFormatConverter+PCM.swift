@@ -165,6 +165,10 @@ extension AudioFormatConverter {
             throw NSError(description: "Unable to set data format on input file.")
         }
 
+        if outputDescription.mChannelsPerFrame < inputDescription.mChannelsPerFrame {
+            try Self.enableDownmix(on: strongInputFile, to: outputDescription.mChannelsPerFrame)
+        }
+
         if noErr
             != ExtAudioFileSetProperty(
                 strongOutputFile,

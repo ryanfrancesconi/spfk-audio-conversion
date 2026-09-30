@@ -9,12 +9,15 @@ import SPFKUtils
 // MARK: - internal helper functions
 
 extension AudioFormatConverter {
-    func createTempFile(inputURL: URL, in directory: URL) async throws -> URL {
+    func createTempFile(inputURL: URL, sourceChannels: UInt32, in directory: URL) async throws -> URL {
         var tempOptions = AudioFormatConverterOptions()
         tempOptions.bitDepthRule = .lessThanOrEqual
         tempOptions.bitsPerChannel = 24
         tempOptions.sampleRate = source.options.sampleRate
-        tempOptions.channels = source.options.channels ?? 2
+        tempOptions.channels = source.options.channels ?? min(
+            sourceChannels,
+            Self.maximumChannels(for: source.options.format)
+        )
         tempOptions.format = .wav
 
         let tempName = inputURL.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
@@ -119,7 +122,7 @@ extension AudioFormatConverter {
         try Task.checkCancellation()
 
         let avfile = try AVAudioFile(forReading: inputURL)
-        guard avfile.fileFormat.channelCount <= 2 else {
+        guard avfile.fileFormat.channelCount <= Self.maximumChannels(for: source.options.format) else {
             throw NSError(description: "Incompatible number of channels for conversion: \(inputURL.lastPathComponent)")
         }
 
@@ -146,7 +149,7 @@ extension AudioFormatConverter {
         // Check channel count and sample rate via AVAudioFile
         let audioFile = try? AVAudioFile(forReading: source.input)
         let channelCount = audioFile?.fileFormat.channelCount ?? 0
-        let supportedChannels = channelCount <= 2
+        let supportedChannels = channelCount <= Self.maximumChannels(for: source.options.format)
 
         // If sample rate conversion is requested, always create a temp file
         // since libsndfile doesn't do resampling.
@@ -194,6 +197,7 @@ extension AudioFormatConverter {
 
         let temp = try await createTempFile(
             inputURL: source.input,
+            sourceChannels: channelCount,
             in: source.output.deletingLastPathComponent()
         )
 
