@@ -7,6 +7,7 @@ import SPFKBase
 import SPFKFileSystem
 import SPFKMatroska
 import SPFKMetadata
+import SPFKVideo
 
 /// Applies an ``AudioEditDescription`` to an audio file and writes the result to an output URL.
 ///
