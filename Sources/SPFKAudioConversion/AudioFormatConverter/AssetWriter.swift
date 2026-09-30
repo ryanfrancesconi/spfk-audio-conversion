@@ -5,7 +5,8 @@ import Foundation
 import SPFKAudioBase
 import SPFKBase
 
-/// Writes audio to compressed or PCM formats using AVFoundation's `AVAssetWriter` pipeline.
+/// Writes AAC (M4A, MP4) using AVFoundation's `AVAssetWriter` pipeline. PCM output is
+/// ``AudioFormatConverter``'s own `ExtAudioFile` path.
 ///
 /// Accepts PCM input only. For compressed input, first convert to an intermediate PCM file.
 actor AssetWriter {
@@ -28,7 +29,7 @@ actor AssetWriter {
         }
 
         switch outputFormat {
-        case .m4a, .mp4, .aiff, .caf, .wav:
+        case .m4a, .mp4:
             break
         default:
             throw NSError(description: "Unsupported output format: \(outputFormat)")
@@ -74,20 +75,8 @@ actor AssetWriter {
             throw NSError(description: "Options format can't be nil.")
         }
 
-        guard let fileType = outputFormat.avFileType, let formatKey = outputFormat.audioFormatID
-        else {
+        guard let formatKey = outputFormat.audioFormatID, formatKey == kAudioFormatMPEG4AAC else {
             throw NSError(description: "Unsupported output format: \(outputFormat)")
-        }
-
-        // 1. chosen option. 2. same as input file. 3. 16 bit
-        // optional in case of compressed audio. That said, the other conversion methods are actually used in
-        // that case
-        let bitDepth = (source.options.bitsPerChannel ?? inputFormat.settings[AVLinearPCMBitDepthKey] ?? 16) as Any
-
-        var isFloat = false
-
-        if let intDepth = bitDepth as? Int {
-            isFloat = intDepth >= 32
         }
 
         var sampleRate = source.options.sampleRate ?? inputFormat.sampleRate
@@ -101,37 +90,23 @@ actor AssetWriter {
             sampleRate = systemRate
         }
 
-        // Note: AVAssetReaderOutput does not currently support compressed audio
-        if formatKey == kAudioFormatMPEG4AAC {
-            if sampleRate > 48000 {
-                source.adjustments.append(
-                    .sampleRate(requested: sampleRate, applied: 48000, format: outputFormat)
-                )
-                sampleRate = 48000
-            }
-
-            // mono should be 1/2 the shown bitrate
-            let perChannel = channels == 1 ? 2 : 1
-
-            // reset these for m4a:
-            return [
-                AVFormatIDKey: formatKey,
-                AVSampleRateKey: sampleRate,
-                AVNumberOfChannelsKey: channels,
-                AVEncoderBitRateKey: Int(source.options.bitRate) / perChannel,
-                AVEncoderBitRateStrategyKey: AVAudioBitRateStrategy_Constant,
-            ]
-
-        } else {
-            return [
-                AVFormatIDKey: formatKey,
-                AVSampleRateKey: sampleRate,
-                AVNumberOfChannelsKey: channels,
-                AVLinearPCMBitDepthKey: bitDepth,
-                AVLinearPCMIsFloatKey: isFloat,
-                AVLinearPCMIsBigEndianKey: fileType == .aiff,
-                AVLinearPCMIsNonInterleaved: !(source.options.isInterleaved ?? inputFormat.isInterleaved),
-            ]
+        // AAC encodes nothing above 48 kHz.
+        if sampleRate > 48000 {
+            source.adjustments.append(
+                .sampleRate(requested: sampleRate, applied: 48000, format: outputFormat)
+            )
+            sampleRate = 48000
         }
+
+        // mono should be 1/2 the shown bitrate
+        let perChannel = channels == 1 ? 2 : 1
+
+        return [
+            AVFormatIDKey: formatKey,
+            AVSampleRateKey: sampleRate,
+            AVNumberOfChannelsKey: channels,
+            AVEncoderBitRateKey: Int(source.options.bitRate) / perChannel,
+            AVEncoderBitRateStrategyKey: AVAudioBitRateStrategy_Constant,
+        ]
     }
 }

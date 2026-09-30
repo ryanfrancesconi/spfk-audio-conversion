@@ -37,57 +37,25 @@ class ConversionPathTests: BinTestCase {
         #expect(streamDesc.mBitsPerChannel == 16)
     }
 
-    // MARK: - AssetWriter paths (PCM output via AVFoundation)
+    // MARK: - AssetWriter writes AAC only
 
-    @Test func assetWriterPCMToAIFF() async throws {
-        let input = TestBundleResources.shared.tabla_wav
-        let output = bin.appending(component: "\(#function)\(Entropy.uniqueId).aiff", directoryHint: .notDirectory)
-        if output.exists { try? output.delete() }
-        
-        var options = AudioFormatConverterOptions()
-        options.format = .aiff
+    /// PCM output goes through `ExtAudioFile`; the writer refuses it rather than writing it at
+    /// settings nothing maintains.
+    @Test(arguments: [AudioFileType.wav, .aiff, .caf])
+    func assetWriterRefusesPCMOutput(format: AudioFileType) async throws {
+        let output = bin.appending(component: "\(#function).\(format.pathExtension)", directoryHint: .notDirectory)
 
-        let source = AudioFormatConverterSource(input: input, output: output, options: options)
-        let writer = AssetWriter(source: source)
-        try await writer.start()
+        let source = AudioFormatConverterSource(
+            input: TestBundleResources.shared.tabla_wav,
+            output: output,
+            options: AudioFormatConverterOptions(format: format)
+        )
 
-        #expect(output.exists)
-        
-        let outputFile = try AVAudioFile(forReading: output)
-        #expect(outputFile.duration > 0)
-    }
+        await #expect(throws: (any Error).self) {
+            try await AssetWriter(source: source).start()
+        }
 
-    @Test func assetWriterPCMToCAF() async throws {
-        let input = TestBundleResources.shared.tabla_wav
-        let output = bin.appending(component: "\(#function).caf", directoryHint: .notDirectory)
-        if output.exists { try? output.delete() }
-        
-        var options = AudioFormatConverterOptions()
-        options.format = .caf
-
-        let source = AudioFormatConverterSource(input: input, output: output, options: options)
-        let writer = AssetWriter(source: source)
-        try await writer.start()
-
-        #expect(output.exists)
-        let outputFile = try AVAudioFile(forReading: output)
-        #expect(outputFile.duration > 0)
-    }
-
-    @Test func assetWriterPCMToWAV() async throws {
-        let input = TestBundleResources.shared.tabla_aif
-        let output = bin.appending(component: "\(#function).wav", directoryHint: .notDirectory)
-
-        var options = AudioFormatConverterOptions()
-        options.format = .wav
-
-        let source = AudioFormatConverterSource(input: input, output: output, options: options)
-        let writer = AssetWriter(source: source)
-        try await writer.start()
-
-        #expect(output.exists)
-        let outputFile = try AVAudioFile(forReading: output)
-        #expect(outputFile.duration > 0)
+        #expect(!output.exists)
     }
 
     // MARK: - Compressed to compressed
