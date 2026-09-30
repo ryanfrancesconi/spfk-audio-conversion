@@ -227,12 +227,14 @@ public actor SegmentDivider {
 
             file.framePosition = startFrame
 
+            let capacity = try AVAudioFrameCount.checked(frameCount, for: sourceURL)
+
             guard let buffer = AVAudioPCMBuffer(
                 pcmFormat: file.processingFormat,
-                frameCapacity: AVAudioFrameCount(frameCount)
+                frameCapacity: capacity
             ) else { return 1.0 }
 
-            try file.read(into: buffer, frameCount: AVAudioFrameCount(frameCount))
+            try file.read(into: buffer, frameCount: capacity)
 
             let peakAmplitude = (try? buffer.peak())?.amplitude ?? 0
             guard peakAmplitude > 0.001 else { return 1.0 }

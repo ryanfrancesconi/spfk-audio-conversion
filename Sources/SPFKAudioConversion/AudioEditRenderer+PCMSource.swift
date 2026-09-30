@@ -33,7 +33,7 @@ extension AudioEditRenderer {
     /// lossy one overshoots, so the read stops at the first empty chunk rather than at a count.
     func readAndApplyEdit(from decoder: some SeekablePCMSource) throws -> AVAudioPCMBuffer {
         let format = decoder.processingFormat
-        let totalFrames = AVAudioFrameCount(max(0, decoder.totalFrameCount))
+        let totalFrames = try AVAudioFrameCount.checked(max(0, decoder.totalFrameCount), for: sourceURL)
 
         guard totalFrames > 0 else {
             throw NSError(description: "No audio could be decoded from \(sourceURL.lastPathComponent)")

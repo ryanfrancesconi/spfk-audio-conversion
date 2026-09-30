@@ -103,11 +103,14 @@ public actor AudioEditRenderer {
         // MPEG audio doesn't store a reliable frame count. Fall back to the asset duration.
         let frameCapacity: AVAudioFrameCount
         if audioFile.length > 0 {
-            frameCapacity = AVAudioFrameCount(audioFile.length)
+            frameCapacity = try .checked(audioFile.length, for: sourceURL)
         } else {
             let asset = AVURLAsset(url: sourceURL)
             let duration = try await asset.load(.duration)
-            frameCapacity = AVAudioFrameCount(ceil(duration.seconds * audioFile.processingFormat.sampleRate))
+            frameCapacity = try .checked(
+                roundingUp: duration.seconds * audioFile.processingFormat.sampleRate,
+                for: sourceURL
+            )
         }
 
         let sampleRate = audioFile.processingFormat.sampleRate

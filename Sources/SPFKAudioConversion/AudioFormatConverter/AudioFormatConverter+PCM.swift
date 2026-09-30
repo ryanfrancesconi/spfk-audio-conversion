@@ -189,7 +189,6 @@ extension AudioFormatConverter {
 
         let bufferByteSize: UInt32 = 32768
         var srcBuffer = [UInt8](repeating: 0, count: Int(bufferByteSize))
-        var sourceFrameOffset: UInt32 = 0
         var iteration = 0
 
         var error: Error?
@@ -233,8 +232,6 @@ extension AudioFormatConverter {
                 if frameCount == 0 {
                     break
                 }
-
-                sourceFrameOffset += frameCount
 
                 let writeError = ExtAudioFileWrite(strongOutputFile, frameCount, &fillBufList)
 
