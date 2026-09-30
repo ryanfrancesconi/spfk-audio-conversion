@@ -3,6 +3,7 @@
 import AVFoundation
 import Foundation
 import SPFKAudioBase
+import SPFKAudioConverterC
 import SPFKBase
 import SPFKMetadata
 import SPFKMetadataBase
@@ -399,5 +400,60 @@ class AudioEditRendererTests: BinTestCase {
         let outputID3 = ID3File(path: output.path)
         #expect(outputID3.load())
         #expect(outputID3[id3: .private] == nil, "XMP PRIV frame is stripped — copyTags only copies the PropertyMap")
+    }
+
+    // MARK: - Rendering in place keeps the source's encoding
+
+    @Test func renderKeepsA16BitFLACAt16Bits() async throws {
+        let source = bin.appending(component: "source16.flac", directoryHint: .notDirectory)
+
+        var options = AudioFormatConverterOptions()
+        options.format = .flac
+        options.bitsPerChannel = 16
+        try await AudioFormatConverter(
+            inputURL: TestBundleResources.shared.tabla_wav,
+            outputURL: source,
+            options: options
+        ).start()
+
+        #expect(try Self.fileInfoBitDepth(source) == 16)
+
+        let output = bin.appending(component: "\(#function).flac", directoryHint: .notDirectory)
+
+        try await AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 0.5, outPoint: 3.5)),
+            outputURL: output
+        ).render()
+
+        #expect(try Self.fileInfoBitDepth(output) == 16)
+    }
+
+    @Test func renderKeepsAnMP3sBitRate() async throws {
+        let source = TestBundleResources.shared.tabla_mp3
+        let sourceRate = try await AVAudioFile(forReading: source).estimatedDataRate()
+        let output = bin.appending(component: "\(#function).mp3", directoryHint: .notDirectory)
+
+        try await AudioEditRenderer(
+            sourceURL: source,
+            edit: AudioEditDescription(trim: TrimDescription(inPoint: 0.5, outPoint: 3.5)),
+            outputURL: output
+        ).render()
+
+        let outputRate = try await AVAudioFile(forReading: output).estimatedDataRate()
+
+        #expect(abs(outputRate - sourceRate) <= 16, "source \(sourceRate) kbps, render \(outputRate) kbps")
+    }
+
+    private static func fileInfoBitDepth(_ url: URL) throws -> Int32 {
+        var sampleRate: Int32 = 0
+        var channels: Int32 = 0
+        var bitDepth: Int32 = 0
+
+        guard SndFileConverter().fileInfo(url.path, sampleRate: &sampleRate, channels: &channels, bitDepth: &bitDepth) == 0 else {
+            throw NSError(description: "libsndfile could not open \(url.lastPathComponent)")
+        }
+
+        return bitDepth
     }
 }

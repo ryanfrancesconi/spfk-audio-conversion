@@ -241,7 +241,12 @@ public actor AudioEditRenderer {
             )
             try outputFile.write(from: buffer)
         } else {
-            try await writeViaIntermediateWAV(buffer, sampleRate: fileFormat.sampleRate, to: url)
+            try await writeViaIntermediateWAV(
+                buffer,
+                sampleRate: fileFormat.sampleRate,
+                options: try await encodingOptions(matching: fileFormat, of: url),
+                to: url
+            )
         }
     }
 
@@ -272,9 +277,42 @@ public actor AudioEditRenderer {
         return fileFormat.settings
     }
 
+    /// The source's own bit depth and bit rate, so a render written back in place re-encodes at
+    /// what the file already was rather than at the converter's defaults.
+    ///
+    /// The intermediate is float, which would otherwise decide the depth of a FLAC.
+    private func encodingOptions(matching fileFormat: AVAudioFormat, of url: URL) async throws -> AudioFormatConverterOptions {
+        var options = AudioFormatConverterOptions()
+
+        switch AudioFileType(pathExtension: url.pathExtension) {
+        case .flac:
+            let depth = fileFormat.streamDescription.pointee.sourceBitsPerChannel
+
+            if let depth, depth == 16 || depth == 24 {
+                options.bitsPerChannel = UInt32(depth)
+            }
+
+        case .mp3:
+            // LAME takes a CBR rate, so a VBR source's average is snapped to one it accepts.
+            let kbps = try await AVAudioFile(forReading: sourceURL).estimatedDataRate()
+
+            if kbps > 0, let nearest = AudioFormatConverterOptions.supportedBitRates.min(by: {
+                abs(Float($0) - kbps * 1000) < abs(Float($1) - kbps * 1000)
+            }) {
+                options.bitRate = nearest
+            }
+
+        default:
+            break
+        }
+
+        return options
+    }
+
     private func writeViaIntermediateWAV(
         _ buffer: AVAudioPCMBuffer,
         sampleRate: Double,
+        options: AudioFormatConverterOptions,
         to url: URL
     ) async throws {
         let tempURL = FileManager.default.temporaryDirectory
@@ -308,7 +346,7 @@ public actor AudioEditRenderer {
         let convSource = AudioFormatConverterSource(
             input: tempURL,
             output: url,
-            options: AudioFormatConverterOptions(),
+            options: options,
             metadataCopyScheme: .ignore
         )
 
