@@ -290,4 +290,21 @@ class MetadataCopyTests: BinTestCase {
         #expect(MetadataPaster.readBEXT(from: output, type: .wav) == nil)
         #expect(try await AudioMarkerDescriptionCollection(url: output).count > 0)
     }
+
+    /// AIFF markers live in `MARK`, outside the tag that excluding text clears.
+    @Test func copyMarkersKeepsOnlyMarkersInASameFormatAIFFCopy() async throws {
+        let input = try copyToBin(url: TestBundleResources.shared.tabla_aif)
+        var props = try TagProperties(url: input)
+        props[.title] = "Kept Out"
+        try props.save(to: input)
+
+        let inputMarkers = try await AudioMarkerDescriptionCollection(url: input).count
+        #expect(inputMarkers > 0)
+        #expect(try TagProperties(url: input)[.title] == "Kept Out")
+
+        let output = try await convert(input: input, outputExtension: "aif", scheme: .copyMarkers)
+
+        #expect(try TagProperties(url: output)[.title] == nil)
+        #expect(try await AudioMarkerDescriptionCollection(url: output).count == inputMarkers)
+    }
 }
