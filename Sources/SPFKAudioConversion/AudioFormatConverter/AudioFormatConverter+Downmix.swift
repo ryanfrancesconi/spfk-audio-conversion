@@ -63,15 +63,16 @@ extension AudioFormatConverter {
         // the one just changed.
         var config: CFArray?
 
-        try check(
+        let status = withUnsafeMutablePointer(to: &config) {
             ExtAudioFileSetProperty(
                 file,
                 kExtAudioFileProperty_ConverterConfig,
                 UInt32(MemoryLayout<CFArray?>.size),
-                &config
-            ),
-            "apply the downmix"
-        )
+                $0
+            )
+        }
+
+        try check(status, "apply the downmix")
     }
 
     private static func check(_ status: OSStatus, _ step: String) throws {
