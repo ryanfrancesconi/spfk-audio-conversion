@@ -75,15 +75,15 @@ struct AVAssetReaderPCMSourceTests {
         let first = try await AVAssetReaderPCMSource(url: url, audioTrack: english.id)
         let second = try await AVAssetReaderPCMSource(url: url, audioTrack: japanese.id)
 
-        #expect(abs(try dominantFrequency(of: first) - 440) < 15)
-        #expect(abs(try dominantFrequency(of: second) - 880) < 25)
+        #expect(try abs(dominantFrequency(of: first) - 440) < 15)
+        #expect(try abs(dominantFrequency(of: second) - 880) < 25)
     }
 
     /// No selection takes the first track, matching every other entry point's default.
     @Test func defaultsToTheFirstTrack() async throws {
         let source = try await AVAssetReaderPCMSource(url: url)
 
-        #expect(abs(try dominantFrequency(of: source) - 440) < 15)
+        #expect(try abs(dominantFrequency(of: source) - 440) < 15)
     }
 
     /// A selection can outlive the file it was made against; falling back beats throwing, and beats
@@ -91,10 +91,10 @@ struct AVAssetReaderPCMSourceTests {
     @Test func fallsBackToTheFirstTrackForAnUnknownSelection() async throws {
         let source = try await AVAssetReaderPCMSource(
             url: url,
-            audioTrack: AudioTrackDescription.ID(rawValue: 999_999)
+            audioTrack: AudioTrackDescription.ID(rawValue: 999999)
         )
 
-        #expect(abs(try dominantFrequency(of: source) - 440) < 15)
+        #expect(try abs(dominantFrequency(of: source) - 440) < 15)
     }
 
     /// The track's own format, not a resample — a waveform drawn at the wrong rate is the wrong
@@ -107,7 +107,7 @@ struct AVAssetReaderPCMSourceTests {
 
         // 2.066s at 44.1kHz. Loose because a container's declared duration and a track's decoded
         // length differ by codec priming.
-        #expect(abs(source.totalFrameCount - 91_110) < 3000)
+        #expect(abs(source.totalFrameCount - 91110) < 3000)
     }
 
     /// `SeekablePCMSource` says landing exactly is the contract, and a caller scrubbing a waveform
@@ -116,9 +116,8 @@ struct AVAssetReaderPCMSourceTests {
     /// the target, and has to sit at it.
     @Test(arguments: [0.5, 1.0, 1.37])
     func seekingLandsExactlyWhereAsked(seconds: Double) async throws {
-        let reference = try await decode(try await AVAssetReaderPCMSource(url: url))
-
         let source = try await AVAssetReaderPCMSource(url: url)
+        let reference = try decode(source)
         let target = AVAudioFramePosition(source.processingFormat.sampleRate * seconds)
         try source.seek(toFrame: target)
 
@@ -129,7 +128,7 @@ struct AVAssetReaderPCMSourceTests {
         ))
         #expect(try source.readNextChunk(into: buffer, frameCount: AVAudioFrameCount(window)) == AVAudioFrameCount(window))
 
-        let afterSeek = Array(UnsafeBufferPointer(start: try #require(buffer.floatChannelData)[0], count: window))
+        let afterSeek = try Array(UnsafeBufferPointer(start: #require(buffer.floatChannelData)[0], count: window))
 
         // Within a packet either side; AAC decodes in 1024-frame packets.
         let search = 1024
@@ -182,7 +181,7 @@ struct AVAssetReaderPCMSourceTests {
 
         try source.seek(toFrame: AVAudioFramePosition(source.processingFormat.sampleRate * 0.5))
 
-        #expect(abs(try dominantFrequency(of: source, seconds: 0.5) - 880) < 30)
+        #expect(try abs(dominantFrequency(of: source, seconds: 0.5) - 880) < 30)
     }
 
     /// Reading past the end stops rather than spinning or repeating the tail.
@@ -198,7 +197,7 @@ struct AVAssetReaderPCMSourceTests {
         var total = 0
 
         for _ in 0 ..< 8 {
-            total += Int(try source.readNextChunk(into: buffer, frameCount: 4096))
+            try total += Int(source.readNextChunk(into: buffer, frameCount: 4096))
         }
 
         // Priming can leave a little past the declared length; what matters is that it terminates.
