@@ -36,4 +36,9 @@ struct TrackPCMSourceTests {
 
         #expect(source is MatroskaAudioDecoder)
     }
+
+    @Test func oggIsDecodedThroughLibsndfile() async throws {
+        #expect(try await TrackPCMSource.source(for: resources.tabla_ogg, audioTrack: nil) is SndFilePCMSource)
+        #expect(try await TrackPCMSource.source(for: resources.sine_opus, audioTrack: nil) is SndFilePCMSource)
+    }
 }

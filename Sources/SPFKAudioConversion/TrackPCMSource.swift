@@ -9,13 +9,17 @@ import SPFKVideo
 public enum TrackPCMSource {
     /// A decoder for `audioTrack` of `url`, or `nil` when the ordinary file read already gets it.
     ///
-    /// `ExtAudioFile` reads only the first audio track, and opens neither Matroska nor MXF. A
+    /// `ExtAudioFile` reads only the first audio track, and opens neither Ogg, Matroska nor MXF. A
     /// selection naming the first track, or one the file does not carry, is the ordinary read.
     public static func source(
         for url: URL,
         audioTrack: AudioTrackDescription.ID?
     ) async throws -> (any SeekablePCMSource)? {
         let fileType = AudioFileType(pathExtension: url.pathExtension)
+
+        if fileType == .ogg || fileType == .opus {
+            return try SndFilePCMSource(url: url)
+        }
 
         if fileType?.isMatroska == true {
             return try MatroskaAudioDecoder(url: url, audioTrack: audioTrack)
