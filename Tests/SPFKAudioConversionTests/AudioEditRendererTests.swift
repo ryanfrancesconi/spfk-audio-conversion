@@ -7,7 +7,6 @@ import SPFKAudioConverterC
 import SPFKBase
 import SPFKMetadata
 import SPFKMetadataBase
-import SPFKMetadataC
 import SPFKTesting
 import Testing
 
@@ -283,9 +282,9 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let pictureRef = try TagPictureRef.parsing(url: output)
-        #expect(pictureRef.cgImage.width == 600)
-        #expect(pictureRef.cgImage.height == 592)
+        let artwork = try #require(try EmbeddedArtwork.read(from: output))
+        #expect(artwork.cgImage.width == 600)
+        #expect(artwork.cgImage.height == 592)
     }
 
     // MARK: - Marker adjustment on trim
@@ -303,10 +302,8 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 2)
-        #expect(chapters[0].startTime == 0.5)
-        #expect(chapters[1].startTime == 1.5)
+        let markers = try await AudioMarkerDescriptionCollection(url: output).markerDescriptions
+        #expect(markers.map(\.startTime) == [0.5, 1.5])
     }
 
     /// mp3_id3 has chapters at t=0, 1, 2. Trimming outPoint=1.5 removes the t=2 chapter;
@@ -322,10 +319,8 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 2)
-        #expect(chapters[0].startTime == 0)
-        #expect(chapters[1].startTime == 1)
+        let markers = try await AudioMarkerDescriptionCollection(url: output).markerDescriptions
+        #expect(markers.map(\.startTime) == [0, 1])
     }
 
     /// Trimming both ends: inPoint=0.5, outPoint=1.5 keeps only the t=1 chapter, shifted to t=0.5.
@@ -340,9 +335,8 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 1)
-        #expect(chapters[0].startTime == 0.5)
+        let markers = try await AudioMarkerDescriptionCollection(url: output).markerDescriptions
+        #expect(markers.map(\.startTime) == [0.5])
     }
 
     // MARK: - M4A image preservation
@@ -352,15 +346,11 @@ class AudioEditRendererTests: BinTestCase {
         let m4a = try copyToBin(url: TestBundleResources.shared.tabla_m4a)
 
         let imageURL = TestBundleResources.shared.sharksandwich
-        guard let pictureRef = TagPictureRef(url: imageURL, pictureDescription: "", pictureType: "") else {
-            Issue.record("Failed to load sharksandwich.jpg")
-            return
-        }
-        let expectedWidth = pictureRef.cgImage.width
-        let expectedHeight = pictureRef.cgImage.height
+        let image = try #require(EmbeddedArtwork(contentsOf: imageURL), "Failed to load sharksandwich.jpg")
+        let expectedWidth = image.cgImage.width
+        let expectedHeight = image.cgImage.height
 
-        let written = TagPicture.write(pictureRef, path: m4a.path)
-        #expect(written, "Precondition: image must be writable to M4A")
+        try image.write(to: m4a)
 
         let output = bin.appending(component: "m4a_image_out.m4a", directoryHint: .notDirectory)
         let renderer = AudioEditRenderer(
@@ -370,9 +360,9 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let readBack = try TagPictureRef.parsing(url: output)
-        #expect(readBack.cgImage.width == expectedWidth)
-        #expect(readBack.cgImage.height == expectedHeight)
+        let artwork = try #require(try EmbeddedArtwork.read(from: output))
+        #expect(artwork.cgImage.width == expectedWidth)
+        #expect(artwork.cgImage.height == expectedHeight)
     }
 
     // MARK: - XMP handling
@@ -386,9 +376,7 @@ class AudioEditRendererTests: BinTestCase {
         let source = TestBundleResources.shared.mp3_xmp
         let output = bin.appending(component: "render_xmp_strip_out.mp3", directoryHint: .notDirectory)
 
-        let sourceID3 = ID3File(path: source.path)
-        try #require(sourceID3.load())
-        try #require(sourceID3[id3: .private] != nil, "Precondition: mp3_xmp must have a PRIV (XMP) frame")
+        try #require(StoredXMPPacketWrite.storedPacket(in: source) != nil, "Precondition: mp3_xmp must have a PRIV (XMP) frame")
 
         let renderer = AudioEditRenderer(
             sourceURL: source,
@@ -397,9 +385,7 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        let outputID3 = ID3File(path: output.path)
-        #expect(outputID3.load())
-        #expect(outputID3[id3: .private] == nil, "XMP PRIV frame is stripped — copyTags only copies the PropertyMap")
+        #expect(StoredXMPPacketWrite.storedPacket(in: output) == nil, "XMP PRIV frame is stripped — copyTags only copies the PropertyMap")
     }
 
     // MARK: - Rendering in place keeps the source's encoding

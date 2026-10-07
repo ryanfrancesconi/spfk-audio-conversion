@@ -5,7 +5,6 @@ import SPFKAudioBase
 import SPFKBase
 import SPFKFileSystem
 import SPFKMetadata
-import SPFKMetadataC
 
 extension AudioFormatConverter {
     /// Copies metadata from the source file to the converted output file based on the
@@ -66,10 +65,10 @@ extension AudioFormatConverter {
               [AudioFileType.wav, .flac].contains(outputType)
         else { return }
 
-        guard let bext = MetadataPaster.readBEXT(from: source.input, type: inputType) else { return }
+        guard let bext = ProductionChunks.readBEXT(from: source.input, fileType: inputType) else { return }
 
         do {
-            try MetadataPaster.writeBEXT(bext, to: source.output, type: outputType)
+            try ProductionChunks.writeBEXT(bext, to: source.output, fileType: outputType)
         } catch {
             Log.error("Failed to copy BEXT to \(source.output.lastPathComponent):", error)
             recordMetadataFailure(.bext, error)
@@ -83,10 +82,10 @@ extension AudioFormatConverter {
               [AudioFileType.wav, .flac].contains(outputType)
         else { return }
 
-        guard let ixml = MetadataPaster.readIXML(from: source.input, type: inputType) else { return }
+        guard let ixml = ProductionChunks.readIXML(from: source.input, fileType: inputType) else { return }
 
         do {
-            try MetadataPaster.writeIXML(ixml, to: source.output, type: outputType)
+            try ProductionChunks.writeIXML(ixml, to: source.output, fileType: outputType)
         } catch {
             Log.error("Failed to copy iXML to \(source.output.lastPathComponent):", error)
             recordMetadataFailure(.ixml, error)
@@ -112,12 +111,7 @@ extension AudioFormatConverter {
         }
     }
 
-    /// Writes markers to an existing file, dispatching on `outputType`.
-    ///
-    /// Public because it is the one entry point that writes markers *without* touching anything
-    /// else — going through `MetaAudioFileDescription.save(dirtyFlags: [.markers])` instead would
-    /// run `tagProperties.save` on the way, and a caller that only has markers in hand would
-    /// strip the file's tags doing it.
+    /// `EmbeddedMarkers.write`, which leaves the file's tags alone, reporting a failure as `false`.
     ///
     /// - Returns: `false` when the write failed. A format with no marker support returns `true`:
     ///   there was nothing it could have written.
@@ -127,53 +121,13 @@ extension AudioFormatConverter {
         to url: URL,
         outputType: AudioFileType
     ) -> Bool {
-        switch outputType {
-        case .wav, .w64, .aiff, .aifc:
-            // Cue points via AudioToolbox; endTime and color travel in the name suffix.
-            let audioMarkers = descriptions.enumerated().map { i, desc in
-                desc.audioMarker(markerID: i, fileType: outputType)
-            }
-
-            if !AudioMarkerUtil.write(audioMarkers, to: url) {
-                Log.error("Failed to write markers to \(url.lastPathComponent)")
-                return false
-            }
-
-        case .mp3:
-            // ID3 CHAP frames via TagLib. These carry endTime natively, so only the color needs
-            // encoding into the title.
-            let chapters = descriptions.map(\.colorEncodedChapterMarker)
-
-            if !MPEGChapterUtil.write(chapters, to: url.path) {
-                Log.error("Failed to write chapters to \(url.lastPathComponent)")
-                return false
-            }
-
-        case .flac, .ogg, .opus:
-            // Vorbis comment chapters via TagLib XiphComment. endTime is native here too.
-            let chapters = descriptions.map(\.colorEncodedChapterMarker)
-
-            if !XiphChapterUtil.write(chapters, to: url.path) {
-                Log.error("Failed to write chapters to \(url.lastPathComponent)")
-                return false
-            }
-
-        case .m4a, .mp4, .aac, .m4b, .mov, .m4v:
-            // QuickTime chapter track via TagLib MP4ChapterList — the native marker format for
-            // mov as much as for the MP4 family.
-            //
-            // The container has neither an endTime nor a color field, so the title's JSON suffix
-            // is the only carrier for both. Building a bare `ChapterMarker` here silently demotes
-            // every colored region to an uncolored point marker.
-            let chapters = descriptions.map(\.fileEncodedChapterMarker)
-
-            if !MP4ChapterUtil.write(chapters, to: url.path) {
-                Log.error("Failed to write chapters to \(url.lastPathComponent)")
-                return false
-            }
-
-        default:
+        do {
+            try EmbeddedMarkers.write(descriptions, to: url, fileType: outputType)
+        } catch MetadataError.unsupportedFormat {
             Log.debug("Marker writing not supported for \(outputType.rawValue) — skipping")
+        } catch {
+            Log.error("Failed to write markers to \(url.lastPathComponent):", error)
+            return false
         }
 
         return true
@@ -189,20 +143,9 @@ extension AudioFormatConverter {
     /// it is a poor error signal and is not treated as one.
     @discardableResult
     public static func removeMarkers(from url: URL, outputType: AudioFileType) -> Bool {
-        switch outputType {
-        case .wav, .w64, .aiff, .aifc:
-            return AudioMarkerUtil.remove(url)
-
-        case .mp3:
-            return MPEGChapterUtil.remove(url.path)
-
-        case .flac, .ogg, .opus:
-            return XiphChapterUtil.remove(url.path)
-
-        case .m4a, .mp4, .aac, .m4b, .mov, .m4v:
-            return MP4ChapterUtil.remove(url.path)
-
-        default:
+        do {
+            return try EmbeddedMarkers.removeAll(from: url, fileType: outputType)
+        } catch {
             Log.debug("Marker removal not supported for \(outputType.rawValue) — skipping")
             return false
         }
@@ -222,16 +165,14 @@ extension AudioFormatConverter {
     // MARK: - Image
 
     private func copyImage() {
-        do {
-            let pictureRef = try TagPictureRef.parsing(url: source.input)
+        // No image, or one that can't be read, leaves nothing to carry.
+        guard let artwork = try? EmbeddedArtwork.read(from: source.input) else { return }
 
-            guard TagPicture.write(pictureRef, path: source.output.path) else {
-                Log.error("Failed to write image to \(source.output.lastPathComponent)")
-                recordMetadataFailure(.image, "The image could not be written")
-                return
-            }
+        do {
+            try artwork.write(to: source.output)
         } catch {
-            // Source has no embedded image — expected for many files
+            Log.error("Failed to write image to \(source.output.lastPathComponent)")
+            recordMetadataFailure(.image, "The image could not be written")
         }
     }
 

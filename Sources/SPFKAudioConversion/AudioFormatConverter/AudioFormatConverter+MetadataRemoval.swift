@@ -5,7 +5,6 @@ import SPFKAudioBase
 import SPFKBase
 import SPFKFileSystem
 import SPFKMetadata
-import SPFKMetadataC
 
 extension AudioFormatConverter {
     /// Removes from a verbatim copy what ``AudioFormatConverterSource/metadataCopyScheme`` leaves
@@ -37,8 +36,10 @@ extension AudioFormatConverter {
             AudioFormatConverter.removeMarkers(from: output, outputType: outputType)
         }
 
-        if !scheme.includesImage, (try? TagPictureRef.parsing(url: output)) != nil {
-            if !TagPicture.write(nil, path: output.path) {
+        if !scheme.includesImage, (try? EmbeddedArtwork.read(from: output)) != nil {
+            do {
+                try EmbeddedArtwork.remove(from: output)
+            } catch {
                 recordMetadataFailure(.image, "The image could not be removed")
             }
         }
@@ -48,20 +49,13 @@ extension AudioFormatConverter {
     /// ID3 chunk the strip removes.
     private func removeText(outputType: AudioFileType) {
         let output = source.output
-        let keptImage = source.metadataCopyScheme.includesImage ? try? TagPictureRef.parsing(url: output) : nil
+        let keptImage = source.metadataCopyScheme.includesImage ? try? EmbeddedArtwork.read(from: output) : nil
 
         if outputType == .wav {
-            let file = WaveFileC(path: output.path)
-
-            if file.load(), file.bextDescriptionC != nil || file.iXML != nil {
-                file.bextDescriptionC = nil
-                file.iXML = nil
-                file.markersNeedsSave = false
-                file.imageNeedsSave = false
-
-                if !file.save() {
-                    recordMetadataFailure(.bext, "BEXT and iXML could not be removed")
-                }
+            do {
+                try ProductionChunks.removeAll(from: output, fileType: .wav)
+            } catch {
+                recordMetadataFailure(.bext, "BEXT and iXML could not be removed")
             }
         }
 
@@ -71,8 +65,12 @@ extension AudioFormatConverter {
             recordMetadataFailure(.tags, error)
         }
 
-        if let keptImage, !TagPicture.write(keptImage, path: output.path) {
-            recordMetadataFailure(.image, "The image could not be kept")
+        if let keptImage {
+            do {
+                try keptImage.write(to: output)
+            } catch {
+                recordMetadataFailure(.image, "The image could not be kept")
+            }
         }
     }
 }

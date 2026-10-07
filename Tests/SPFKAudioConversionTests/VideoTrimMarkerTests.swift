@@ -5,7 +5,6 @@ import Foundation
 import SPFKBase
 import SPFKMetadata
 import SPFKMetadataBase
-import SPFKMetadataC
 import SPFKTesting
 import SPFKVideo
 import Testing
@@ -22,8 +21,8 @@ final class VideoTrimMarkerTests: BinTestCase {
     /// `sample.mov` runs 2.0s — `ffprobe -show_entries format=duration`, 2026-08-10.
     private let sourceDuration: TimeInterval = 2.0
 
-    private func chapters(of url: URL) -> [ChapterMarker] {
-        MP4ChapterUtil.read(url.path) as? [ChapterMarker] ?? []
+    private func readMarkers(of url: URL) async throws -> [AudioMarkerDescription] {
+        try await AudioMarkerDescriptionCollection(url: url).markerDescriptions
     }
 
     private func sourceCopy(named name: String, markers: [AudioMarkerDescription]) throws -> URL {
@@ -41,7 +40,7 @@ final class VideoTrimMarkerTests: BinTestCase {
         ]
 
         let source = try sourceCopy(named: "source.mov", markers: markers)
-        #expect(chapters(of: source).count == 3)
+        #expect(try await readMarkers(of: source).count == 3)
 
         let trim = TrimDescription(inPoint: 0.5, outPoint: 1.5)
         let rendered = bin.appendingPathComponent("rendered.mov")
@@ -60,11 +59,10 @@ final class VideoTrimMarkerTests: BinTestCase {
 
         AudioFormatConverter.writeMarkers(adjusted, to: rendered, outputType: .mov)
 
-        let readBack = chapters(of: rendered)
-        #expect(readBack.compactMap(\.name) == ["inside"])
-
-        let start = try #require(readBack.first?.startTime)
-        #expect(abs(start - 0.5) < 0.05)
+        let readBackMarkers = try await readMarkers(of: rendered)
+        #expect(readBackMarkers.compactMap(\.name) == ["inside"])
+        let markerStart = try #require(readBackMarkers.first?.startTime)
+        #expect(abs(markerStart - 0.5) < 0.05)
     }
 
     /// A region spanning the in-point is clipped to the trimmed timeline rather than dropped, and
@@ -149,7 +147,7 @@ final class VideoTrimMarkerTests: BinTestCase {
         try await VideoEditRenderer(sourceURL: source, trim: trim, outputURL: rendered).render()
 
         AudioFormatConverter.writeMarkers(markers, to: rendered, outputType: .mov)
-        #expect(chapters(of: rendered).isNotEmpty)
+        #expect(try await readMarkers(of: rendered).isNotEmpty)
 
         let renderedDuration = try await AVURLAsset(url: rendered).load(.duration).seconds
 
@@ -163,6 +161,6 @@ final class VideoTrimMarkerTests: BinTestCase {
         #expect(adjusted.isEmpty)
 
         AudioFormatConverter.removeMarkers(from: rendered, outputType: .mov)
-        #expect(chapters(of: rendered).isEmpty)
+        #expect(try await readMarkers(of: rendered).isEmpty)
     }
 }

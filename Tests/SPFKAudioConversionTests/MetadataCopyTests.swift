@@ -6,7 +6,6 @@ import SPFKBase
 import SPFKFileSystem
 import SPFKMetadata
 import SPFKMetadataBase
-import SPFKMetadataC
 import SPFKTesting
 import Testing
 
@@ -61,15 +60,14 @@ class MetadataCopyTests: BinTestCase {
     @Test(arguments: ["wav", "flac", "mp3", "m4a", "ogg", "opus"])
     func ratingSurvivesConversion(outputExtension: String) async throws {
         let input = TestBundleResources.shared.rated_80_wav
-        let sourceRating = TagRating.read(input.path)
-        #expect(sourceRating > 0)
+        let sourceStars = try #require(try TagProperties(url: input)[.rating])
 
         let output = try await convert(input: input, outputExtension: outputExtension)
-        #expect(TagRating.read(output.path) == sourceRating)
+        #expect(try TagProperties(url: output)[.rating] == sourceStars)
     }
 
-    /// The app writes its own ratings through `TagRating.write`, which is a different storage
-    /// path from the externally-tooled fixtures — a rating written here has to survive too.
+    /// A rating the app saved, rather than one an external tool wrote into the fixture, has to
+    /// survive too.
     @Test(arguments: ["flac", "mp3", "m4a", "ogg", "opus"])
     func appWrittenRatingSurvivesConversion(outputExtension: String) async throws {
         let source = bin.appending(
@@ -78,11 +76,13 @@ class MetadataCopyTests: BinTestCase {
         if source.exists { try? source.delete() }
         try FileManager.default.copyItem(at: TestBundleResources.shared.tabla_wav, to: source)
 
-        #expect(TagRating.write(5, toPath: source.path))
-        #expect(TagRating.read(source.path) == 5)
+        var description = try await MetaAudioFileDescription(parsing: source)
+        description.tagProperties[.rating] = "5"
+        try description.save(dirtyFlags: [.metadata])
+        #expect(try TagProperties(url: source)[.rating] == "5")
 
         let output = try await convert(input: source, outputExtension: outputExtension)
-        #expect(TagRating.read(output.path) == 5)
+        #expect(try TagProperties(url: output)[.rating] == "5")
     }
 
     // MARK: - Image Copy Tests
@@ -91,9 +91,9 @@ class MetadataCopyTests: BinTestCase {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "flac")
 
-        let pictureRef = try TagPictureRef.parsing(url: output)
-        #expect(pictureRef.cgImage.width == 600)
-        #expect(pictureRef.cgImage.height == 592)
+        let artwork = try #require(try EmbeddedArtwork.read(from: output))
+        #expect(artwork.cgImage.width == 600)
+        #expect(artwork.cgImage.height == 592)
     }
 
     // MARK: - Scheme Filtering Tests
@@ -107,8 +107,7 @@ class MetadataCopyTests: BinTestCase {
         #expect(props[.title] == "Stonehenge")
 
         // Markers should not be present
-        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.isEmpty)
+        #expect(try await AudioMarkerDescriptionCollection(url: output).markerDescriptions.isEmpty)
     }
 
     @Test func ignoreSchemeSkipsAll() async throws {
@@ -121,8 +120,7 @@ class MetadataCopyTests: BinTestCase {
         #expect(props[.artist] == nil)
 
         // Image should not be present
-        let picture = TagPicture(path: output.path)?.pictureRef
-        #expect(picture == nil)
+        #expect(try EmbeddedArtwork.read(from: output) == nil)
     }
 
     // MARK: - Marker Copy Tests
@@ -131,8 +129,7 @@ class MetadataCopyTests: BinTestCase {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "mp3")
 
-        let chapters = MPEGChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 3)
+        #expect(try await AudioMarkerDescriptionCollection(url: output).markerDescriptions.count == 3)
     }
 
     @Test func copyMarkersWAVToWAV() async throws {
@@ -149,30 +146,27 @@ class MetadataCopyTests: BinTestCase {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "flac")
 
-        let chapters = XiphChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 3)
-        #expect(chapters.map { $0.name } == ["M0", "M1", "M2"])
-        #expect(chapters.map { $0.startTime } == [0, 1, 2])
+        let markers = try await AudioMarkerDescriptionCollection(url: output).markerDescriptions
+        #expect(markers.map(\.name) == ["M0", "M1", "M2"])
+        #expect(markers.map(\.startTime) == [0, 1, 2])
     }
 
     @Test func copyMarkersMP3ToOGG() async throws {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "ogg")
 
-        let chapters = XiphChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 3)
-        #expect(chapters.map { $0.name } == ["M0", "M1", "M2"])
-        #expect(chapters.map { $0.startTime } == [0, 1, 2])
+        let markers = try await AudioMarkerDescriptionCollection(url: output).markerDescriptions
+        #expect(markers.map(\.name) == ["M0", "M1", "M2"])
+        #expect(markers.map(\.startTime) == [0, 1, 2])
     }
 
     @Test func copyMarkersMP3ToM4A() async throws {
         let input = TestBundleResources.shared.mp3_id3
         let output = try await convert(input: input, outputExtension: "m4a")
 
-        let chapters = MP4ChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 3)
-        #expect(chapters.map { $0.name } == ["M0", "M1", "M2"])
-        #expect(chapters.map { $0.startTime } == [0, 1, 2])
+        let markers = try await AudioMarkerDescriptionCollection(url: output).markerDescriptions
+        #expect(markers.map(\.name) == ["M0", "M1", "M2"])
+        #expect(markers.map(\.startTime) == [0, 1, 2])
     }
 
     @Test func copyMarkersOnlySkipsTagsFLAC() async throws {
@@ -184,13 +178,12 @@ class MetadataCopyTests: BinTestCase {
         #expect(props[.title] == nil)
 
         // Markers should be present
-        let chapters = XiphChapterUtil.read(output.path) as? [ChapterMarker] ?? []
-        #expect(chapters.count == 3)
+        #expect(try await AudioMarkerDescriptionCollection(url: output).markerDescriptions.count == 3)
     }
 
     // MARK: - XMP handling
 
-    /// XMP lives in an ID3 PRIV frame. TagLibBridge.copyTags copies TagLib's PropertyMap only;
+    /// XMP lives in an ID3 PRIV frame. `TagProperties.copyTags` copies TagLib's PropertyMap only;
     /// PRIV frames are not in the PropertyMap, so copyAll does not preserve XMP.
     /// This test documents that current behavior.
     ///
@@ -198,15 +191,11 @@ class MetadataCopyTests: BinTestCase {
     @Test func copyAllStripsXMPFromMP3() async throws {
         let input = TestBundleResources.shared.mp3_xmp
 
-        let sourceID3 = ID3File(path: input.path)
-        try #require(sourceID3.load())
-        try #require(sourceID3[id3: .private] != nil, "Precondition: mp3_xmp must have a PRIV (XMP) frame")
+        try #require(StoredXMPPacketWrite.storedPacket(in: input) != nil, "Precondition: mp3_xmp must have a PRIV (XMP) frame")
 
         let output = try await convert(input: input, outputExtension: "mp3")
 
-        let outputID3 = ID3File(path: output.path)
-        #expect(outputID3.load())
-        #expect(outputID3[id3: .private] == nil, "XMP PRIV frame is stripped — TagLibBridge.copyTags only copies the PropertyMap")
+        #expect(StoredXMPPacketWrite.storedPacket(in: output) == nil, "XMP PRIV frame is stripped — copyTags only copies the PropertyMap")
     }
 
     // MARK: - Failures reach the caller
@@ -261,13 +250,13 @@ class MetadataCopyTests: BinTestCase {
             )
         ).start()
 
-        let bext = try #require(MetadataPaster.readBEXT(from: TestBundleResources.shared.cowbell_bext_wav, type: .wav))
-        try MetadataPaster.writeBEXT(bext, to: input, type: .wav)
+        let bext = try #require(ProductionChunks.readBEXT(from: TestBundleResources.shared.cowbell_bext_wav, fileType: .wav))
+        try ProductionChunks.writeBEXT(bext, to: input, fileType: .wav)
         try input.set(tagNames: ["Private"])
 
         #expect(try TagProperties(url: input)[.title] == "Stonehenge")
         #expect(try await AudioMarkerDescriptionCollection(url: input).count > 0)
-        #expect(MetadataPaster.readBEXT(from: input, type: .wav) != nil)
+        #expect(ProductionChunks.readBEXT(from: input, fileType: .wav) != nil)
 
         return input
     }
@@ -277,7 +266,7 @@ class MetadataCopyTests: BinTestCase {
         let output = try await convert(input: input, outputExtension: "wav", scheme: .ignore)
 
         #expect(try TagProperties(url: output)[.title] == nil)
-        #expect(MetadataPaster.readBEXT(from: output, type: .wav) == nil)
+        #expect(ProductionChunks.readBEXT(from: output, fileType: .wav) == nil)
         #expect((try? await AudioMarkerDescriptionCollection(url: output).count) ?? 0 == 0)
         #expect(!output.tagNames.contains("Private"))
     }
@@ -287,7 +276,7 @@ class MetadataCopyTests: BinTestCase {
         let output = try await convert(input: input, outputExtension: "wav", scheme: .copyMarkers)
 
         #expect(try TagProperties(url: output)[.title] == nil)
-        #expect(MetadataPaster.readBEXT(from: output, type: .wav) == nil)
+        #expect(ProductionChunks.readBEXT(from: output, fileType: .wav) == nil)
         #expect(try await AudioMarkerDescriptionCollection(url: output).count > 0)
     }
 
@@ -295,13 +284,13 @@ class MetadataCopyTests: BinTestCase {
     @Test(arguments: [MetadataCopyScheme.ignore, .copyMarkers])
     func excludingTextRemovesBEXTAndIXMLFromASameFormatFLACCopy(scheme: MetadataCopyScheme) async throws {
         let input = try copyToBin(url: TestBundleResources.shared.flac_bext_ixml_external)
-        try #require(MetadataPaster.readBEXT(from: input, type: .flac) != nil)
-        try #require(MetadataPaster.readIXML(from: input, type: .flac) != nil)
+        try #require(ProductionChunks.readBEXT(from: input, fileType: .flac) != nil)
+        try #require(ProductionChunks.readIXML(from: input, fileType: .flac) != nil)
 
         let output = try await convert(input: input, outputExtension: "flac", scheme: scheme)
 
-        #expect(MetadataPaster.readBEXT(from: output, type: .flac) == nil)
-        #expect(MetadataPaster.readIXML(from: output, type: .flac) == nil)
+        #expect(ProductionChunks.readBEXT(from: output, fileType: .flac) == nil)
+        #expect(ProductionChunks.readIXML(from: output, fileType: .flac) == nil)
     }
 
     /// AIFF markers live in `MARK`, outside the tag that excluding text clears.
