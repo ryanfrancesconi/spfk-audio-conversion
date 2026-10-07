@@ -24,7 +24,7 @@ let package = Package(
         .package(url: "https://github.com/ryanfrancesconi/spfk-waveform", from: "1.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-matroska", from: "1.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-video", from: "1.1.0"),
-        .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "1.5.0"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-metadata", from: "2.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-lame", from: "1.0.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "1.1.0"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-utils", from: "1.6.1"),
