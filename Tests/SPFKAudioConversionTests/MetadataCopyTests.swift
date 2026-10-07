@@ -291,6 +291,19 @@ class MetadataCopyTests: BinTestCase {
         #expect(try await AudioMarkerDescriptionCollection(url: output).count > 0)
     }
 
+    /// FLAC keeps BEXT and iXML in APPLICATION blocks, which the tag strip does not reach.
+    @Test(arguments: [MetadataCopyScheme.ignore, .copyMarkers])
+    func excludingTextRemovesBEXTAndIXMLFromASameFormatFLACCopy(scheme: MetadataCopyScheme) async throws {
+        let input = try copyToBin(url: TestBundleResources.shared.flac_bext_ixml_external)
+        try #require(MetadataPaster.readBEXT(from: input, type: .flac) != nil)
+        try #require(MetadataPaster.readIXML(from: input, type: .flac) != nil)
+
+        let output = try await convert(input: input, outputExtension: "flac", scheme: scheme)
+
+        #expect(MetadataPaster.readBEXT(from: output, type: .flac) == nil)
+        #expect(MetadataPaster.readIXML(from: output, type: .flac) == nil)
+    }
+
     /// AIFF markers live in `MARK`, outside the tag that excluding text clears.
     @Test func copyMarkersKeepsOnlyMarkersInASameFormatAIFFCopy() async throws {
         let input = try copyToBin(url: TestBundleResources.shared.tabla_aif)
