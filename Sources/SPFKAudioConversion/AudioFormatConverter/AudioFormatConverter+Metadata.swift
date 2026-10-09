@@ -172,17 +172,17 @@ extension AudioFormatConverter {
             try artwork.write(to: source.output)
         } catch {
             Log.error("Failed to write image to \(source.output.lastPathComponent)")
-            recordMetadataFailure(.image, "The image could not be written")
+            recordMetadataFailure(.artwork, "The image could not be written")
         }
     }
 
     // MARK: - Failures
 
-    func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ error: Error) {
-        recordMetadataFailure(category, error.localizedDescription)
+    func recordMetadataFailure(_ component: MetadataComponent, _ error: Error) {
+        recordMetadataFailure(component, error.localizedDescription)
     }
 
-    func recordMetadataFailure(_ category: AudioFormatConverterMetadataFailure.Category, _ reason: String) {
-        source.metadataFailures.append(AudioFormatConverterMetadataFailure(category: category, reason: reason))
+    func recordMetadataFailure(_ component: MetadataComponent, _ reason: String) {
+        source.metadataFailures.append(AudioFormatConverterMetadataFailure(component: component, reason: reason))
     }
 }

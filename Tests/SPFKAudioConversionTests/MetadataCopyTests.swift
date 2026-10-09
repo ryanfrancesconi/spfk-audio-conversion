@@ -78,7 +78,7 @@ class MetadataCopyTests: BinTestCase {
 
         var description = try await MetaAudioFileDescription(parsing: source)
         description.tagProperties[.rating] = "5"
-        try description.save(dirtyFlags: [.metadata])
+        try description.save(dirtyFlags: [.tags])
         #expect(try TagProperties(url: source)[.rating] == "5")
 
         let output = try await convert(input: source, outputExtension: outputExtension)
@@ -219,7 +219,7 @@ class MetadataCopyTests: BinTestCase {
         await converter.copyMetadata()
 
         let failures = await converter.source.metadataFailures
-        #expect(failures.contains { $0.category == .tags }, "\(failures)")
+        #expect(failures.contains { $0.component == .tags }, "\(failures)")
     }
 
     // MARK: - CAF

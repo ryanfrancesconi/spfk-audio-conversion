@@ -3,6 +3,7 @@
 import AVFoundation
 import Foundation
 import SPFKAudioBase
+import SPFKMetadataBase
 import SPFKVideo
 
 /// Describes the input file, output file, and options for a single conversion operation.
@@ -41,10 +42,10 @@ public struct AudioFormatConverterSource: Sendable {
     /// asked for was not what they got.
     public var adjustments: [AudioFormatConverterAdjustment] = []
 
-    /// Metadata the conversion could not carry onto ``output``, per category. Empty when everything
+    /// Metadata the conversion could not carry onto ``output``, per component. Empty when everything
     /// the ``metadataCopyScheme`` asked for came across.
     ///
-    /// The conversion still succeeds; a source with nothing to copy in a category is not a failure.
+    /// The conversion still succeeds; a source with nothing to copy in a component is not a failure.
     public var metadataFailures: [AudioFormatConverterMetadataFailure] = []
 
     /// Creates a conversion source.
@@ -70,24 +71,15 @@ public enum AudioFormatConverterAdjustment: Sendable, Equatable {
     case sampleRate(requested: Double, applied: Double, format: AudioFileType)
 }
 
-/// A category of metadata a conversion could not copy onto its output.
+/// A part of the metadata a conversion could not copy onto its output.
 public struct AudioFormatConverterMetadataFailure: Sendable, Equatable {
-    public enum Category: Sendable, Equatable {
-        case tags
-        case bext
-        case ixml
-        case markers
-        case image
-        case finderTags
-    }
-
-    public let category: Category
+    public let component: MetadataComponent
 
     /// Why the copy failed, as the underlying error described it.
     public let reason: String
 
-    public init(category: Category, reason: String) {
-        self.category = category
+    public init(component: MetadataComponent, reason: String) {
+        self.component = component
         self.reason = reason
     }
 }

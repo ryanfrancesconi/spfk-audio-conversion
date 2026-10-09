@@ -40,7 +40,7 @@ extension AudioFormatConverter {
             do {
                 try EmbeddedArtwork.remove(from: output)
             } catch {
-                recordMetadataFailure(.image, "The image could not be removed")
+                recordMetadataFailure(.artwork, "The image could not be removed")
             }
         }
     }
@@ -56,6 +56,7 @@ extension AudioFormatConverter {
                 try ProductionChunks.removeAll(from: output, fileType: .wav)
             } catch {
                 recordMetadataFailure(.bext, "BEXT and iXML could not be removed")
+                recordMetadataFailure(.ixml, "BEXT and iXML could not be removed")
             }
         }
 
@@ -69,7 +70,7 @@ extension AudioFormatConverter {
             do {
                 try keptImage.write(to: output)
             } catch {
-                recordMetadataFailure(.image, "The image could not be kept")
+                recordMetadataFailure(.artwork, "The image could not be kept")
             }
         }
     }
