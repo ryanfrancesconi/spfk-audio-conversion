@@ -79,6 +79,7 @@ let package = Package(
             dependencies: [
                 .targetItem(name: "SPFKAudioConversion", condition: nil),
                 .targetItem(name: "SPFKAudioConverterC", condition: nil),
+                .product(name: "SPFKBase", package: "spfk-base"),
                 .product(name: "SPFKTesting", package: "spfk-testing"),
             ],
         ),
