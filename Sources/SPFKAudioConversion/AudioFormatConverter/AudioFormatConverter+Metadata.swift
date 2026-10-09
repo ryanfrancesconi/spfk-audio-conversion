@@ -111,7 +111,7 @@ extension AudioFormatConverter {
         }
     }
 
-    /// `EmbeddedMarkers.write`, which leaves the file's tags alone, reporting a failure as `false`.
+    /// `EmbeddedAudioMarkers.write`, which leaves the file's tags alone, reporting a failure as `false`.
     ///
     /// - Returns: `false` when the write failed. A format with no marker support returns `true`:
     ///   there was nothing it could have written.
@@ -122,7 +122,7 @@ extension AudioFormatConverter {
         outputType: AudioFileType
     ) -> Bool {
         do {
-            try EmbeddedMarkers.write(descriptions, to: url, fileType: outputType)
+            try EmbeddedAudioMarkers.write(descriptions, to: url, fileType: outputType)
         } catch MetadataError.unsupportedFormat {
             Log.debug("Marker writing not supported for \(outputType.rawValue) — skipping")
         } catch {
@@ -144,7 +144,7 @@ extension AudioFormatConverter {
     @discardableResult
     public static func removeMarkers(from url: URL, outputType: AudioFileType) -> Bool {
         do {
-            return try EmbeddedMarkers.removeAll(from: url, fileType: outputType)
+            return try EmbeddedAudioMarkers.removeAll(from: url, fileType: outputType)
         } catch {
             Log.debug("Marker removal not supported for \(outputType.rawValue) — skipping")
             return false
