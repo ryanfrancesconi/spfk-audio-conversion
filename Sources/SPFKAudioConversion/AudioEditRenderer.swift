@@ -41,6 +41,10 @@ public actor AudioEditRenderer {
     /// App-wide render choices, such as how a channel edit that would clip is brought under 0 dBFS.
     public let renderSettings: AudioRenderSettings
 
+    /// Folds a 2-channel render to one channel after the edit's own channel operation, for a
+    /// destination that takes mono. A render the edit already made mono is left as it is.
+    public let conformToMono: MonoSource?
+
     public init(
         sourceURL: URL,
         audioTrack: AudioTrackDescription.ID? = nil,
@@ -48,7 +52,8 @@ public actor AudioEditRenderer {
         outputURL: URL,
         fileConflictScheme: FileConflictScheme = .error,
         metadataCopyScheme: MetadataCopyScheme = .copyAll,
-        renderSettings: AudioRenderSettings = AudioRenderSettings()
+        renderSettings: AudioRenderSettings = AudioRenderSettings(),
+        conformToMono: MonoSource? = nil
     ) {
         self.sourceURL = sourceURL
         self.audioTrack = audioTrack
@@ -57,6 +62,7 @@ public actor AudioEditRenderer {
         self.fileConflictScheme = fileConflictScheme
         self.metadataCopyScheme = metadataCopyScheme
         self.renderSettings = renderSettings
+        self.conformToMono = conformToMono
     }
 
     /// Applies the edit and writes the processed audio to the output URL.
@@ -123,7 +129,7 @@ public actor AudioEditRenderer {
 
         try await write(processed, fileFormat: fileFormat, to: resolvedOutput)
         try await carryMetadata(to: resolvedOutput)
-        try rewriteTrackList(of: resolvedOutput, for: [edit.channels])
+        try rewriteTrackList(of: resolvedOutput, for: renderedChannelOperations)
 
         // Re-write markers adjusted for the trim range, overwriting the unadjusted markers
         // that copyMetadata wrote above.

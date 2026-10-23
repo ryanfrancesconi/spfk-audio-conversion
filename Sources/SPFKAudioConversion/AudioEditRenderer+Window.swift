@@ -15,19 +15,39 @@ extension AudioEditRenderer {
         let isPreTrimmed: Bool
     }
 
-    /// The edit pipeline every read route shares: source stages, output stages, then the ceiling.
+    /// The edit pipeline every read route shares: source stages, the mono conform, output stages,
+    /// then the ceiling.
     func processEdit(_ window: RenderWindow, fileFormat: AVAudioFormat, writingTo url: URL) throws -> AVAudioPCMBuffer {
         let edit = window.edit
 
-        var buffer = try window.buffer
-            .applyingSourceStages(edit, isPreTrimmed: window.isPreTrimmed)
+        let source = try window.buffer.applyingSourceStages(edit, isPreTrimmed: window.isPreTrimmed)
+        var buffer = try Self.conforming(source, toMono: conformToMono)
             .applyingOutputStages(edit)
 
-        if edit.needsCeiling, !Self.writesFloatPCM(fileFormat: fileFormat, buffer: buffer.format, outputURL: url) {
+        let needsCeiling = edit.needsCeiling || conformToMono != nil
+
+        if needsCeiling, !Self.writesFloatPCM(fileFormat: fileFormat, buffer: buffer.format, outputURL: url) {
             buffer = try applyingCeiling(buffer)
         }
 
         return buffer
+    }
+
+    /// Folds a 2-channel buffer to `source`; any other buffer, or a nil `source`, passes through.
+    static func conforming(_ buffer: AVAudioPCMBuffer, toMono source: MonoSource?) throws -> AVAudioPCMBuffer {
+        guard let source, buffer.format.channelCount == 2 else { return buffer }
+        return try buffer.applyingChannelOperation(.mono(source))
+    }
+
+    /// The channel operations the render applies, in order, for describing them in its TRACK_LIST.
+    var renderedChannelOperations: [ChannelOperation] {
+        var operations = [edit.channels]
+
+        if let conformToMono, edit.channels.outputChannelCount(forInput: 2) == 2 {
+            operations.append(.mono(conformToMono))
+        }
+
+        return operations
     }
 
     /// Brings a buffer whose sample peak exceeds 0 dBFS under it, by ``renderSettings``' ceiling.

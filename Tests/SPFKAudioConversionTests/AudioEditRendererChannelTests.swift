@@ -168,3 +168,88 @@ class AudioEditRendererChannelTests: BinTestCase {
         #expect(ProductionChunks.readIXML(from: out, fileType: .wav) == nil)
     }
 }
+
+/// A spot's mono conform composes after the edit's own channel operation.
+@Suite(.tags(.file))
+class AudioEditRendererConformTests: BinTestCase {
+    private func channels(_ url: URL) throws -> [[Float]] {
+        let file = try AVAudioFile(forReading: url)
+        var result = [[Float]](repeating: [], count: Int(file.processingFormat.channelCount))
+        let chunk = try #require(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 16384))
+        // A single read can stop short of the end.
+        while file.framePosition < file.length {
+            try file.read(into: chunk)
+            guard chunk.frameLength > 0 else { break }
+            let data = try #require(chunk.floatChannelData)
+            for ch in result.indices {
+                result[ch] += UnsafeBufferPointer(start: data[ch], count: Int(chunk.frameLength))
+            }
+        }
+        return result
+    }
+
+    /// `tabla.wav` as float, so the comparison is free of requantization.
+    private func floatSource() throws -> URL {
+        let url = bin.appending(component: "source.wav", directoryHint: .notDirectory)
+        let file = try AVAudioFile(forReading: TestBundleResources.shared.tabla_wav)
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)))
+        try file.read(into: buffer)
+        // Scoped, so the WAV header is finalized before the render reads it.
+        do {
+            let output = try AVAudioFile(forWriting: url, settings: buffer.format.settings, commonFormat: .pcmFormatFloat32, interleaved: false)
+            try output.write(from: buffer)
+        }
+        return url
+    }
+
+    private func render(_ source: URL, _ operation: ChannelOperation, conform: MonoSource) async throws -> [[Float]] {
+        let out = bin.appending(component: "conformed-\(operation.kindName)-\(conform.rawValue).wav", directoryHint: .notDirectory)
+        try await AudioEditRenderer(
+            sourceURL: source, edit: AudioEditDescription(channels: operation), outputURL: out, conformToMono: conform
+        ).render()
+        return try channels(out)
+    }
+
+    @Test func swapThenLeftIsTheSourcesRight() async throws {
+        let source = try floatSource()
+        let original = try channels(source)
+        #expect(try await render(source, .swap, conform: .left) == [original[1]])
+    }
+
+    @Test func decodeThenAverageIsMid() async throws {
+        let source = try floatSource()
+        let original = try channels(source)
+        let rendered = try await render(source, .midSideDecode(width: 1), conform: .average)
+        try #require(rendered.count == 1)
+        try #require(rendered[0].count == original[0].count)
+        let worst = zip(rendered[0], original[0]).map { abs($0 - $1) }.max() ?? 0
+        #expect(worst < 1e-6)
+    }
+
+    @Test func monoEditIsNotConformedAgain() async throws {
+        let source = try floatSource()
+        let original = try channels(source)
+        #expect(try await render(source, .mono(.right), conform: .left) == [original[1]])
+    }
+
+    /// `AVAudioFile` hands a mono float WAV over in two reads; an edit must render all of it.
+    @Test func monoFloatSourceRendersWhole() async throws {
+        _ = try await render(floatSource(), .none, conform: .left)
+        let monoURL = bin.appending(component: "conformed-none-left.wav", directoryHint: .notDirectory)
+        let out = bin.appending(component: "renormalized.wav", directoryHint: .notDirectory)
+        try await AudioEditRenderer(sourceURL: monoURL, edit: AudioEditDescription(normalize: NormalizeDescription(gain: 0.5)), outputURL: out).render()
+
+        #expect(try AVAudioFile(forReading: out).length == AVAudioFile(forReading: monoURL).length)
+    }
+
+    @Test func conformWithoutEditRendersMonoTrackList() async throws {
+        let out = bin.appending(component: "ixml-conformed.wav", directoryHint: .notDirectory)
+        try await AudioEditRenderer(
+            sourceURL: TestBundleResources.shared.ixml_chunk, edit: AudioEditDescription(), outputURL: out, conformToMono: .left
+        ).render()
+
+        let xml = try #require(ProductionChunks.readIXML(from: out, fileType: .wav))
+        #expect(try IXMLMetadata(xml: xml).tracks?.map(\.name) == ["Mid"])
+        #expect(try channels(out).count == 1)
+    }
+}
