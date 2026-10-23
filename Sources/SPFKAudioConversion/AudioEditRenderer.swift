@@ -12,7 +12,7 @@ import SPFKVideo
 /// Applies an ``AudioEditDescription`` to an audio file and writes the result to an output URL.
 ///
 /// The trim window is read as a PCM buffer (a file that cannot state its length is read whole),
-/// the edit is applied (trim → reverse → fade), and the result is written to the output URL. Text metadata
+/// the edit is applied (see ``processEdit(_:)``), and the result is written to the output URL. Text metadata
 /// and markers are copied from the source to the output after writing.
 ///
 /// PCM formats (WAV, AIFF, CAF) and AAC (M4A) are written directly via `AVAudioFile`.
@@ -74,7 +74,7 @@ public actor AudioEditRenderer {
         // same reader the conversion path uses.
         if AudioFileType(pathExtension: sourceURL.pathExtension)?.isMatroska == true {
             let decoder = try MatroskaAudioDecoder(url: sourceURL, audioTrack: audioTrack)
-            let processed = try readAndApplyEdit(from: decoder)
+            let processed = try processEdit(readWindow(from: decoder))
             return try await finish(processed, fileFormat: decoder.processingFormat, to: resolvedOutput)
         }
 
@@ -91,59 +91,12 @@ public actor AudioEditRenderer {
 
         // `AVAudioFile` reads the first audio track and cannot be pointed at another.
         if let reader = try await selectedTrackReader() {
-            let processed = try readAndApplyEdit(from: reader)
+            let processed = try processEdit(readWindow(from: reader))
             return try await finish(processed, fileFormat: try await fileFormat(of: reader), to: resolvedOutput)
         }
 
         let audioFile = try AVAudioFile(forReading: sourceURL)
-
-        // AVAudioFile.length returns 0 for some compressed formats (e.g. MP3) because
-        // MPEG audio doesn't store a reliable frame count. Fall back to the asset duration.
-        let frameCapacity: AVAudioFrameCount
-        if audioFile.length > 0 {
-            frameCapacity = try .checked(audioFile.length, for: sourceURL)
-        } else {
-            let asset = AVURLAsset(url: sourceURL)
-            let duration = try await asset.load(.duration)
-            frameCapacity = try .checked(
-                roundingUp: duration.seconds * audioFile.processingFormat.sampleRate,
-                for: sourceURL
-            )
-        }
-
-        let sampleRate = audioFile.processingFormat.sampleRate
-        let safeEdit = edit.clampingFadesToTrim(fileDuration: Double(frameCapacity) / sampleRate)
-
-        // Read only the trim window. A 2 second trim out of an hour otherwise allocates the hour:
-        // measured 1325 MB for 1.9 MB of output, and `SegmentDivider` runs four of these at once.
-        //
-        // A file that cannot state its own length cannot be seeked by frame either, so it is read
-        // whole as before and trimmed in memory.
-        let window = audioFile.length > 0
-            ? Self.window(for: safeEdit.trim, totalFrames: frameCapacity, sampleRate: sampleRate)
-            : (offset: AVAudioFrameCount(0), frameCount: frameCapacity)
-
-        let isPreTrimmed = window.offset > 0 || window.frameCount < frameCapacity
-
-        guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: audioFile.processingFormat,
-            frameCapacity: window.frameCount
-        ) else {
-            throw NSError(description: "Failed to allocate PCM buffer for \(sourceURL.lastPathComponent)")
-        }
-
-        if window.offset > 0 {
-            audioFile.framePosition = AVAudioFramePosition(window.offset)
-        }
-
-        try audioFile.read(into: buffer, frameCount: window.frameCount)
-
-        guard buffer.frameLength > 0 else {
-            throw NSError(description: "Read 0 frames from \(sourceURL.lastPathComponent)")
-        }
-
-        let processed = try buffer.applying(safeEdit, isPreTrimmed: isPreTrimmed)
-
+        let processed = try processEdit(await readWindow(from: audioFile))
         return try await finish(processed, fileFormat: audioFile.fileFormat, to: resolvedOutput)
     }
 
@@ -151,7 +104,7 @@ public actor AudioEditRenderer {
 
     /// Writes the edited buffer and carries the source's metadata onto it.
     ///
-    /// Shared by both read paths, which differ only in what they decode through.
+    /// Shared by every read route, which differ only in what they decode through.
     private func finish(
         _ processed: AVAudioPCMBuffer,
         fileFormat: AVAudioFormat,
