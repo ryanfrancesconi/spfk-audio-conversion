@@ -82,6 +82,21 @@ extension AudioEditRenderer {
 
         try audioFile.read(into: buffer, frameCount: window.frameCount)
 
+        // A read can return fewer frames than asked with more still in the file: a mono float WAV
+        // stops 980 frames short of 210900. Each further read overwrites its buffer, so it goes
+        // through a chunk.
+        if buffer.frameLength < window.frameCount,
+           let chunk = AVAudioPCMBuffer(pcmFormat: audioFile.processingFormat, frameCapacity: Self.decodeChunkFrames) {
+            while buffer.frameLength < window.frameCount {
+                try Task.checkCancellation()
+
+                try audioFile.read(into: chunk, frameCount: min(Self.decodeChunkFrames, window.frameCount - buffer.frameLength))
+                guard chunk.frameLength > 0 else { break }
+
+                try buffer.copy(from: chunk, frames: chunk.frameLength)
+            }
+        }
+
         guard buffer.frameLength > 0 else {
             throw NSError(description: "Read 0 frames from \(sourceURL.lastPathComponent)")
         }
