@@ -15,9 +15,30 @@ extension AudioEditRenderer {
         let isPreTrimmed: Bool
     }
 
-    /// The edit pipeline every read route shares.
-    func processEdit(_ window: RenderWindow) throws -> AVAudioPCMBuffer {
-        try window.buffer.applying(window.edit, isPreTrimmed: window.isPreTrimmed)
+    /// The edit pipeline every read route shares: source stages, output stages, then the ceiling.
+    func processEdit(_ window: RenderWindow, fileFormat: AVAudioFormat, writingTo url: URL) throws -> AVAudioPCMBuffer {
+        let edit = window.edit
+
+        var buffer = try window.buffer
+            .applyingSourceStages(edit, isPreTrimmed: window.isPreTrimmed)
+            .applyingOutputStages(edit)
+
+        if edit.needsCeiling, !Self.writesFloatPCM(fileFormat: fileFormat, buffer: buffer.format, outputURL: url) {
+            buffer = try applyingCeiling(buffer)
+        }
+
+        return buffer
+    }
+
+    /// Brings a buffer whose sample peak exceeds 0 dBFS under it, by ``renderSettings``' ceiling.
+    func applyingCeiling(_ buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
+        let peak = try buffer.peak().amplitude
+        guard peak > 1 else { return buffer }
+
+        switch renderSettings.ceiling {
+        case .scale: return try buffer.gain(1 / peak)
+        case .limit: return try buffer.limited()
+        }
     }
 
     /// Reads the trim window of `audioFile`.

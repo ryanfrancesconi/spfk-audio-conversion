@@ -36,6 +36,26 @@ extension AudioEditRenderer {
         }
     }
 
+    /// Rewrites the render's iXML TRACK_LIST to describe the channels `operations` wrote, in order.
+    /// A render without a TRACK_LIST is left without one.
+    func rewriteTrackList(of url: URL, for operations: [ChannelOperation]) throws {
+        let operations = operations.filter { $0 != .none }
+
+        guard operations.isNotEmpty,
+              let fileType = AudioFileType(pathExtension: url.pathExtension),
+              let xml = ProductionChunks.readIXML(from: url, fileType: fileType)
+        else { return }
+
+        var ixml = try IXMLMetadata(xml: xml)
+        guard ixml.tracks != nil else { return }
+
+        for operation in operations {
+            ixml.applyChannelOperation(operation)
+        }
+
+        try ProductionChunks.writeIXML(ixml.xml, to: url, fileType: fileType)
+    }
+
     /// Reads the source's markers, moves them onto the trimmed timeline, and re-writes them to
     /// `outputURL`, overwriting the unadjusted markers `copyMetadata` already wrote.
     ///

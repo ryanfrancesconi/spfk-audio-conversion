@@ -38,13 +38,17 @@ public actor AudioEditRenderer {
     /// Controls which metadata categories are copied from source to output. Defaults to `.copyAll`.
     public var metadataCopyScheme: MetadataCopyScheme
 
+    /// App-wide render choices, such as how a channel edit that would clip is brought under 0 dBFS.
+    public let renderSettings: AudioRenderSettings
+
     public init(
         sourceURL: URL,
         audioTrack: AudioTrackDescription.ID? = nil,
         edit: AudioEditDescription,
         outputURL: URL,
         fileConflictScheme: FileConflictScheme = .error,
-        metadataCopyScheme: MetadataCopyScheme = .copyAll
+        metadataCopyScheme: MetadataCopyScheme = .copyAll,
+        renderSettings: AudioRenderSettings = AudioRenderSettings()
     ) {
         self.sourceURL = sourceURL
         self.audioTrack = audioTrack
@@ -52,6 +56,7 @@ public actor AudioEditRenderer {
         self.outputURL = outputURL
         self.fileConflictScheme = fileConflictScheme
         self.metadataCopyScheme = metadataCopyScheme
+        self.renderSettings = renderSettings
     }
 
     /// Applies the edit and writes the processed audio to the output URL.
@@ -74,8 +79,9 @@ public actor AudioEditRenderer {
         // same reader the conversion path uses.
         if AudioFileType(pathExtension: sourceURL.pathExtension)?.isMatroska == true {
             let decoder = try MatroskaAudioDecoder(url: sourceURL, audioTrack: audioTrack)
-            let processed = try processEdit(readWindow(from: decoder))
-            return try await finish(processed, fileFormat: decoder.processingFormat, to: resolvedOutput)
+            let fileFormat = decoder.processingFormat
+            let processed = try processEdit(readWindow(from: decoder), fileFormat: fileFormat, writingTo: resolvedOutput)
+            return try await finish(processed, fileFormat: fileFormat, to: resolvedOutput)
         }
 
         // MXF decodes fine through `AVAssetReaderPCMSource`, but **nothing here can write one**:
@@ -91,12 +97,13 @@ public actor AudioEditRenderer {
 
         // `AVAudioFile` reads the first audio track and cannot be pointed at another.
         if let reader = try await selectedTrackReader() {
-            let processed = try processEdit(readWindow(from: reader))
-            return try await finish(processed, fileFormat: try await fileFormat(of: reader), to: resolvedOutput)
+            let fileFormat = try await fileFormat(of: reader)
+            let processed = try processEdit(readWindow(from: reader), fileFormat: fileFormat, writingTo: resolvedOutput)
+            return try await finish(processed, fileFormat: fileFormat, to: resolvedOutput)
         }
 
         let audioFile = try AVAudioFile(forReading: sourceURL)
-        let processed = try processEdit(await readWindow(from: audioFile))
+        let processed = try processEdit(await readWindow(from: audioFile), fileFormat: audioFile.fileFormat, writingTo: resolvedOutput)
         return try await finish(processed, fileFormat: audioFile.fileFormat, to: resolvedOutput)
     }
 
@@ -116,6 +123,7 @@ public actor AudioEditRenderer {
 
         try await write(processed, fileFormat: fileFormat, to: resolvedOutput)
         try await carryMetadata(to: resolvedOutput)
+        try rewriteTrackList(of: resolvedOutput, for: [edit.channels])
 
         // Re-write markers adjusted for the trim range, overwriting the unadjusted markers
         // that copyMetadata wrote above.
@@ -186,7 +194,7 @@ public actor AudioEditRenderer {
         if Self.isDirectlyWritable(url: url) {
             let outputFile = try AVAudioFile(
                 forWriting: url,
-                settings: Self.resolveOutputSettings(fileFormat: fileFormat, buffer: buffer, outputURL: url),
+                settings: Self.resolveOutputSettings(fileFormat: fileFormat, buffer: buffer.format, outputURL: url),
                 commonFormat: .pcmFormatFloat32,
                 interleaved: false
             )
@@ -207,9 +215,12 @@ public actor AudioEditRenderer {
     /// (e.g. MP4/AAC), the source `fileFormat.settings` contain codec parameters that
     /// AVAudioFile rejects with `kAudioFormatUnsupportedDataFormatError`. In that case,
     /// derive float32 PCM settings from the already-decompressed buffer instead.
-    private static func resolveOutputSettings(
+    ///
+    /// A channel edit can change the channel count, which the source's settings would otherwise
+    /// write; a source channel layout is dropped with it, since it cannot describe the new count.
+    static func resolveOutputSettings(
         fileFormat: AVAudioFormat,
-        buffer: AVAudioPCMBuffer,
+        buffer: AVAudioFormat,
         outputURL: URL
     ) -> [String: Any] {
         let outputType = AudioFileType(pathExtension: outputURL.pathExtension)
@@ -218,14 +229,32 @@ public actor AudioEditRenderer {
         if outputType?.isPCM == true, sourceFormatID != kAudioFormatLinearPCM {
             return [
                 AVFormatIDKey: kAudioFormatLinearPCM,
-                AVSampleRateKey: buffer.format.sampleRate,
-                AVNumberOfChannelsKey: Int(buffer.format.channelCount),
+                AVSampleRateKey: buffer.sampleRate,
+                AVNumberOfChannelsKey: Int(buffer.channelCount),
                 AVLinearPCMBitDepthKey: 32,
                 AVLinearPCMIsFloatKey: true,
                 AVLinearPCMIsBigEndianKey: false,
             ]
         }
-        return fileFormat.settings
+
+        var settings = fileFormat.settings
+
+        if buffer.channelCount != fileFormat.channelCount {
+            settings[AVNumberOfChannelsKey] = Int(buffer.channelCount)
+            settings[AVChannelLayoutKey] = nil
+        }
+
+        return settings
+    }
+
+    /// True when the render is written as float PCM, which carries a peak above 0 dBFS intact.
+    static func writesFloatPCM(fileFormat: AVAudioFormat, buffer: AVAudioFormat, outputURL: URL) -> Bool {
+        guard isDirectlyWritable(url: outputURL) else { return false }
+
+        let settings = resolveOutputSettings(fileFormat: fileFormat, buffer: buffer, outputURL: outputURL)
+
+        return settings[AVFormatIDKey] as? UInt32 == kAudioFormatLinearPCM
+            && settings[AVLinearPCMIsFloatKey] as? Bool == true
     }
 
     /// The source's own bit depth and bit rate, so a render written back in place re-encodes at
