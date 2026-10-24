@@ -56,7 +56,7 @@ extension AudioEditRenderer {
         try ProductionChunks.writeIXML(ixml.xml, to: url, fileType: fileType)
     }
 
-    /// Reads the source's markers, moves them onto the trimmed timeline, and re-writes them to
+    /// Reads the source's markers, moves them onto the trimmed and stretched timeline, and re-writes them to
     /// `outputURL`, overwriting the unadjusted markers `copyMetadata` already wrote.
     ///
     /// - Parameter newDuration: duration of the render, bounding a region that ran past the
@@ -76,10 +76,10 @@ extension AudioEditRenderer {
 
         guard collection.count > 0 else { return true }
 
-        let adjusted = AudioMarkerDescription.adjustedForTrim(
+        let adjusted = AudioMarkerDescription.adjusted(
             collection.markerDescriptions,
-            inPoint: edit.trim.inPoint,
-            outPoint: edit.trim.outPoint,
+            forTrim: edit.trim,
+            timeScale: edit.timePitch.rate,
             newDuration: newDuration
         )
 

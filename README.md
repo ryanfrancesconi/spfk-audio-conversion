@@ -36,15 +36,17 @@ readable here only through the decoder below, and are not writable at all.
 | **`AudioFormatConverterAdjustment`** | A change the converter had to make to the requested options, so the caller can report it |
 | **`BatchAudioFormatConverter`** | The above under structured concurrency, with a sliding window of 8 and per-file progress through its delegate |
 | **`BatchAudioFormatConverterResult`** | What one file in a batch produced |
-| **`AudioEditRenderer`** | Applies a pending edit — trim, reverse, fade — and writes the result |
+| **`AudioEditRenderer`** | Applies a pending edit — trim, channels, time and pitch, normalize, fade — and writes the result |
 | **`SegmentDivider`** / **`SegmentDividerOptions`** | Splitting a file into its detected segments |
 | **`BatchSegmentRenderer`** | That split across many files at once |
 | **`MatroskaAudioDecoder`** | Demuxed Matroska blocks as PCM, seekable by frame |
 | **`AVAssetReaderPCMSource`** | The same shape over an AVFoundation asset |
 
-`AudioEditRenderer` reads only the trim window as a PCM buffer (a file that cannot state its length
-is read whole), applies the edit and writes the output, copying text metadata and markers across
-afterward. PCM formats and AAC are written directly through `AVAudioFile`; MP3, FLAC and OGG go
+`AudioEditRenderer` reads only the trim window as a PCM buffer, plus the frames either side that the
+time/pitch stretcher needs as context (a file that cannot state its length is read whole), applies
+the edit and writes the output, copying text metadata and markers across afterward. A stretch or
+transposition also rewrites what it changes: markers are scaled by the rate, the BPM tag and iXML
+BPM become the source's × rate, and the key moves by whole semitones into the key tag. PCM formats and AAC are written directly through `AVAudioFile`; MP3, FLAC and OGG go
 through an intermediate WAV and the converter.
 
 ## Metadata Copying
@@ -111,6 +113,7 @@ AVFoundation cannot open.
 | [spfk-audio-base](https://github.com/ryanfrancesconi/spfk-audio-base) | Audio type definitions (`AudioFileType`, `AudioDefaults`) |
 | [spfk-metadata](https://github.com/ryanfrancesconi/spfk-metadata) | Audio file metadata parsing |
 | [spfk-matroska](https://github.com/ryanfrancesconi/spfk-matroska) | Matroska demuxing, for the decoder above |
+| [spfk-tempo](https://github.com/ryanfrancesconi/spfk-tempo) | The time/pitch stretcher |
 | [spfk-lame](https://github.com/ryanfrancesconi/spfk-lame) | LAME + mpg123 xcframeworks for MP3 encoding/decoding |
 | [spfk-utils](https://github.com/ryanfrancesconi/spfk-utils) | General utilities (`Entropy`, `Serializable`) |
 | [spfk-waveform](https://github.com/ryanfrancesconi/spfk-waveform) | Waveform scanning, for the intermediate PCM path |

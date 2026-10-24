@@ -11,9 +11,10 @@ import SPFKVideo
 
 /// Applies an ``AudioEditDescription`` to an audio file and writes the result to an output URL.
 ///
-/// The trim window is read as a PCM buffer (a file that cannot state its length is read whole),
-/// the edit is applied (see ``processEdit(_:)``), and the result is written to the output URL. Text metadata
-/// and markers are copied from the source to the output after writing.
+/// The trim window is read as a PCM buffer, with the stretcher's context either side of it (a file
+/// that cannot state its length is read whole), the edit is applied in the order
+/// ``processEdit(_:fileFormat:writingTo:)`` states, and the result is written to the output URL.
+/// Text metadata and markers are then copied from the source, and adjusted for the trim and rate.
 ///
 /// PCM formats (WAV, AIFF, CAF) and AAC (M4A) are written directly via `AVAudioFile`.
 /// Formats unsupported by `AVAudioFile` (MP3, FLAC, OGG) are written via an intermediate
@@ -86,7 +87,7 @@ public actor AudioEditRenderer {
         if AudioFileType(pathExtension: sourceURL.pathExtension)?.isMatroska == true {
             let decoder = try MatroskaAudioDecoder(url: sourceURL, audioTrack: audioTrack)
             let fileFormat = decoder.processingFormat
-            let processed = try processEdit(readWindow(from: decoder), fileFormat: fileFormat, writingTo: resolvedOutput)
+            let processed = try await processEdit(readWindow(from: decoder), fileFormat: fileFormat, writingTo: resolvedOutput)
             return try await finish(processed, fileFormat: fileFormat, to: resolvedOutput)
         }
 
@@ -104,12 +105,12 @@ public actor AudioEditRenderer {
         // `AVAudioFile` reads the first audio track and cannot be pointed at another.
         if let reader = try await selectedTrackReader() {
             let fileFormat = try await fileFormat(of: reader)
-            let processed = try processEdit(readWindow(from: reader), fileFormat: fileFormat, writingTo: resolvedOutput)
+            let processed = try await processEdit(readWindow(from: reader), fileFormat: fileFormat, writingTo: resolvedOutput)
             return try await finish(processed, fileFormat: fileFormat, to: resolvedOutput)
         }
 
         let audioFile = try AVAudioFile(forReading: sourceURL)
-        let processed = try processEdit(await readWindow(from: audioFile), fileFormat: audioFile.fileFormat, writingTo: resolvedOutput)
+        let processed = try await processEdit(readWindow(from: audioFile), fileFormat: audioFile.fileFormat, writingTo: resolvedOutput)
         return try await finish(processed, fileFormat: audioFile.fileFormat, to: resolvedOutput)
     }
 
@@ -131,9 +132,16 @@ public actor AudioEditRenderer {
         try await carryMetadata(to: resolvedOutput)
         try rewriteTrackList(of: resolvedOutput, for: renderedChannelOperations)
 
-        // Re-write markers adjusted for the trim range, overwriting the unadjusted markers
+        do {
+            try rewriteTimePitchTags(of: resolvedOutput)
+        } catch {
+            try? FileManager.default.removeItem(at: resolvedOutput)
+            throw error
+        }
+
+        // Re-write markers adjusted for the trim range and rate, overwriting the unadjusted markers
         // that copyMetadata wrote above.
-        if metadataCopyScheme.includesMarkers, edit.trim.inPoint > 0 || edit.trim.outPoint > 0 {
+        if metadataCopyScheme.includesMarkers, !edit.trim.isEmpty || edit.timePitch.rate != 1 {
             let renderedDuration = Double(processed.frameLength) / processed.format.sampleRate
 
             guard await adjustAndWriteMarkers(to: resolvedOutput, newDuration: renderedDuration) else {
