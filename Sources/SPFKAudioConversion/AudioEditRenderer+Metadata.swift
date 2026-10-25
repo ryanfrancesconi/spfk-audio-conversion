@@ -56,7 +56,7 @@ extension AudioEditRenderer {
         try ProductionChunks.writeIXML(ixml.xml, to: url, fileType: fileType)
     }
 
-    /// Reads the source's markers, moves them onto the trimmed and stretched timeline, and re-writes them to
+    /// Reads the source's markers, moves them onto the trimmed, stretched and reversed timeline, and re-writes them to
     /// `outputURL`, overwriting the unadjusted markers `copyMetadata` already wrote.
     ///
     /// - Parameter newDuration: duration of the render, bounding a region that ran past the
@@ -76,12 +76,7 @@ extension AudioEditRenderer {
 
         guard collection.count > 0 else { return true }
 
-        let adjusted = AudioMarkerDescription.adjusted(
-            collection.markerDescriptions,
-            forTrim: edit.trim,
-            timeScale: edit.timePitch.rate,
-            newDuration: newDuration
-        )
+        let adjusted = AudioMarkerDescription.adjusted(collection.markerDescriptions, for: edit, newDuration: newDuration)
 
         // An empty set has to clear the file rather than skip it: `copyMetadata` already wrote the
         // source's markers at their pre-trim times, and leaving them is worse than having none.

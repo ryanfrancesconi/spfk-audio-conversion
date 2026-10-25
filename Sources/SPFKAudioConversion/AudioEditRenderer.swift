@@ -139,9 +139,9 @@ public actor AudioEditRenderer {
             throw error
         }
 
-        // Re-write markers adjusted for the trim range and rate, overwriting the unadjusted markers
+        // Re-write markers adjusted for the trim range, rate and reversal, overwriting the unadjusted markers
         // that copyMetadata wrote above.
-        if metadataCopyScheme.includesMarkers, !edit.trim.isEmpty || edit.timePitch.rate != 1 {
+        if metadataCopyScheme.includesMarkers, !edit.trim.isEmpty || edit.timePitch.rate != 1 || edit.isReversed {
             let renderedDuration = Double(processed.frameLength) / processed.format.sampleRate
 
             guard await adjustAndWriteMarkers(to: resolvedOutput, newDuration: renderedDuration) else {

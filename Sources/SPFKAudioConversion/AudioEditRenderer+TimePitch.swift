@@ -60,15 +60,20 @@ extension AudioEditRenderer {
         )
     }
 
-    /// The window's channel steps and time/pitch, with the context taking the same channel steps
-    /// so it reaches the stretcher in the material's layout.
+    /// The window's channel steps, reverse and time/pitch, with the context taking the same steps
+    /// so it reaches the stretcher in the material's layout. Reversed, the source's post-context
+    /// leads the material.
     func stretched(_ window: RenderWindow) async throws -> AVAudioPCMBuffer {
         let edit = window.edit
         let total = Int(window.buffer.frameLength)
-        let material = window.contextBefore ..< max(window.contextBefore, total - window.contextAfter)
+        let leading = edit.isReversed ? window.contextAfter : window.contextBefore
+        let trailing = edit.isReversed ? window.contextBefore : window.contextAfter
+        let material = leading ..< max(leading, total - trailing)
+
+        let conformed = try Self.conforming(window.buffer.applyingChannelOperation(edit.channels), toMono: conformToMono)
 
         // Handed to the stretcher and awaited; nothing else holds it meanwhile.
-        nonisolated(unsafe) let input = try Self.conforming(window.buffer.applyingChannelOperation(edit.channels), toMono: conformToMono)
+        nonisolated(unsafe) let input = edit.isReversed ? try conformed.reverse() : conformed
 
         let output = try await TimePitchRenderer.render(
             input,
