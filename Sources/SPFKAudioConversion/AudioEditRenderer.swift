@@ -42,6 +42,9 @@ public actor AudioEditRenderer {
     /// App-wide render choices, such as how a channel edit that would clip is brought under 0 dBFS.
     public let renderSettings: AudioRenderSettings
 
+    /// The notation a transposed key is written in.
+    public let keyNotation: MusicalKeyNotation
+
     /// Folds a 2-channel render to one channel after the edit's own channel operation, for a
     /// destination that takes mono. A render the edit already made mono is left as it is.
     public let conformToMono: MonoSource?
@@ -54,6 +57,7 @@ public actor AudioEditRenderer {
         fileConflictScheme: FileConflictScheme = .error,
         metadataCopyScheme: MetadataCopyScheme = .copyAll,
         renderSettings: AudioRenderSettings = AudioRenderSettings(),
+        keyNotation: MusicalKeyNotation = .standard,
         conformToMono: MonoSource? = nil
     ) {
         self.sourceURL = sourceURL
@@ -63,6 +67,7 @@ public actor AudioEditRenderer {
         self.fileConflictScheme = fileConflictScheme
         self.metadataCopyScheme = metadataCopyScheme
         self.renderSettings = renderSettings
+        self.keyNotation = keyNotation
         self.conformToMono = conformToMono
     }
 

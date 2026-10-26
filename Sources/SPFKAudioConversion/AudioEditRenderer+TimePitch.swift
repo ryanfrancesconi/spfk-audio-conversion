@@ -123,9 +123,10 @@ extension AudioEditRenderer {
         }
 
         if semitones != 0 {
-            if let resolved = MusicalKeyValue.resolve(initialKey: properties[.initialKey], comment: properties[.comment]) {
-                let key = resolved.key
-                properties.setInitialKey(key.value.transposed(bySemitones: semitones).string(in: .short, flats: key.usesFlats))
+            if let resolved = MusicalKeyValue.resolve(initialKey: properties[.initialKey], comment: properties[.comment]),
+               let transposed = resolved.key.value.transposed(bySemitones: semitones).string(in: .standard)
+            {
+                properties.setInitialKey(transposed, notation: keyNotation)
 
                 if case let .comment(remainder) = resolved.source {
                     properties.set(tag: .comment, value: remainder.isEmpty ? nil : remainder)

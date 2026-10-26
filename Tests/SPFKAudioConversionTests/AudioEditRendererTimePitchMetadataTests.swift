@@ -12,7 +12,7 @@ import Testing
 @testable import SPFKAudioConversion
 
 /// What a stretch or transposition rewrites in the render's metadata.
-@Suite(.tags(.file))
+@Suite(.tags(.file, .musicalKey))
 class AudioEditRendererTimePitchMetadataTests: BinTestCase {
     /// A copy of `tabla.wav` carrying only `tags`, written as another tool would have written them:
     /// the read-path setter stores them verbatim.
@@ -33,13 +33,16 @@ class AudioEditRendererTimePitchMetadataTests: BinTestCase {
         _ source: URL,
         _ timePitch: TimePitchDescription,
         trim: TrimDescription = TrimDescription(),
-        scheme: MetadataCopyScheme = .copyAll
+        scheme: MetadataCopyScheme = .copyAll,
+        keyNotation: MusicalKeyNotation = .standard
     ) async throws -> TagProperties {
         var edit = AudioEditDescription(trim: trim)
         edit.timePitch = timePitch
 
         let output = bin.appending(component: "out-\(UUID().uuidString).\(source.pathExtension)")
-        try await AudioEditRenderer(sourceURL: source, edit: edit, outputURL: output, metadataCopyScheme: scheme).render()
+        try await AudioEditRenderer(
+            sourceURL: source, edit: edit, outputURL: output, metadataCopyScheme: scheme, keyNotation: keyNotation
+        ).render()
         lastOutput = output
         return try TagProperties(url: output)
     }
@@ -59,7 +62,7 @@ class AudioEditRendererTimePitchMetadataTests: BinTestCase {
     @Test func aPitchOnlyRenderKeepsTheBPM() async throws {
         let tags = try await render(source([.bpm: "120", .initialKey: "Am"]), TimePitchDescription(semitones: 2))
         #expect(tags[.bpm] == "120")
-        #expect(tags[.initialKey] == "Bm")
+        #expect(tags[.initialKey] == "B Minor")
     }
 
     @Test func noBPMIsWrittenWhereTheSourceHadNone() async throws {
@@ -68,21 +71,34 @@ class AudioEditRendererTimePitchMetadataTests: BinTestCase {
     }
 
     @Test(arguments: [
-        ("Am", 2, "Bm"),
-        ("C# Minor", -1, "Cm"),
-        ("Dbm", 2, "Ebm"),
-        ("8A", 2, "Bm"),
+        ("Am", 2, "B Minor"),
+        ("C# Minor", -1, "C Minor"),
+        ("Dbm", 2, "D# Minor"),
+        ("8A", 2, "B Minor"),
+        ("4B", 2, "Bb Major"),
         ("B", 1, "C"),
-        ("Am", 12, "Am"),
+        ("Am", 12, "A Minor"),
     ])
     func theKeyIsTransposedByWholeSemitones(key: String, semitones: Int, expected: String) async throws {
         let tags = try await render(source([.initialKey: key]), TimePitchDescription(semitones: semitones))
         #expect(tags[.initialKey] == expected)
     }
 
+    @Test(arguments: [
+        ("Am", MusicalKeyNotation.camelot, "10A"),
+        ("Am", .short, "Bm"),
+        ("Gm", .short, "Am"),
+        ("Emaj", .openKey, "7d"),
+        ("E", .camelot, "F#"),
+    ])
+    func theKeyIsWrittenInTheNotation(key: String, notation: MusicalKeyNotation, expected: String) async throws {
+        let tags = try await render(source([.initialKey: key]), TimePitchDescription(semitones: 2), keyNotation: notation)
+        #expect(tags[.initialKey] == expected)
+    }
+
     @Test func centsRoundToTheNearestSemitone() async throws {
         let up = try await render(source([.initialKey: "Am"]), TimePitchDescription(semitones: 1, cents: 60))
-        #expect(up[.initialKey] == "Bm")
+        #expect(up[.initialKey] == "B Minor")
 
         let none = try await render(source([.initialKey: "C# Minor"]), TimePitchDescription(cents: 40))
         #expect(none[.initialKey] == "C# Minor")
@@ -95,13 +111,13 @@ class AudioEditRendererTimePitchMetadataTests: BinTestCase {
 
     @Test func aCommentKeyMovesToTheKeyTag() async throws {
         let tags = try await render(source([.comment: "8A - Energy 6"]), TimePitchDescription(semitones: 2))
-        #expect(tags[.initialKey] == "Bm")
+        #expect(tags[.initialKey] == "B Minor")
         #expect(tags[.comment] == "Energy 6")
     }
 
     @Test func aCommentThatWasOnlyTheKeyIsCleared() async throws {
         let tags = try await render(source([.comment: "8A"]), TimePitchDescription(semitones: 2))
-        #expect(tags[.initialKey] == "Bm")
+        #expect(tags[.initialKey] == "B Minor")
         #expect(tags[.comment] == nil || tags[.comment] == "")
     }
 
