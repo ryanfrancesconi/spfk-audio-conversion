@@ -99,10 +99,10 @@ class AssetWriterErrorTests: BinTestCase {
         let image = bin.appending(component: "tiny.dmg", directoryHint: .notDirectory)
         let mount = bin.appending(component: "tiny", directoryHint: .isDirectory)
 
-        try hdiutil(["create", "-size", "8m", "-fs", "HFS+", "-volname", "tiny", "-quiet", image.path])
-        try hdiutil(["attach", image.path, "-nobrowse", "-quiet", "-mountpoint", mount.path])
+        try await hdiutil(["create", "-size", "8m", "-fs", "HFS+", "-volname", "tiny", "-quiet", image.path])
+        try await hdiutil(["attach", image.path, "-nobrowse", "-quiet", "-mountpoint", mount.path])
 
-        defer { _ = try? hdiutil(["detach", mount.path, "-force", "-quiet"]) }
+        defer { _ = try? await hdiutil(["detach", mount.path, "-force", "-quiet"]) }
 
         // Leave less headroom than 4.8 seconds of 320 kbps AAC needs, and more than the writer
         // needs to start.
@@ -139,10 +139,10 @@ class AssetWriterErrorTests: BinTestCase {
         let image = bin.appending(component: "tiny.dmg", directoryHint: .notDirectory)
         let mount = bin.appending(component: "tiny", directoryHint: .isDirectory)
 
-        try hdiutil(["create", "-size", "8m", "-fs", "HFS+", "-volname", "tiny", "-quiet", image.path])
-        try hdiutil(["attach", image.path, "-nobrowse", "-quiet", "-mountpoint", mount.path])
+        try await hdiutil(["create", "-size", "8m", "-fs", "HFS+", "-volname", "tiny", "-quiet", image.path])
+        try await hdiutil(["attach", image.path, "-nobrowse", "-quiet", "-mountpoint", mount.path])
 
-        defer { _ = try? hdiutil(["detach", mount.path, "-force", "-quiet"]) }
+        defer { _ = try? await hdiutil(["detach", mount.path, "-force", "-quiet"]) }
 
         // Each of these encodes tabla.wav to well over 16 KB.
         let available = try mount.resourceValues(forKeys: [.volumeAvailableCapacityKey])
@@ -166,15 +166,14 @@ class AssetWriterErrorTests: BinTestCase {
     }
 
     @discardableResult
-    private func hdiutil(_ args: [String]) throws -> String {
-        let handler = ProcessHandler(url: URL(fileURLWithPath: "/usr/bin/hdiutil"), args: args)
-        let output = try handler.run()
+    private func hdiutil(_ args: [String]) async throws -> String {
+        let output = try await ProcessRunner.run(URL(fileURLWithPath: "/usr/bin/hdiutil"), arguments: args, timeout: .seconds(60))
 
-        guard handler.process.terminationStatus == 0 else {
-            throw NSError(description: "hdiutil \(args.first ?? "") failed: \(output)")
+        guard output.status == 0, output.reason == .exit else {
+            throw NSError(description: "hdiutil \(args.first ?? "") failed: \(output.stdout + output.stderr)")
         }
 
-        return output
+        return output.stdout
     }
 
     // MARK: - PCM to M4A succeeds
