@@ -102,8 +102,9 @@ final class ReversedAudioBuilderTests: BinTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let destination = directory.appendingPathComponent("cancelled.caf")
 
-        await #expect(throws: CancellationError.self) {
-            _ = try await ReversedAudioBuilder.build(
+        // A child task, so the cancel reaches the build and not the test itself.
+        let build = Task {
+            try await ReversedAudioBuilder.build(
                 source: TestBundleResources.shared.tabla_wav,
                 audioTrack: nil,
                 into: destination,
@@ -113,6 +114,10 @@ final class ReversedAudioBuilderTests: BinTestCase {
                     if value > 0.75 { withUnsafeCurrentTask { $0?.cancel() } }
                 }
             )
+        }
+
+        await #expect(throws: CancellationError.self) {
+            _ = try await build.value
         }
 
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
