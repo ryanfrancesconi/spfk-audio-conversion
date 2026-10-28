@@ -74,16 +74,9 @@ public enum ReversedAudioBuilder {
         chunkFrames: AVAudioFrameCount,
         progress: (Double) -> Void
     ) async throws -> (frameCount: Int, sampleRate: Double) {
-        if let decoder = try await TrackPCMSource.source(for: source, audioTrack: audioTrack) {
-            let declared = max(0, decoder.totalFrameCount)
-            return try decode(format: decoder.processingFormat, declaredFrames: declared, into: forward, chunkFrames: chunkFrames, progress: progress) { chunk, wanted in
-                chunk.frameLength = try trapping { try decoder.readNextChunk(into: chunk, frameCount: wanted) }
-            }
-        }
-
-        let file = try trapping { try AVAudioFile(forReading: source) }
-        return try decode(format: file.processingFormat, declaredFrames: file.length, into: forward, chunkFrames: chunkFrames, progress: progress) { chunk, wanted in
-            try readToEnd(file, into: chunk, frameCount: wanted)
+        let reader = try await TrackPCMSource.reader(for: source, audioTrack: audioTrack)
+        return try decode(format: reader.processingFormat, declaredFrames: reader.totalFrameCount, into: forward, chunkFrames: chunkFrames, progress: progress) { chunk, wanted in
+            chunk.frameLength = try trapping { try reader.readNextChunk(into: chunk, frameCount: wanted) }
         }
     }
 
