@@ -57,7 +57,8 @@ extension AudioFormatConverter {
         }
 
         let converter = LameConverter()
-        let bitRate = Int32(source.options.bitRate / 1000)
+        let perChannel: UInt32 = avfile.fileFormat.channelCount == 1 ? 2 : 1
+        let bitRate = Int32(source.options.bitRate / perChannel / 1000)
 
         let status = converter.convert(
             toMP3: inputURL.path,
