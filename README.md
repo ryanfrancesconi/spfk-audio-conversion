@@ -4,130 +4,27 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
 
-Audio file format conversion library supporting PCM and compressed formats via CoreAudio, AVFoundation, LAME, and libsndfile.
+The capability that writes audio files: converting between formats, and rendering the edits a user
+has queued on a file. ShadowTag's conversion, edit, split and reverse features run through it. It is
+macOS only.
 
-## Features
+Conversion goes from anything AVFoundation, libsndfile or the Matroska demuxer can read, to PCM
+(WAV, AIFF, CAF), AAC, MP3, FLAC, Ogg Vorbis or Opus, singly or as a concurrent batch. Metadata
+travels with the audio: tags, BEXT and iXML, artwork, and markers rewritten in the output's own
+marker format. Rendering applies a pending edit described in spfk-audio-base (trim, channels,
+reverse, time and pitch, normalize, fade) and writes the result. The package also splits a file into
+its detected segments, builds reversed copies for reversed playback, and decodes containers
+AVFoundation cannot open into PCM for anything that needs samples from them.
 
-- Convert between PCM formats (WAV, AIFF, CAF) with sample rate, bit depth, and channel count options
-- Encode to compressed formats (M4A/AAC, MP3, FLAC, Ogg Vorbis, Ogg Opus)
-- Decode compressed formats to PCM
-- Transcode between compressed formats via intermediate PCM
-- Batch conversion with configurable concurrency and progress reporting
-- WAV output past 4 GiB is written as RF64; AIFF output of 2 GB or more is refused
-- Bit depth rule enforcement to prevent unnecessary upsampling
+MP3 is encoded with LAME from spfk-lame, and FLAC and Ogg through libsndfile. Demuxing belongs to
+spfk-matroska, time and pitch DSP to spfk-tempo, tag reading and writing to spfk-metadata, and
+caching reversed copies to spfk-waveform.
 
-## Supported Formats
+## Markers
 
-| Direction | Formats |
-|-----------|---------|
-| **Input** | Anything AVFoundation or libsndfile opens (WAV, AIFF, CAF, M4A, MP3, MP4, FLAC, OGG, etc.), plus Matroska via `MatroskaAudioDecoder` |
-| **Output** | WAV, AIFF, CAF, M4A, MP3, FLAC, Ogg Vorbis, Ogg Opus |
-
-Matroska is not an `AVAudioFile` format — `.mka`/`.mkv`/`.webm` are absent from
-`AVURLAsset.audiovisualTypes()` and `AVAudioFile(forReading:)` throws `'fmt?'` on them. They are
-readable here only through the decoder below, and are not writable at all.
-
-## Key types
-
-| Type | Description |
-|------|-------------|
-| **`AudioFormatConverter`** | One conversion, dispatching to the right encoder for the output format |
-| **`AudioFormatConverterSource`** | The input file, output file and options for one operation |
-| **`AudioFormatConverterAdjustment`** | A change the converter had to make to the requested options, so the caller can report it |
-| **`BatchAudioFormatConverter`** | The above under structured concurrency, with a sliding window of 8 and per-file progress through its delegate |
-| **`BatchAudioFormatConverterResult`** | What one file in a batch produced |
-| **`AudioEditRenderer`** | Applies a pending edit — trim, channels, time and pitch, normalize, fade — and writes the result |
-| **`SegmentDivider`** / **`SegmentDividerOptions`** | Splitting a file into its detected segments |
-| **`BatchSegmentRenderer`** | That split across many files at once |
-| **`MatroskaAudioDecoder`** | Demuxed Matroska blocks as PCM, seekable by frame |
-| **`AVAssetReaderPCMSource`** | The same shape over an AVFoundation asset |
-
-`AudioEditRenderer` reads only the trim window as a PCM buffer, plus the frames either side that the
-time/pitch stretcher needs as context (a file that cannot state its length is read whole), applies
-the edit and writes the output, copying text metadata and markers across afterward. A stretch or
-transposition also rewrites what it changes: markers are scaled by the rate, the BPM tag and iXML
-BPM become the source's × rate, and the key moves by whole semitones into the key tag. PCM formats and AAC are written directly through `AVAudioFile`; MP3, FLAC and OGG go
-through an intermediate WAV and the converter.
-
-## Metadata Copying
-
-Metadata is automatically copied from source to output after conversion, controlled by `MetadataCopyScheme` (default: `.copyAll`):
-
-| Scheme | Tags | BEXT/iXML | Markers | Artwork |
-|--------|:----:|:---------:|:-------:|:-------:|
-| `.copyAll` | yes | yes | yes | yes |
-| `.copyTextAndMarkers` | yes | yes | yes | -- |
-| `.copyText` | yes | yes | -- | -- |
-| `.copyMarkers` | -- | -- | yes | -- |
-| `.ignore` | -- | -- | -- | -- |
-
-**Marker format mapping** — markers are written in the native chapter/cue format of the output:
-
-| Output format | Marker format |
-|---------------|---------------|
-| WAV | RIFF cue points (AudioToolbox) |
-| AIFF | `MARK` chunk (AudioToolbox) |
-| MP3 | ID3v2 CHAP frames |
-| FLAC, OGG, Opus | Vorbis comment chapters |
-| M4A, MP4, M4B | QuickTime chapter track |
-
-BEXT and iXML copy between WAV and FLAC, in either direction.
-
-## Architecture
-
-```
-AudioFormatConverter.start()
-  |-- Matroska or MXF input, or a non-first audio track
-  |                     --> decoded to an intermediate WAV, then converted from that
-  |-- PCM output        --> convertToPCM()         [CoreAudio ExtAudioFile]
-  |-- MP3 output        --> convertToMP3()         [LAME via LameConverter]
-  |-- FLAC output       --> convertToFLAC()        [libsndfile via SndFileConverter]
-  |-- Ogg Vorbis output --> convertToVorbis()      [libsndfile via SndFileConverter]
-  |-- Ogg Opus output   --> convertToOpus()        [libsndfile via SndFileConverter]
-  |-- PCM in, M4A out   --> AssetWriter            [AVFoundation]
-  |-- Compressed in/out --> convertCompressed()     [intermediate PCM + target encoder]
-
-```
-
-`LameConverter` and `SndFileConverter` are the two encoders in the ObjC target, wrapping LAME +
-mpg123 and libsndfile respectively.
-
-`BatchAudioFormatConverter` runs the above under structured concurrency, with a sliding window of
-8 concurrent conversions and per-file progress through `BatchAudioFormatConverterDelegate`.
-
-### Matroska
-
-`MatroskaAudioDecoder` turns demuxed blocks into PCM and seeks by frame.
-`MatroskaPCMBlockReader` handles uncompressed tracks, widening to float with no converter in the
-path — the data is already PCM, so putting `AVAudioConverter` in front of it would only add a
-place to go wrong.
-
-`MatroskaAudioDecoder+WaveformPCMSource` is the conformance that lets a waveform parse a container
-AVFoundation cannot open.
-
-## Dependencies
-
-| Package | Description |
-|---------|-------------|
-| [spfk-base](https://github.com/ryanfrancesconi/spfk-base) | Foundation extensions and utilities |
-| [spfk-audio-base](https://github.com/ryanfrancesconi/spfk-audio-base) | Audio type definitions (`AudioFileType`, `AudioDefaults`) |
-| [spfk-metadata](https://github.com/ryanfrancesconi/spfk-metadata) | Audio file metadata parsing |
-| [spfk-matroska](https://github.com/ryanfrancesconi/spfk-matroska) | Matroska demuxing, for the decoder above |
-| [spfk-tempo](https://github.com/ryanfrancesconi/spfk-tempo) | The time/pitch stretcher |
-| [spfk-lame](https://github.com/ryanfrancesconi/spfk-lame) | LAME + mpg123 xcframeworks for MP3 encoding/decoding |
-| [spfk-utils](https://github.com/ryanfrancesconi/spfk-utils) | General utilities (`Entropy`, `Serializable`) |
-| [spfk-waveform](https://github.com/ryanfrancesconi/spfk-waveform) | Waveform scanning, for the intermediate PCM path |
-| [spfk-video](https://github.com/ryanfrancesconi/spfk-video) | Video track reading and frame extraction |
-| [sndfile-binary-xcframework](https://github.com/sbooth/sndfile-binary-xcframework) | libsndfile for FLAC/OGG encoding |
-| [ogg-binary-xcframework](https://github.com/sbooth/ogg-binary-xcframework) | Ogg container library |
-| [flac-binary-xcframework](https://github.com/sbooth/flac-binary-xcframework) | FLAC codec |
-| [vorbis-binary-xcframework](https://github.com/sbooth/vorbis-binary-xcframework) | Vorbis codec |
-| [opus-binary-xcframework](https://github.com/sbooth/opus-binary-xcframework) | Opus codec |
-
-## Requirements
-
-- **Platforms:** macOS 13+
-- **Swift:** 6.2+
+Converting with no markers to copy does not remove the ones already in the output, and a trim can
+carry the source's markers across at their old times. A render that should keep none has to call
+`AudioFormatConverter.removeMarkers(from:outputType:)`.
 
 ## About
 
