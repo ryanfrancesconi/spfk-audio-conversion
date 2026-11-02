@@ -28,15 +28,23 @@ public final class SndFilePCMSource: @unchecked Sendable {
         reader = try SndFileReader(path: url.path)
 
         guard reader.channelCount > 0,
-              let format = AVAudioFormat(
-                  standardFormatWithSampleRate: reader.sampleRate,
-                  channels: AVAudioChannelCount(reader.channelCount)
+              let format = AVAudioFormat.pcmProcessingFormat(
+                  sampleRate: reader.sampleRate,
+                  channelCount: AVAudioChannelCount(reader.channelCount),
+                  layoutTag: Self.layoutTag(channelCount: Int(reader.channelCount))
               )
         else {
             throw NSError(description: "\(url.lastPathComponent) has no audio channels")
         }
 
         processingFormat = format
+    }
+
+    /// libsndfile passes Vorbis channel order through and reports no channel map, so the output is
+    /// labeled with the layout Core Audio gives the same files. Only 5.1 has been measured; other
+    /// counts are discrete.
+    private static func layoutTag(channelCount: Int) -> AudioChannelLayoutTag? {
+        channelCount == 6 ? kAudioChannelLayoutTag_Ogg_5_1 : nil
     }
 }
 
