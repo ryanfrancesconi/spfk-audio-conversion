@@ -9,11 +9,11 @@ import SPFKUtils
 import SPFKVideo
 
 extension AudioFormatConverter {
-    /// Converts a Matroska-family input by demuxing its audio to an intermediate WAV first.
+    /// Converts a Matroska-family input by demuxing its audio to an intermediate file first.
     ///
     /// Neither `ExtAudioFile` nor `AVAssetReader` opens the container, so all three routes through
     /// ``start()`` fail on one. ``MatroskaAudioDecoder`` supplies PCM the rest of the pipeline reads
-    /// as it would any other WAV, which is what makes a video source with an audio target work.
+    /// as it would any other PCM file, which is what makes a video source with an audio target work.
     ///
     /// - Throws: ``MatroskaAudioDecoderError`` naming the codec when the track is one macOS has no
     ///   decoder for, which is the only refusal this path should produce.

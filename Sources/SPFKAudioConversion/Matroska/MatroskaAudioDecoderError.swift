@@ -14,6 +14,9 @@ public enum MatroskaAudioDecoderError: Error, Equatable, Sendable {
     /// The codec is described, but the system has no decoder for it in this configuration.
     case decoderUnavailable(String)
 
+    /// More than two channels in a layout this decoder does not know, so it cannot label them.
+    case unsupportedChannelLayout(codecID: String, channelCount: Int)
+
     case bufferAllocationFailed
 
     /// The decoder was fed valid packets and failed anyway, which usually means a corrupt stream.
@@ -35,6 +38,9 @@ extension MatroskaAudioDecoderError: LocalizedError {
 
         case let .decoderUnavailable(codecID):
             "No system decoder is available for \(codecID)"
+
+        case let .unsupportedChannelLayout(codecID, channelCount):
+            "\(channelCount)-channel \(codecID) is not a channel layout this app can decode"
 
         case .bufferAllocationFailed:
             "Could not allocate an audio buffer"

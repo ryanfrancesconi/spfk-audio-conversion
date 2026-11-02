@@ -11,7 +11,7 @@ extension AudioFormatConverter {
     /// Frames requested per read while writing an intermediate.
     static let intermediateChunkFrames: AVAudioFrameCount = 16384
 
-    /// Converts by decoding `pcmSource` to an intermediate WAV and running the ordinary pipeline
+    /// Converts by decoding `pcmSource` to an intermediate file and running the ordinary pipeline
     /// on that.
     ///
     /// The route for anything ``start()``'s own branches cannot read: a container neither Core Audio
@@ -22,7 +22,7 @@ extension AudioFormatConverter {
         pcmSource: some SequentialPCMSource,
         sampleFormat: (bitDepth: Int, isFloat: Bool)
     ) async throws {
-        let intermediate = try writeIntermediateWAV(
+        let intermediate = try writeIntermediateFile(
             from: pcmSource,
             sampleFormat: sampleFormat,
             directory: source.output.deletingLastPathComponent()
@@ -51,18 +51,22 @@ extension AudioFormatConverter {
         await copyMetadata()
     }
 
-    /// Writes everything `pcmSource` decodes into a WAV in `directory`.
-    private func writeIntermediateWAV(
+    /// Writes everything `pcmSource` decodes into a WAV in `directory`, or a CAF past two channels.
+    ///
+    /// The downmix reads the intermediate's layout. WAV can state only its own channel order, and
+    /// writes any other layout as discrete with the samples left where they were; CAF keeps it.
+    private func writeIntermediateFile(
         from pcmSource: some SequentialPCMSource,
         sampleFormat: (bitDepth: Int, isFloat: Bool),
         directory: URL
     ) throws -> URL {
-        let name = source.input.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + ".wav"
+        let processingFormat = pcmSource.processingFormat
+        let pathExtension = processingFormat.channelCount > 2 ? "caf" : "wav"
+
+        let name = source.input.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + "." + pathExtension
         let output = directory.appending(component: name, directoryHint: .notDirectory)
 
-        let processingFormat = pcmSource.processingFormat
-
-        let settings: [String: Any] = [
+        var settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatLinearPCM,
             AVSampleRateKey: processingFormat.sampleRate,
             AVNumberOfChannelsKey: processingFormat.channelCount,
@@ -70,6 +74,13 @@ extension AudioFormatConverter {
             AVLinearPCMIsFloatKey: sampleFormat.isFloat,
             AVLinearPCMIsBigEndianKey: false,
         ]
+
+        if processingFormat.channelCount > 2, let layout = processingFormat.channelLayout {
+            settings[AVChannelLayoutKey] = Data(
+                bytes: layout.layout,
+                count: MemoryLayout<AudioChannelLayout>.size
+            )
+        }
 
         // A source hands back deinterleaved float32 whatever the track's own depth is — that is
         // what `commonFormat` and `interleaved` describe. `settings` describes the file on disk.

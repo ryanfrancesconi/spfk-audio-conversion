@@ -93,9 +93,9 @@ public final class AVAssetReaderPCMSource: @unchecked Sendable {
         guard
             let description = descriptions.first,
             let streamDescription = CMAudioFormatDescriptionGetStreamBasicDescription(description)?.pointee,
-            let processingFormat = AVAudioFormat(
-                standardFormatWithSampleRate: streamDescription.mSampleRate,
-                channels: AVAudioChannelCount(streamDescription.mChannelsPerFrame)
+            let processingFormat = Self.processingFormat(
+                streamDescription: streamDescription,
+                channelLayout: CMAudioFormatDescriptionGetChannelLayout(description, sizeOut: nil)
             )
         else {
             throw AVAssetReaderPCMSourceError.unreadable(url)
@@ -111,6 +111,19 @@ public final class AVAssetReaderPCMSource: @unchecked Sendable {
             : 0
 
         try startReading(atFrame: 0)
+    }
+
+    /// The track's own rate, channel count and layout. The reader outputs channels in the track's
+    /// order, so its layout labels them.
+    private static func processingFormat(
+        streamDescription: AudioStreamBasicDescription,
+        channelLayout: UnsafePointer<AudioChannelLayout>?
+    ) -> AVAudioFormat? {
+        AVAudioFormat.pcmProcessingFormat(
+            sampleRate: streamDescription.mSampleRate,
+            channelCount: AVAudioChannelCount(streamDescription.mChannelsPerFrame),
+            layout: channelLayout.map { AVAudioChannelLayout(layout: $0) }
+        )
     }
 
     // MARK: - Reading
