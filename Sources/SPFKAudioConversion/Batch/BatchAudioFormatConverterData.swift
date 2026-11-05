@@ -2,6 +2,7 @@
 
 import Foundation
 import SPFKBase
+import SPFKUtils
 
 /// Mutable state for a ``BatchAudioFormatConverter``, tracking sources and progress.
 public actor BatchAudioFormatConverterData {
@@ -37,7 +38,7 @@ public actor BatchAudioFormatConverterData {
         self.sources = sources
         count = sources.count
         completed = 0
-        batchSize = 8.clamped(to: 0 ... count)
+        batchSize = BatchWorkKind.blocking.width.clamped(to: 0 ... count)
     }
 
     /// Advances the completed count by one.
