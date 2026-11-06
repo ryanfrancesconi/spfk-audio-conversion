@@ -1,30 +1,26 @@
 # SPFKAudioConversion
 
 [![Version](https://img.shields.io/github/v/tag/ryanfrancesconi/spfk-audio-conversion)](https://github.com/ryanfrancesconi/spfk-audio-conversion/tags)
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
+[![Swift](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
+[![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-conversion%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-conversion)
 
-The capability that writes audio files: converting between formats, and rendering the edits a user
-has queued on a file. ShadowTag's conversion, edit, split and reverse features run through it. It is
-macOS only.
+Audio file conversion and edit rendering for macOS.
 
-Conversion goes from anything AVFoundation, libsndfile or the Matroska demuxer can read, to PCM
-(WAV, AIFF, CAF), AAC, MP3, FLAC, Ogg Vorbis or Opus, singly or as a concurrent batch. Metadata
-travels with the audio: tags, BEXT and iXML, artwork, and markers rewritten in the output's own
-marker format. Rendering applies a pending edit described in spfk-audio-base (trim, channels,
-reverse, time and pitch, normalize, fade) and writes the result. The package also splits a file into
-its detected segments, builds reversed copies for reversed playback, and decodes containers
-AVFoundation cannot open into PCM for anything that needs samples from them.
+## Features
 
-MP3 is encoded with LAME from spfk-lame, and FLAC and Ogg through libsndfile. Demuxing belongs to
-spfk-matroska, time and pitch DSP to spfk-tempo, tag reading and writing to spfk-metadata, and
-caching reversed copies to spfk-waveform.
+- Convert to PCM (WAV, AIFF, CAF), AAC, MP3, FLAC, Ogg Vorbis or Opus, one file at a time or as a
+  concurrent batch (`AudioFormatConverter`, `BatchAudioFormatConverter`)
+- Copy tags, BEXT, iXML, artwork, markers and Finder tags to the output
+- Render a pending `AudioEditDescription` (`AudioEditRenderer`)
+- Split a file into its detected segments (`SegmentDivider`)
+- Build reversed copies (`ReversedAudioBuilder`)
+- Decode Matroska audio to PCM (`MatroskaAudioDecoder`)
+- MP3 is encoded with LAME, and FLAC, Vorbis and Opus through libsndfile
 
-## Markers
+## Notes
 
-Converting with no markers to copy does not remove the ones already in the output, and a trim can
-carry the source's markers across at their old times. A render that should keep none has to call
-`AudioFormatConverter.removeMarkers(from:outputType:)`.
+- Converting with no markers to copy does not remove markers already in the output. Call
+  `AudioFormatConverter.removeMarkers(from:outputType:)` when the output should have none.
 
 ## About
 
