@@ -7,7 +7,8 @@ import SPFKBase
 /// fail without setting an error at all, which leaves nothing else to go on.
 public enum AudioFileReadError: LocalizedError {
     case openFailed(URL, underlying: any Error)
-    case readFailed(URL, framePosition: Int64, length: Int64, underlying: any Error)
+    /// `framePosition` is nil when the file could not report one.
+    case readFailed(URL, framePosition: Int64?, length: Int64, underlying: any Error)
 
     public var underlying: any Error {
         switch self {
@@ -21,8 +22,10 @@ public enum AudioFileReadError: LocalizedError {
         return switch self {
         case let .openFailed(url, _):
             "\(url.lastPathComponent) could not be opened (\(detail))"
-        case let .readFailed(url, framePosition, length, _):
+        case let .readFailed(url, framePosition?, length, _):
             "\(url.lastPathComponent) could not be read at frame \(framePosition) of \(length) (\(detail))"
+        case let .readFailed(url, nil, _, _):
+            "\(url.lastPathComponent) could not be read (\(detail))"
         }
     }
 }
