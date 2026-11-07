@@ -15,7 +15,12 @@ public final class AVAudioFilePCMSource: SequentialPCMSource {
 
     public init(url: URL) throws {
         var file: AVAudioFile?
-        try ExceptionTrap.withThrowing { file = try AVAudioFile(forReading: url) }
+
+        do {
+            try ExceptionTrap.withThrowing { file = try AVAudioFile(forReading: url) }
+        } catch {
+            throw AudioFileReadError.openFailed(url, underlying: error)
+        }
 
         guard let file else {
             throw NSError(description: "Unable to open \(url.lastPathComponent)")
