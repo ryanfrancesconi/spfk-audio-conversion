@@ -80,33 +80,6 @@ public enum ReversedAudioBuilder {
         }
     }
 
-    /// Stops at `length` without reading past it, since what that read returns is not guaranteed:
-    /// `eofErr`, or a failure with no error set. `eofErr` is still treated as the end, for a file
-    /// that holds fewer frames than it declares. Any other failure is thrown as
-    /// ``AudioFileReadError/readFailed(_:framePosition:length:underlying:)``. `framePosition` is
-    /// read inside the trap: `AVAudioFile` raises from it when it has no converter for the format.
-    static func readToEnd(_ file: AVAudioFile, into chunk: AVAudioPCMBuffer, frameCount: AVAudioFrameCount) throws {
-        var framePosition: AVAudioFramePosition?
-
-        do {
-            try ExceptionTrap.withThrowing {
-                let position = file.framePosition
-                framePosition = position
-
-                guard position < file.length else {
-                    chunk.frameLength = 0
-                    return
-                }
-
-                try file.read(into: chunk, frameCount: frameCount)
-            }
-        } catch let error as NSError where error.domain == NSOSStatusErrorDomain && error.code == eofErr {
-            chunk.frameLength = 0
-        } catch {
-            throw AudioFileReadError.readFailed(file.url, framePosition: framePosition, length: file.length, underlying: error)
-        }
-    }
-
     /// Reads until a chunk comes back empty, never to a declared length.
     private static func decode(
         format: AVAudioFormat,

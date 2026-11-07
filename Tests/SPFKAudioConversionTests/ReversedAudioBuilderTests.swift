@@ -42,7 +42,7 @@ final class ReversedAudioBuilderTests: BinTestCase {
             let file = try AVAudioFile(forReading: url)
             let chunk = try #require(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 4096))
             while true {
-                try ReversedAudioBuilder.readToEnd(file, into: chunk, frameCount: 4096)
+                try file.readUpToLength(into: chunk, frameCount: 4096)
                 guard chunk.frameLength > 0 else { break }
                 try append(chunk)
             }

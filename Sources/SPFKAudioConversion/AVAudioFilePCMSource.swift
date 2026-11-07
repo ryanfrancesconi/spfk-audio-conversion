@@ -30,7 +30,7 @@ public final class AVAudioFilePCMSource: SequentialPCMSource {
     }
 
     public func readNextChunk(into buffer: AVAudioPCMBuffer, frameCount: AVAudioFrameCount) throws -> AVAudioFrameCount {
-        try ReversedAudioBuilder.readToEnd(file, into: buffer, frameCount: frameCount)
+        try file.readUpToLength(into: buffer, frameCount: frameCount)
         return buffer.frameLength
     }
 }
