@@ -38,4 +38,30 @@ struct AudioFileReadErrorTests {
             return error.localizedDescription.hasPrefix("missing.wav could not be opened (")
         }
     }
+
+    @Test("reading stops at the file's length without the read past the end")
+    func readStopsAtLength() throws {
+        let file = try EndFailingAudioFile(forReading: TestBundleResources.shared.tabla_wav)
+        let chunk = try #require(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: 1 << 15))
+        var total: AVAudioFramePosition = 0
+
+        while true {
+            try ReversedAudioBuilder.readToEnd(file, into: chunk, frameCount: 1 << 15)
+            guard chunk.frameLength > 0 else { break }
+            total += AVAudioFramePosition(chunk.frameLength)
+        }
+
+        #expect(total == file.length)
+    }
+}
+
+/// Fails a read past the end with no description, as Swift reports an Objective-C call that set no
+/// error.
+private final class EndFailingAudioFile: AVAudioFile {
+    override func read(into buffer: AVAudioPCMBuffer, frameCount frames: AVAudioFrameCount) throws {
+        guard framePosition < length else {
+            throw NSError(domain: "Foundation._GenericObjCError", code: 0)
+        }
+        try super.read(into: buffer, frameCount: frames)
+    }
 }
