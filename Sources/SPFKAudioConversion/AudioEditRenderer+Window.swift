@@ -141,7 +141,7 @@ extension AudioEditRenderer {
             while buffer.frameLength < frames {
                 try Task.checkCancellation()
 
-                try audioFile.read(into: chunk, frameCount: min(Self.decodeChunkFrames, frames - buffer.frameLength))
+                try audioFile.readUpToLength(into: chunk, frameCount: min(Self.decodeChunkFrames, frames - buffer.frameLength))
                 guard chunk.frameLength > 0 else { break }
 
                 try buffer.copy(from: chunk, frames: chunk.frameLength)
