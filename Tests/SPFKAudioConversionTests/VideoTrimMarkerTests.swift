@@ -21,6 +21,9 @@ final class VideoTrimMarkerTests: BinTestCase {
     /// `sample.mov` runs 2.0s — `ffprobe -show_entries format=duration`, 2026-08-10.
     private let sourceDuration: TimeInterval = 2.0
 
+    /// A render with an orientation reads the source through a different kind of asset.
+    static let orientations: [OrientationEdit] = [.up, .right]
+
     private func readMarkers(of url: URL) async throws -> [AudioMarkerDescription] {
         try await AudioMarkerDescriptionCollection(url: url).markerDescriptions
     }
@@ -32,7 +35,8 @@ final class VideoTrimMarkerTests: BinTestCase {
         return url
     }
 
-    @Test func aTrimmedVideoKeepsTheMarkersInsideItAtTheirNewTimes() async throws {
+    @Test(arguments: Self.orientations)
+    func aTrimmedVideoKeepsTheMarkersInsideItAtTheirNewTimes(orientation: OrientationEdit) async throws {
         let markers = [
             AudioMarkerDescription(name: "beforeIn", startTime: 0.25),
             AudioMarkerDescription(name: "inside", startTime: 1.0),
@@ -45,7 +49,7 @@ final class VideoTrimMarkerTests: BinTestCase {
         let trim = TrimDescription(inPoint: 0.5, outPoint: 1.5)
         let rendered = bin.appendingPathComponent("rendered.mov")
 
-        try await VideoEditRenderer(sourceURL: source, trim: trim, outputURL: rendered).render()
+        try await VideoEditRenderer(sourceURL: source, trim: trim, orientation: orientation, outputURL: rendered).render()
 
         let renderedDuration = try await AVURLAsset(url: rendered).load(.duration).seconds
         #expect(abs(renderedDuration - 1.0) < 0.1)
@@ -67,14 +71,15 @@ final class VideoTrimMarkerTests: BinTestCase {
 
     /// A region spanning the in-point is clipped to the trimmed timeline rather than dropped, and
     /// survives the round trip through the file.
-    @Test func aRegionSpanningTheInPointIsWrittenFromZero() async throws {
+    @Test(arguments: Self.orientations)
+    func aRegionSpanningTheInPointIsWrittenFromZero(orientation: OrientationEdit) async throws {
         let markers = [AudioMarkerDescription(name: "spans", startTime: 0.25, endTime: 1.2)]
         let source = try sourceCopy(named: "region-source.mov", markers: markers)
 
         let trim = TrimDescription(inPoint: 0.5, outPoint: sourceDuration)
         let rendered = bin.appendingPathComponent("region-rendered.mov")
 
-        try await VideoEditRenderer(sourceURL: source, trim: trim, outputURL: rendered).render()
+        try await VideoEditRenderer(sourceURL: source, trim: trim, orientation: orientation, outputURL: rendered).render()
 
         let renderedDuration = try await AVURLAsset(url: rendered).load(.duration).seconds
 
@@ -133,7 +138,8 @@ final class VideoTrimMarkerTests: BinTestCase {
     /// `sample.mov`, where it survived with its times offset by the leading GOP the export keeps.
     /// The render here is seeded with that same pre-trim track so the removal is what the test
     /// exercises, whichever way the export happens to behave.
-    @Test func aTrimThatKeepsNoMarkersClearsTheRendersChapterTrack() async throws {
+    @Test(arguments: Self.orientations)
+    func aTrimThatKeepsNoMarkersClearsTheRendersChapterTrack(orientation: OrientationEdit) async throws {
         let markers = [
             AudioMarkerDescription(name: "beforeIn", startTime: 0.1),
             AudioMarkerDescription(name: "afterOut", startTime: 1.9),
@@ -144,7 +150,7 @@ final class VideoTrimMarkerTests: BinTestCase {
         let trim = TrimDescription(inPoint: 0.5, outPoint: 1.5)
         let rendered = bin.appendingPathComponent("empty-rendered.mov")
 
-        try await VideoEditRenderer(sourceURL: source, trim: trim, outputURL: rendered).render()
+        try await VideoEditRenderer(sourceURL: source, trim: trim, orientation: orientation, outputURL: rendered).render()
 
         AudioFormatConverter.writeMarkers(markers, to: rendered, outputType: .mov)
         #expect(try await readMarkers(of: rendered).isNotEmpty)
