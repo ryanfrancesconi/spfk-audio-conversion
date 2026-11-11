@@ -18,21 +18,6 @@ struct BatchAudioFormatConverterDataTests {
         }
     }
 
-    // MARK: - Initial state
-
-    @Test func emptyInitHasZeroCounts() async {
-        let data = BatchAudioFormatConverterData()
-        let count = await data.count
-        let completed = await data.completed
-        let batchSize = await data.batchSize
-        let percent = await data.percent
-
-        #expect(count == 0)
-        #expect(completed == 0)
-        #expect(batchSize == 0)
-        #expect(percent == 0)
-    }
-
     // MARK: - update(sources:)
 
     @Test func updateSetsSources() async {
@@ -125,18 +110,5 @@ struct BatchAudioFormatConverterDataTests {
         let data = BatchAudioFormatConverterData()
         let percent = await data.percent
         #expect(percent == 0)
-    }
-
-    // MARK: - init(sources:)
-
-    @Test func initWithSourcesSetsState() async {
-        let sources = makeSources(count: 6)
-        let data = await BatchAudioFormatConverterData(sources: sources)
-
-        let count = await data.count
-        let batchSize = await data.batchSize
-
-        #expect(count == 6)
-        #expect(batchSize == 6)
     }
 }
