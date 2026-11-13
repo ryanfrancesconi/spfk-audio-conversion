@@ -9,20 +9,20 @@ import SPFKVideo
 /// Decodes a Matroska or WebM file's audio track to PCM.
 ///
 /// Exists because AVFoundation cannot open the container at all, so `AVAudioFile` and
-/// `ExtAudioFile` — everything else in this package's decode path — throw `'fmt?'` on a `.mkv`.
+/// `ExtAudioFile` - everything else in this package's decode path - throw `'fmt?'` on a `.mkv`.
 /// `spfk-matroska` supplies the compressed frames and this turns them into PCM.
 ///
 /// **Decoding is Apple's, never ours.** The codecs here are pool-licensed and macOS already ships
 /// decoders for them; this feeds `AVAudioConverter` and gets PCM back.
 ///
 /// Streamed rather than loaded: frames come out of the demuxer in stored order and are decoded as
-/// asked for, so a whole film's audio never exists in memory at once — at 48kHz stereo float that
+/// asked for, so a whole film's audio never exists in memory at once - at 48kHz stereo float that
 /// would be roughly 1.4GB per hour.
 ///
 /// ``seek(toFrame:)`` repositions through the container's `Cues` index, which is what makes this
 /// usable for playback as well as for the front-to-back waveform scan it was first written for.
 /// `@unchecked Sendable` on exactly the terms `MatroskaSampleBufferReader` is: this holds a position
-/// in a file, so **one consumer may drive it and no more** — two threads pulling from it would
+/// in a file, so **one consumer may drive it and no more** - two threads pulling from it would
 /// interleave their reads. The conformance exists so a player can hand it to a feed `Task`, and is a
 /// statement of that invariant rather than a claim of thread safety.
 public final class MatroskaAudioDecoder: @unchecked Sendable {
@@ -34,14 +34,14 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     /// The Matroska track being decoded.
     public let track: MatroskaTrack
 
-    /// The PCM format frames are decoded into — deinterleaved 32-bit float at the track's own rate,
+    /// The PCM format frames are decoded into - deinterleaved 32-bit float at the track's own rate,
     /// which is what the waveform and the audio engine both consume.
     public let processingFormat: AVAudioFormat
 
     /// The demuxed file's headers, so a caller reading PCM can still ask what it is reading.
     public var file: MatroskaFile { reader.file }
 
-    /// Reopened rather than mutated when a file with no `Cues` index has to be rewound — hence
+    /// Reopened rather than mutated when a file with no `Cues` index has to be rewound - hence
     /// `var`. See ``seek(toFrame:)``.
     private var reader: MatroskaFrameReader
 
@@ -62,7 +62,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     /// Packets handed to the converter, and frames it gave back, over the decoder's whole life.
     ///
     /// A stream description with the wrong packet length or source depth builds a converter that
-    /// consumes packets, emits nothing, and reports success — so an empty result is only believable
+    /// consumes packets, emits nothing, and reports success - so an empty result is only believable
     /// when there was nothing to decode. See ``endOfStream()``.
     private var suppliedPacketCount = 0
     private var producedFrameCount: AVAudioFramePosition = 0
@@ -75,7 +75,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     private var pendingOffset: AVAudioFrameCount = 0
 
     /// Where the current decode run began, in source frames, taken from the first packet's
-    /// container timestamp. Nil until that packet is read — a run's origin is not knowable from the
+    /// container timestamp. Nil until that packet is read - a run's origin is not knowable from the
     /// seek that started it, because the container restarts at the indexed boundary at or before
     /// what was asked for rather than at the request itself.
     private var runOriginFrame: AVAudioFramePosition?
@@ -112,7 +112,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     /// Derived rather than counted, so a seek and a sequential read cannot disagree about it: the
     /// container time this decode run began at, plus what the run has produced since.
     ///
-    /// Defined over the buffered path — ``readNextChunk(into:frameCount:)`` and ``seek(toFrame:)``.
+    /// Defined over the buffered path - ``readNextChunk(into:frameCount:)`` and ``seek(toFrame:)``.
     /// ``nextBuffer(frameCapacity:)`` is the raw pull underneath both and does not move it, so a
     /// caller should use one or the other and not mix them.
     public var framePosition: AVAudioFramePosition {
@@ -129,7 +129,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     /// is given and discarding them when it is not.
     ///
     /// One primitive for both, because reading and seeking differ only in whether the samples are
-    /// kept — and two copies of this accounting is how a seek ends up off by a packet.
+    /// kept - and two copies of this accounting is how a seek ends up off by a packet.
     ///
     /// - Returns: how many frames were consumed, short of `frameCount` only at the end of the track.
     @discardableResult
@@ -198,8 +198,8 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
 
     /// How far before a seek target the decode run is started.
     ///
-    /// A block codec restarts with priming — samples it emits to fill its own state, which are not
-    /// signal — so decoding straight from a boundary and keeping the first output is wrong. Landing
+    /// A block codec restarts with priming - samples it emits to fill its own state, which are not
+    /// signal - so decoding straight from a boundary and keeping the first output is wrong. Landing
     /// early and discarding forward is the answer, and the discard needed to hit the target exactly
     /// already does that work; this only guarantees there is some to discard when the target lands
     /// on a boundary. Comfortably longer than AAC's 2112-frame priming at any rate decoded here.
@@ -207,7 +207,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
 
     /// Repositions so the next read starts at `frame`.
     ///
-    /// A file with no `Cues` index still seeks, by decoding up to the target — see the fallback
+    /// A file with no `Cues` index still seeks, by decoding up to the target - see the fallback
     /// below. That costs time proportional to the distance, so it is O(1) on an indexed file and
     /// O(target) on one without.
     ///
@@ -228,10 +228,10 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
             //
             // This deliberately does *not* refuse. A version that threw on any backward seek was
             // wrong on ordinary use, not just on scrubbing: pressing play with a selection seeks
-            // back to its in-point, and so does playing the same file twice — both failed on every
+            // back to its in-point, and so does playing the same file twice - both failed on every
             // indexless `.mkv`, which is most of them.
             guard target < framePosition else {
-                // Already before the target, so the run can simply decode on to it — no restart,
+                // Already before the target, so the run can simply decode on to it - no restart,
                 // and none of the state below needs clearing.
                 try discardForward(to: target)
                 return
@@ -262,7 +262,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     private func advanceToSeekTarget(_ target: AVAudioFramePosition) throws {
         defer { pendingSeekTarget = nil }
 
-        // Establishes the run's origin as a side effect — the first packet is what states it.
+        // Establishes the run's origin as a side effect - the first packet is what states it.
         guard try pendingBuffer() != nil, runOriginFrame != nil else { return }
 
         try discardForward(to: target)
@@ -286,7 +286,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
 
     /// Opens `url` and prepares to decode one of its audio tracks.
     ///
-    /// - Parameter audioTrack: which track to decode, or `nil` for the first stored — the muxer's
+    /// - Parameter audioTrack: which track to decode, or `nil` for the first stored - the muxer's
     ///   ordering rather than a choice. An identifier the file does not carry falls back to the
     ///   first rather than throwing: a selection can outlive the file it was made against, and a
     ///   waveform of the wrong track beats no waveform at all.
@@ -320,7 +320,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
 
     /// Decodes up to `frameCapacity` frames, or `nil` once the track is exhausted.
     ///
-    /// A returned buffer can hold fewer frames than asked for without meaning the end — the
+    /// A returned buffer can hold fewer frames than asked for without meaning the end - the
     /// converter emits what a whole number of packets produced.
     public func nextBuffer(frameCapacity: AVAudioFrameCount = 8192) throws -> AVAudioPCMBuffer? {
         if reachedEnd {
@@ -404,7 +404,7 @@ public final class MatroskaAudioDecoder: @unchecked Sendable {
     /// Marks the track exhausted, refusing a run that decoded nothing out of packets that existed.
     ///
     /// Core Audio reports a stream description it cannot make sense of by consuming every packet
-    /// and producing no audio, with no error at any point — so silence is the only symptom, and this
+    /// and producing no audio, with no error at any point - so silence is the only symptom, and this
     /// is the only place it can be caught.
     private func endOfStream() throws {
         reachedEnd = true

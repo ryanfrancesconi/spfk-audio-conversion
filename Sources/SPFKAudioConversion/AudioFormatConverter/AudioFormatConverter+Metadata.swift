@@ -10,7 +10,7 @@ extension AudioFormatConverter {
     /// Copies metadata from the source file to the converted output file based on the
     /// ``AudioFormatConverterSource/metadataCopyScheme``.
     ///
-    /// Each metadata type is copied independently with best-effort error handling — a failure
+    /// Each metadata type is copied independently with best-effort error handling - a failure
     /// in one step (e.g. unsupported marker format) does not prevent other metadata from being copied.
     func copyMetadata() async {
         let scheme = source.metadataCopyScheme
@@ -124,7 +124,7 @@ extension AudioFormatConverter {
         do {
             try EmbeddedAudioMarkers.write(descriptions, to: url, fileType: outputType)
         } catch MetadataError.unsupportedFormat {
-            Log.debug("Marker writing not supported for \(outputType.rawValue) — skipping")
+            Log.debug("Marker writing not supported for \(outputType.rawValue) - skipping")
         } catch {
             Log.error("Failed to write markers to \(url.lastPathComponent):", error)
             return false
@@ -139,14 +139,14 @@ extension AudioFormatConverter {
     /// Writing an empty set is not the same operation: it leaves whatever is already in the file,
     /// and a trim render can arrive carrying the source's markers at their pre-trim times.
     ///
-    /// Returns whether anything was removed — `false` also covers a file that had no markers, so
+    /// Returns whether anything was removed - `false` also covers a file that had no markers, so
     /// it is a poor error signal and is not treated as one.
     @discardableResult
     public static func removeMarkers(from url: URL, outputType: AudioFileType) -> Bool {
         do {
             return try EmbeddedAudioMarkers.removeAll(from: url, fileType: outputType)
         } catch {
-            Log.debug("Marker removal not supported for \(outputType.rawValue) — skipping")
+            Log.debug("Marker removal not supported for \(outputType.rawValue) - skipping")
             return false
         }
     }

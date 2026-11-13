@@ -38,7 +38,7 @@ struct MatroskaPCMBlockReaderTests {
         return (0 ..< frameCount).map { data[0][$0] }
     }
 
-    /// 8-bit integer PCM is unsigned, following the WAV convention Matroska inherits — so the
+    /// 8-bit integer PCM is unsigned, following the WAV convention Matroska inherits - so the
     /// midpoint is 128 rather than 0, and reading it as signed puts silence at full scale.
     @Test func eightBitIsUnsignedAroundOneTwentyEight() throws {
         let reader = MatroskaPCMBlockReader(bytesPerSample: 1, channelCount: 1, sampleFormat: .integer(isBigEndian: false))

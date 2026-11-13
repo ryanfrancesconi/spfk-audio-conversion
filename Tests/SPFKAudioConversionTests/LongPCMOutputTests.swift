@@ -13,7 +13,7 @@ import Testing
 /// WAV output is written as `kAudioFileRF64Type` so a conversion past 4 GiB has somewhere to go.
 /// Core Audio only writes RF64 magic once the data actually crosses that boundary; below it the
 /// file is a plain `RIFF`/`WAVE` carrying a 28-byte `JUNK` placeholder where `ds64` would sit.
-/// These tests pin the small-file half — that the placeholder changes nothing observable — because
+/// These tests pin the small-file half - that the placeholder changes nothing observable - because
 /// the crossing itself needs a 4.5 GB fixture and is proved by hand.
 @Suite(.tags(.file))
 class LongPCMOutputTests: BinTestCase {
@@ -111,7 +111,7 @@ class LongPCMOutputTests: BinTestCase {
     }
 
     /// 8-bit WAV samples are unsigned, and that flag is keyed on the container the samples are laid
-    /// out for — so the writer type has to be chosen separately from the format passed here.
+    /// out for - so the writer type has to be chosen separately from the format passed here.
     /// Handing `createOutputDescription` the RF64 id instead would leave 8-bit output signed.
     ///
     /// Reachable from an 8-bit input with no explicit depth: `bitsPerChannel` clamps to 16...32,

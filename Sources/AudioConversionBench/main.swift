@@ -167,7 +167,7 @@ print(String(format: "        %.1f MB on disk", Double(sourceBytes) / 1_048_576)
 
 // MARK: - 3.1 AudioEditRenderer
 
-section("3.1 AudioEditRenderer — a short trim out of a long source")
+section("3.1 AudioEditRenderer - a short trim out of a long source")
 
 for trimSeconds in [2.0, 30.0] {
     let output = directory.appending(
@@ -194,7 +194,7 @@ for trimSeconds in [2.0, 30.0] {
 
 // MARK: - 3.1 SegmentDivider
 
-section("3.1 SegmentDivider — the same read, once per segment")
+section("3.1 SegmentDivider - the same read, once per segment")
 
 for count in [4, 16] {
     let width = sourceSeconds / Double(count)
@@ -218,7 +218,7 @@ for count in [4, 16] {
 
 // MARK: - 3.2 AVAssetReaderPCMSource
 
-section("3.2 AVAssetReaderPCMSource — a whole-file scan, as the waveform does it")
+section("3.2 AVAssetReaderPCMSource - a whole-file scan, as the waveform does it")
 
 let scanSource = try await AVAssetReaderPCMSource(url: sourceURL)
 let scanFormat = scanSource.processingFormat
@@ -239,7 +239,7 @@ if let buffer = AVAudioPCMBuffer(pcmFormat: scanFormat, frameCapacity: 16384) {
 
 // MARK: - 3.3 ExtAudioFile
 
-section("3.3 ExtAudioFile — PCM to PCM, 32 KB per round trip")
+section("3.3 ExtAudioFile - PCM to PCM, 32 KB per round trip")
 
 await measure("convert to 16-bit WAV") {
     var options = AudioFormatConverterOptions()

@@ -23,7 +23,7 @@ public enum AVAssetReaderPCMSourceError: LocalizedError {
 /// Decodes **one named audio track** of an AVFoundation-readable file to PCM.
 ///
 /// Exists because `AVAudioFile` cannot name a track: its initializers take a URL and nothing else,
-/// and ExtAudioFile underneath offers no selection either — so the ordinary decode path always gets
+/// and ExtAudioFile underneath offers no selection either - so the ordinary decode path always gets
 /// whichever track the container lists first. A commentary or a dub is unreachable through it.
 /// `AVAssetReader` can be pointed at a specific `AVAssetTrack`, which is the whole reason this type
 /// exists alongside the simpler one.
@@ -41,7 +41,7 @@ public final class AVAssetReaderPCMSource: @unchecked Sendable {
     /// The track being decoded.
     public let track: AVAssetTrack
 
-    /// Deinterleaved 32-bit float at the track's own rate — what the waveform scan and the audio
+    /// Deinterleaved 32-bit float at the track's own rate - what the waveform scan and the audio
     /// engine both consume.
     public let processingFormat: AVAudioFormat
 
@@ -67,7 +67,7 @@ public final class AVAssetReaderPCMSource: @unchecked Sendable {
     /// Opens `url` and prepares to decode one of its audio tracks.
     ///
     /// - Parameter audioTrack: which track, or `nil` for the first. An identifier the file does not
-    ///   carry falls back to the first rather than throwing — a selection can outlive the file it
+    ///   carry falls back to the first rather than throwing - a selection can outlive the file it
     ///   was made against.
     public init(url: URL, audioTrack: AudioTrackDescription.ID? = nil) async throws {
         self.url = url
@@ -200,7 +200,7 @@ public final class AVAssetReaderPCMSource: @unchecked Sendable {
             guard let buffer = Self.pcmBuffer(from: sampleBuffer, format: processingFormat),
                   buffer.frameLength > 0
             else {
-                // An empty or undescribable buffer is not the end — keep pulling.
+                // An empty or undescribable buffer is not the end - keep pulling.
                 continue
             }
 

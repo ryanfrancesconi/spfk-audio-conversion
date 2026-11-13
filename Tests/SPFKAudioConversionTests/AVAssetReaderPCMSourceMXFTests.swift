@@ -12,7 +12,7 @@ import Testing
 /// The audio half of MXF support: `AVAudioFile` refuses the container, so every read of an MXF's
 /// audio comes through this source.
 ///
-/// Gated on the plug-ins being installed — Apple ships MXF support as a separate download, so on a
+/// Gated on the plug-ins being installed - Apple ships MXF support as a separate download, so on a
 /// machine without it there is nothing to read.
 @Suite(.tags(.file), .serialized)
 struct AVAssetReaderPCMSourceMXFTests {
@@ -58,7 +58,7 @@ struct AVAssetReaderPCMSourceMXFTests {
         #expect(peak > 0.01, "decoded \(read) frames of silence")
     }
 
-    /// The whole file, to the end, with no short read or stall — the shape a waveform scan takes.
+    /// The whole file, to the end, with no short read or stall - the shape a waveform scan takes.
     @Test("Scans to the declared end", .enabled(if: ProVideoFormats.isAvailable))
     func scansToEnd() async throws {
         let source = try await AVAssetReaderPCMSource(url: url)

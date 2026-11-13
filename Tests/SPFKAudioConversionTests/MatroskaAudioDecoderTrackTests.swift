@@ -10,7 +10,7 @@ import Testing
 
 @testable import SPFKAudioConversion
 
-/// The Matroska half of per-track decoding — the same question `AVAssetReaderPCMSourceTests` asks of
+/// The Matroska half of per-track decoding - the same question `AVAssetReaderPCMSourceTests` asks of
 /// the AVFoundation half, against a container AVFoundation will not open.
 @Suite(.tags(.file), .serialized)
 struct MatroskaAudioDecoderTrackTests {
@@ -89,7 +89,7 @@ struct MatroskaAudioDecoderTrackTests {
         #expect(abs(try dominantFrequency(of: decoder) - 440) < 15)
     }
 
-    /// Seeking must not silently rebuild against a different track — the reader is reopened to do
+    /// Seeking must not silently rebuild against a different track - the reader is reopened to do
     /// it, which is exactly where a track choice could be dropped.
     @Test func keepsTheSelectedTrackAcrossASeek() throws {
         let decoder = try MatroskaAudioDecoder(url: url, audioTrack: try trackIDs().japanese)

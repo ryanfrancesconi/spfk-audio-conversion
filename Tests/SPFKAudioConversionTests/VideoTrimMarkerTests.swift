@@ -18,7 +18,7 @@ import Testing
 /// instead of letting the export's survive at pre-trim times.
 @Suite(.tags(.file), .serialized)
 final class VideoTrimMarkerTests: BinTestCase {
-    /// `sample.mov` runs 2.0s — `ffprobe -show_entries format=duration`, 2026-08-10.
+    /// `sample.mov` runs 2.0s - `ffprobe -show_entries format=duration`, 2026-08-10.
     private let sourceDuration: TimeInterval = 2.0
 
     /// A render with an orientation reads the source through a different kind of asset.
@@ -113,7 +113,7 @@ final class VideoTrimMarkerTests: BinTestCase {
     /// Color and region length survive a write, because nothing in the MP4 family stores either.
     ///
     /// Both ride in the chapter title's JSON suffix, so a writer building a bare `ChapterMarker`
-    /// demotes every colored region to an uncolored point — and the file still reads back as a
+    /// demotes every colored region to an uncolored point - and the file still reads back as a
     /// perfectly valid set of markers, which is what makes the loss silent.
     @Test func writingMarkersToAVideoKeepsColorAndRegionLength() async throws {
         let hex = try #require(HexColor(string: "AF77E9FF"))
@@ -134,7 +134,7 @@ final class VideoTrimMarkerTests: BinTestCase {
 
     /// A trim that keeps no markers has to *clear* the render, not skip it.
     ///
-    /// A passthrough export can carry the source's chapter track across — measured 2026-08-10 on
+    /// A passthrough export can carry the source's chapter track across - measured 2026-08-10 on
     /// `sample.mov`, where it survived with its times offset by the leading GOP the export keeps.
     /// The render here is seeded with that same pre-trim track so the removal is what the test
     /// exercises, whichever way the export happens to behave.

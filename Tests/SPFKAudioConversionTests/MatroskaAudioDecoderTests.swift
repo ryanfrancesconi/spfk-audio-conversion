@@ -9,7 +9,7 @@ import Testing
 @testable import SPFKAudioConversion
 
 /// `sample.mkv` is `sample.mov` remuxed with `-c copy`, so both carry the same AAC bitstream. That
-/// makes the `.mov` — which AVFoundation opens normally — the reference for what decoding the
+/// makes the `.mov` - which AVFoundation opens normally - the reference for what decoding the
 /// `.mkv` should produce.
 @Suite(.tags(.file), .serialized)
 final class MatroskaAudioDecoderTests {
@@ -55,7 +55,7 @@ final class MatroskaAudioDecoderTests {
     /// The decisive one: the same AAC bitstream through AVFoundation's own reader.
     ///
     /// Compares the signal rather than sample positions, because a raw packet stream has no edit
-    /// list and so keeps the encoder priming an `.m4a` trims — the two are offset by a fixed lead-in
+    /// list and so keeps the encoder priming an `.m4a` trims - the two are offset by a fixed lead-in
     /// and a sample-by-sample diff would fail on correct output.
     @Test func matchesAVFoundationDecodingTheSameBitstream() throws {
         let (matroska, format) = try decodeAll(TestBundleResources.shared.tabla_mka)
@@ -86,7 +86,7 @@ final class MatroskaAudioDecoderTests {
         #expect(abs(matroskaEnergy - referenceEnergy) / referenceEnergy < 0.05)
     }
 
-    /// An audio-only Matroska decodes the same way — nothing about this path needs a video track.
+    /// An audio-only Matroska decodes the same way - nothing about this path needs a video track.
     @Test func decodesAnAudioOnlyMatroskaFile() throws {
         let (samples, format) = try decodeAll(TestBundleResources.shared.sample_mka)
 
@@ -113,7 +113,7 @@ final class MatroskaAudioDecoderTests {
 
     /// WebM carries Opus rather than AAC, so this exercises a second codec through the same path.
     ///
-    /// **Core Audio decodes Opus** — it is in `kAudioFormatProperty_DecodeFormatIDs` and needs no
+    /// **Core Audio decodes Opus** - it is in `kAudioFormatProperty_DecodeFormatIDs` and needs no
     /// bundled library, contrary to what was assumed while it sat outside the table.
     @Test func decodesWebMOpus() throws {
         let (samples, format) = try decodeAll(TestBundleResources.shared.sample_webm)

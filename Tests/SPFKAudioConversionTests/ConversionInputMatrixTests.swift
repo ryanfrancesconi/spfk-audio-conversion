@@ -73,7 +73,7 @@ final class ConversionInputMatrixTests: BinTestCase {
     }
 
     /// `sample.mkv` and `sample.webm` carry video, and the audio target is the wanted outcome
-    /// rather than a fallback — nothing in the output should be video.
+    /// rather than a fallback - nothing in the output should be video.
     @Test func convertsAVideoSourceToAudio() async throws {
         let outputURL = bin.appending(component: "sample-video-to-m4a.m4a", directoryHint: .notDirectory)
 
@@ -144,8 +144,8 @@ final class ConversionInputMatrixTests: BinTestCase {
     }
 
     /// `dualaudio.m4a` is the AVFoundation counterpart, same two tones. Nothing on that side
-    /// addresses a track — `AVAudioFile` and `ExtAudioFile` below it take whichever the container
-    /// lists first — so a non-first selection is decoded through `AVAssetReaderPCMSource` instead.
+    /// addresses a track - `AVAudioFile` and `ExtAudioFile` below it take whichever the container
+    /// lists first - so a non-first selection is decoded through `AVAssetReaderPCMSource` instead.
     @Test func convertsTheAudioTrackItWasAskedForFromAnMP4() async throws {
         let input = TestBundleResources.shared.dualaudio_m4a
         let descriptions = await AudioTrackReader.read(from: input)
@@ -232,7 +232,7 @@ final class ConversionInputMatrixTests: BinTestCase {
     /// Writes a copy of `source` with its first `CodecID` overwritten, giving a container the
     /// decoder must refuse.
     ///
-    /// A same-length replacement so no EBML element size changes and the file stays parseable —
+    /// A same-length replacement so no EBML element size changes and the file stays parseable -
     /// which is the point, since the refusal being tested is the codec's and not the container's.
     private func retagCodec(of source: URL, as codecID: String, to destination: URL) throws {
         var data = try Data(contentsOf: source)

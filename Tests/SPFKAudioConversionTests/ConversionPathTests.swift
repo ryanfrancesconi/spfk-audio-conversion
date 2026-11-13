@@ -257,7 +257,7 @@ class ConversionPathTests: BinTestCase {
     // MARK: - Ogg codec identity
 
     /// The codec carried in an Ogg container, read from the identification header of the
-    /// first page. `.ogg` and `.opus` differ only here — both are Ogg, and every other
+    /// first page. `.ogg` and `.opus` differ only here - both are Ogg, and every other
     /// property a converted file exposes is identical.
     private enum OggCodec {
         case vorbis, opus, unknown
@@ -333,7 +333,7 @@ class ConversionPathTests: BinTestCase {
         #expect(sampleRate == 48000)
     }
 
-    /// The snap is silent to the audio but must not be silent to the caller — the UI reports it.
+    /// The snap is silent to the audio but must not be silent to the caller - the UI reports it.
     @Test func opusRecordsSampleRateAdjustment() async throws {
         let input = TestBundleResources.shared.tabla_wav
         let output = bin.appending(component: "\(#function).opus", directoryHint: .notDirectory)

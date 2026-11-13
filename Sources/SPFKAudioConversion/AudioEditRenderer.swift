@@ -130,7 +130,7 @@ public actor AudioEditRenderer {
         to resolvedOutput: URL
     ) async throws -> URL {
         guard processed.frameLength > 0 else {
-            throw NSError(description: "Edit produced 0 frames from \(sourceURL.lastPathComponent) — trim range may be outside file bounds")
+            throw NSError(description: "Edit produced 0 frames from \(sourceURL.lastPathComponent) - trim range may be outside file bounds")
         }
 
         try await write(processed, fileFormat: fileFormat, to: resolvedOutput)
@@ -161,7 +161,7 @@ public actor AudioEditRenderer {
     /// Frames per decoder read while filling the window.
     static let decodeChunkFrames: AVAudioFrameCount = 16384
 
-    /// The frames a trim covers, in the same rounding `AVAudioPCMBuffer.extract(from:to:)` uses —
+    /// The frames a trim covers, in the same rounding `AVAudioPCMBuffer.extract(from:to:)` uses -
     /// the two have to agree, since either can produce the rendered buffer.
     static func window(
         for trim: TrimDescription,

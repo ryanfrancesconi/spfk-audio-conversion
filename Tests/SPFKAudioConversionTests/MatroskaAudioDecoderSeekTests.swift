@@ -47,8 +47,8 @@ final class MatroskaAudioDecoderSeekTests {
 
     /// Where in `reference` the `window` actually sits, relative to `expected`.
     ///
-    /// Reported rather than merely compared because a mismatch here is always a boundary — a packet,
-    /// a cluster, or the codec's priming — and the offset names which one. An assertion that the
+    /// Reported rather than merely compared because a mismatch here is always a boundary - a packet,
+    /// a cluster, or the codec's priming - and the offset names which one. An assertion that the
     /// two "are not equal" would send the next reader hunting for a precision bug instead.
     private func alignmentOffset(
         of window: [Float],
@@ -109,7 +109,7 @@ final class MatroskaAudioDecoderSeekTests {
 
         // The reference has real signal here, or matching it would prove nothing.
         let peak = seeked.map(abs).max() ?? 0
-        #expect(peak > 0.01, "seeked to a silent region — this test cannot detect misalignment there")
+        #expect(peak > 0.01, "seeked to a silent region - this test cannot detect misalignment there")
 
         let offset = alignmentOffset(of: seeked, in: reference, expectedAt: Int(target), search: 4096)
         #expect(offset == 0, "seeked audio best matches the sequential read at offset \(offset)")
@@ -219,7 +219,7 @@ final class MatroskaAudioDecoderSeekTests {
         #expect(maxDelta < 0.01, "rewinding to zero did not reproduce the start of the file")
     }
 
-    /// Past the end is a read of nothing, not a throw — a scrubber dragged to the very end should
+    /// Past the end is a read of nothing, not a throw - a scrubber dragged to the very end should
     /// stop producing audio rather than report a failure.
     @Test func seekingPastTheEndReadsNothing() throws {
         let decoder = try MatroskaAudioDecoder(url: url)
@@ -234,7 +234,7 @@ final class MatroskaAudioDecoderSeekTests {
         #expect(try decoder.readNextChunk(into: buffer, frameCount: count) == 0)
     }
 
-    /// An audio-only container seeks by the same path — nothing here needs a video track, and the
+    /// An audio-only container seeks by the same path - nothing here needs a video track, and the
     /// `Cues` index of a `.mka` indexes a different track than the one `.mkv` tests exercise.
     @Test func seeksInAnAudioOnlyMatroskaFile() throws {
         let decoder = try MatroskaAudioDecoder(url: TestBundleResources.shared.sample_mka)

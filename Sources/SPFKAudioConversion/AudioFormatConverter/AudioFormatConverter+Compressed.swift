@@ -74,7 +74,7 @@ extension AudioFormatConverter {
 
     // MARK: - FLAC Conversion (libsndfile)
 
-    /// Convert to FLAC using libsndfile directly (lossless — uses bit depth, not bitrate).
+    /// Convert to FLAC using libsndfile directly (lossless - uses bit depth, not bitrate).
     func convertToFLAC() async throws {
         try Task.checkCancellation()
 
@@ -183,7 +183,7 @@ extension AudioFormatConverter {
         if let targetRate = source.options.sampleRate {
             if outputFormat == .opus, !supportedOpusRates.contains(targetRate) {
                 // Opus cannot encode the requested rate. Snap to the nearest it supports,
-                // otherwise libsndfile rejects the write — most of `supportedSampleRates`
+                // otherwise libsndfile rejects the write - most of `supportedSampleRates`
                 // is invalid for Opus.
                 let nearest = supportedOpusRates.min {
                     abs($0 - targetRate) < abs($1 - targetRate)

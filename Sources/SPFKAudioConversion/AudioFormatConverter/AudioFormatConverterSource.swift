@@ -20,7 +20,7 @@ public struct AudioFormatConverterSource: Sendable {
     /// Copy or ignore source metadata
     public var metadataCopyScheme: MetadataCopyScheme
 
-    /// Which of the input's audio tracks to convert, or `nil` for the first stored — the muxer's
+    /// Which of the input's audio tracks to convert, or `nil` for the first stored - the muxer's
     /// ordering rather than a choice.
     ///
     /// Consulted only where this package demuxes the container itself, which today means Matroska.

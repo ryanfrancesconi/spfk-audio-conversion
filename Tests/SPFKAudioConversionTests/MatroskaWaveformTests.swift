@@ -40,7 +40,7 @@ final class MatroskaWaveformTests {
     /// The decisive comparison: the same audio scanned through `AVAudioFile` and through the
     /// demuxer must draw the same waveform.
     ///
-    /// Compares the peak envelope statistically rather than point by point — the Matroska stream
+    /// Compares the peak envelope statistically rather than point by point - the Matroska stream
     /// keeps the AAC encoder priming that the `.m4a`'s edit list trims, so the two are offset by a
     /// fixed lead-in and identical output would still fail a positional diff.
     @Test func matchesTheWaveformAVFoundationProducesForTheSameAudio() async throws {
@@ -76,7 +76,7 @@ final class MatroskaWaveformTests {
         #expect(extra <= onePrimingAllowance)
     }
 
-    /// Chunking is the adapter's only real job — the decoder emits whole packets while the scan
+    /// Chunking is the adapter's only real job - the decoder emits whole packets while the scan
     /// asks for an exact frame count, so the remainder has to survive between calls.
     @Test func readsExactChunkSizesAcrossPacketBoundaries() throws {
         let decoder = try MatroskaAudioDecoder(url: mka)

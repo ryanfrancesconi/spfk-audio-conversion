@@ -15,7 +15,7 @@ struct FormatDetectionTests {
     /// An output file does not exist when it is classified, so ``AudioFormatConverter/isCompressed(url:)``
     /// cannot inspect it and answers from its extension list alone. A supported output format
     /// missing from that list is therefore read as PCM and routed to `convertToPCM`, which throws
-    /// for anything but wav/aiff/caf — the whole failure, with no hint of the real cause.
+    /// for anything but wav/aiff/caf - the whole failure, with no hint of the real cause.
     @Test func supportedOutputFormatsAreClassifiedForTheirRoute() {
         // The formats `convertToPCM` can actually write.
         let pcmWritable: Set<AudioFileType> = [.wav, .aiff, .caf]

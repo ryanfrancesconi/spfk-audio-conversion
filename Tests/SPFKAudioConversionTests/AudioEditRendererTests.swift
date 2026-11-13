@@ -77,7 +77,7 @@ class AudioEditRendererTests: BinTestCase {
     // MARK: - render()
 
     @Test func renderInOutPointReducesFrameLength() async throws {
-        // 10 frames at 44100 Hz. Keep frames 2–6 (5 frames).
+        // 10 frames at 44100 Hz. Keep frames 2-6 (5 frames).
         let sampleRate: Double = 44100
         let source = try makeTempWAV(
             samples: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -129,7 +129,7 @@ class AudioEditRendererTests: BinTestCase {
     }
 
     @Test func renderPreservesFormatSettings() async throws {
-        // Source is 44100 Hz mono — output should preserve sample rate and channel count.
+        // Source is 44100 Hz mono - output should preserve sample rate and channel count.
         let source = try makeTempWAV(
             samples: [Float](repeating: 0.5, count: 1000),
             sampleRate: 44100,
@@ -228,7 +228,7 @@ class AudioEditRendererTests: BinTestCase {
 
     // MARK: - MP3 source → MP3 output
 
-    /// Trim an MP3 source and write back to MP3 — the actual failing scenario in the app.
+    /// Trim an MP3 source and write back to MP3 - the actual failing scenario in the app.
     /// Regression: output was 0-length or corrupted because the trim path was not tested.
     @Test func renderMP3TrimToMP3ProducesNonEmptyFile() async throws {
         let source = TestBundleResources.shared.mp3_id3
@@ -368,7 +368,7 @@ class AudioEditRendererTests: BinTestCase {
     // MARK: - XMP handling
 
     /// XMP lives in an ID3 PRIV frame. AudioEditRenderer routes through AudioFormatConverter
-    /// which copies tags via TagLib's PropertyMap only — PRIV frames are not in the PropertyMap,
+    /// which copies tags via TagLib's PropertyMap only - PRIV frames are not in the PropertyMap,
     /// so XMP is stripped. This test documents that current behavior.
     ///
     /// When XMP copy is added at a higher layer (outside spfk-audio-conversion), update this expectation.
@@ -385,7 +385,7 @@ class AudioEditRendererTests: BinTestCase {
         )
         try await renderer.render()
 
-        #expect(StoredXMPPacketWrite.storedPacket(in: output) == nil, "XMP PRIV frame is stripped — copyTags only copies the PropertyMap")
+        #expect(StoredXMPPacketWrite.storedPacket(in: output) == nil, "XMP PRIV frame is stripped - copyTags only copies the PropertyMap")
     }
 
     // MARK: - Rendering in place keeps the source's encoding

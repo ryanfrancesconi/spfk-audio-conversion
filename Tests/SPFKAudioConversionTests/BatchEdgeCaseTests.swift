@@ -120,7 +120,7 @@ class BatchEdgeCaseTests: BinTestCase {
         let errors = results.compactMap(\.error)
         #expect(errors.isEmpty)
 
-        // Each result carries the resolved output URL — verify every one was actually written
+        // Each result carries the resolved output URL - verify every one was actually written
         for result in results {
             #expect(result.source.output.exists)
         }

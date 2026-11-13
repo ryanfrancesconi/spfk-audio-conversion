@@ -140,7 +140,7 @@ extension AudioFormatConverter {
         // writes RF64 magic and fills that placeholder in as ds64. So short output is unchanged
         // in kind, and output past 4 GiB is a valid file rather than a
         // `kAudioFileDoesNotAllow64BitDataSizeError`. The extension stays `wav` either way, which is why
-        // `AudioFileType.audioFileTypeID` is left alone — this is a writer choice, not the
+        // `AudioFileType.audioFileTypeID` is left alone - this is a writer choice, not the
         // container's identity, and `format` above still decides the sample layout.
         let writerFileType = format == kAudioFileWAVEType ? kAudioFileRF64Type : format
 

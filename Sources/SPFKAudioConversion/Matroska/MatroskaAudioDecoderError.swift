@@ -27,7 +27,7 @@ public enum MatroskaAudioDecoderError: Error, Equatable, Sendable {
 
 extension MatroskaAudioDecoderError: LocalizedError {
     /// Plain English rather than a localized string, matching the other error types in the audio
-    /// packages — user-facing wording lives in the UI layer, where the catalogs are.
+    /// packages - user-facing wording lives in the UI layer, where the catalogs are.
     public var errorDescription: String? {
         switch self {
         case let .noAudioTrack(url):

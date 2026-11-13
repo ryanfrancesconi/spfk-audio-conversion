@@ -19,11 +19,11 @@ class SegmentDividerTests: BinTestCase {
 
     private func makeSourceFile() throws -> URL {
         let (url, _) = try AudioTestFile.make(segments: [
-            (4410, audioLevel), // 0.0–0.1 s  segment 1
-            (8820, 0.0), // 0.1–0.3 s  silence
-            (4410, audioLevel), // 0.3–0.4 s  segment 2
-            (8820, 0.0), // 0.4–0.6 s  silence
-            (4410, audioLevel), // 0.6–0.7 s  segment 3
+            (4410, audioLevel), // 0.0-0.1 s  segment 1
+            (8820, 0.0), // 0.1-0.3 s  silence
+            (4410, audioLevel), // 0.3-0.4 s  segment 2
+            (8820, 0.0), // 0.4-0.6 s  silence
+            (4410, audioLevel), // 0.6-0.7 s  segment 3
         ])
         // Move into bin so it's cleaned up with the test
         let dest = bin.appending(component: "source.wav", directoryHint: .notDirectory)
@@ -164,7 +164,7 @@ class SegmentDividerTests: BinTestCase {
     func cueMarkersWrittenToMatchingSegment() async throws {
         let sourceURL = try makeSourceFile()
 
-        // Cue marker inside segment 2 (0.3–0.4), one outside any segment, and a region
+        // Cue marker inside segment 2 (0.3-0.4), one outside any segment, and a region
         // marker that should never appear in output (region markers define boundaries).
         let sourceMarkers: [AudioMarkerDescription] = [
             AudioMarkerDescription(name: "Cue A", startTime: 0.35),
@@ -184,17 +184,17 @@ class SegmentDividerTests: BinTestCase {
         )
         let result = try await divider.divide()
 
-        // Segment 1 (0.0–0.1): no cues inside → no markers
+        // Segment 1 (0.0-0.1): no cues inside → no markers
         let seg1 = try await AudioMarkerDescriptionCollection(url: result[0])
         #expect(seg1.count == 0)
 
-        // Segment 2 (0.3–0.4): "Cue A" at 0.35 → adjusted to 0.05
+        // Segment 2 (0.3-0.4): "Cue A" at 0.35 → adjusted to 0.05
         let seg2 = try await AudioMarkerDescriptionCollection(url: result[1])
         #expect(seg2.count == 1)
         #expect(seg2.markerDescriptions[0].name == "Cue A")
         #expect(abs(seg2.markerDescriptions[0].startTime - 0.05) < 0.001)
 
-        // Segment 3 (0.6–0.7): no cues inside → no markers
+        // Segment 3 (0.6-0.7): no cues inside → no markers
         let seg3 = try await AudioMarkerDescriptionCollection(url: result[2])
         #expect(seg3.count == 0)
     }
@@ -256,7 +256,7 @@ class SegmentDividerTests: BinTestCase {
         #expect(result.count == segments.count)
         #expect(result[1].pathExtension == "aiff")
 
-        // Segment 2 (0.3–0.4): "Cue A" at 0.35 → adjusted to 0.05
+        // Segment 2 (0.3-0.4): "Cue A" at 0.35 → adjusted to 0.05
         let seg2 = try await AudioMarkerDescriptionCollection(url: result[1])
         #expect(seg2.count == 1)
         #expect(seg2.markerDescriptions[0].name == "Cue A")
@@ -282,7 +282,7 @@ class SegmentDividerTests: BinTestCase {
 
     @Test("output files are returned in segment order when more than 4 segments run concurrently")
     func outputOrderWithSixSegments() async throws {
-        // 6 audio bursts — exercises the concurrent task group's index-based ordering
+        // 6 audio bursts - exercises the concurrent task group's index-based ordering
         // (the group caps at 4 in-flight, so tasks 5 and 6 are enqueued after earlier ones complete)
         let (url, _) = try AudioTestFile.make(segments: [
             (4410, audioLevel), (4410, 0.0),

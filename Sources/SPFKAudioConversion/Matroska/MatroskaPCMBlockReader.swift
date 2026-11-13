@@ -6,7 +6,7 @@ import SPFKMatroska
 
 /// Turns a Matroska PCM block into deinterleaved float samples.
 ///
-/// A PCM track needs no decoder — `AVAudioConverter` is not in the path at all — but it does need
+/// A PCM track needs no decoder - `AVAudioConverter` is not in the path at all - but it does need
 /// its samples widened, and 24-bit is why that is done by hand: `AVAudioPCMBuffer` exposes channel
 /// data as `Int16`, `Int32`, `Float` or `Double` and has no accessor for a packed 24-bit sample.
 struct MatroskaPCMBlockReader: Sendable {

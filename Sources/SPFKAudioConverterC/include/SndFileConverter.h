@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// Converts audio files using libsndfile directly.
-/// Each instance is independent — safe for concurrent use across threads.
+/// Each instance is independent - safe for concurrent use across threads.
 @interface SndFileConverter : NSObject
 
 /// Convert PCM audio (WAV/AIFF/FLAC) to FLAC.

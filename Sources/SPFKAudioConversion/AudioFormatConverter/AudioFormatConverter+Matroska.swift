@@ -31,7 +31,7 @@ extension AudioFormatConverter {
     /// Sample format for the intermediate, taken from the track where it states one.
     ///
     /// Downstream reads its source depth off this file, so ``AudioFormatConverterOptions/bitDepthRule``
-    /// compares the caller's request against this number — a narrower intermediate silently caps
+    /// compares the caller's request against this number - a narrower intermediate silently caps
     /// what the output can be. 24-bit covers a lossy codec, which states no depth of its own.
     private static func intermediateSampleFormat(for track: MatroskaTrack) -> (bitDepth: Int, isFloat: Bool) {
         guard case let .audio(parameters) = track.kind, let bitDepth = parameters.bitDepth else {

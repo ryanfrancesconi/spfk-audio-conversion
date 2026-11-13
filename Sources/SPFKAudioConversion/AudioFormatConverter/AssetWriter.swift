@@ -39,7 +39,7 @@ actor AssetWriter {
             throw NSError(description: "Unsupported output format: \(outputFormat)")
         }
 
-        // Capture once — source.asset is a computed property that creates a new AVURLAsset each call.
+        // Capture once - source.asset is a computed property that creates a new AVURLAsset each call.
         // The reader, track, and format hint must all reference the same asset instance.
         let asset = source.asset
 

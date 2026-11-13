@@ -47,7 +47,7 @@
         lame_set_brate(lame, bitRate);
         lame_set_VBR(lame, vbr_off);
     } else {
-        // VBR mode — quality 4 is default VBR size
+        // VBR mode - quality 4 is default VBR size
         lame_set_VBR(lame, vbr_mtrh);
         lame_set_VBR_quality(lame, 4.0f);
     }

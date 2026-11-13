@@ -47,7 +47,7 @@ static int finishConversion(SNDFILE *inFile, SNDFILE *outFile, int result) {
     } else {
         // Preserve source bit depth
         subformat = inputInfo.format & SF_FORMAT_SUBMASK;
-        // FLAC only supports PCM subformats — default to 24 if source is float/other
+        // FLAC only supports PCM subformats - default to 24 if source is float/other
         if (subformat != SF_FORMAT_PCM_S8 &&
             subformat != SF_FORMAT_PCM_16 &&
             subformat != SF_FORMAT_PCM_24) {

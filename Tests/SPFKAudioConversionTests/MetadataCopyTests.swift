@@ -55,8 +55,8 @@ class MetadataCopyTests: BinTestCase {
 
     // MARK: - Rating Copy Tests
 
-    /// The rating does not travel through TagLib's PropertyMap — it has its own per-format
-    /// dispatch — so a tag round-trip on title and artist proves nothing about it.
+    /// The rating does not travel through TagLib's PropertyMap - it has its own per-format
+    /// dispatch - so a tag round-trip on title and artist proves nothing about it.
     @Test(arguments: ["wav", "flac", "mp3", "m4a", "ogg", "opus"])
     func ratingSurvivesConversion(outputExtension: String) async throws {
         let input = TestBundleResources.shared.rated_80_wav
@@ -195,7 +195,7 @@ class MetadataCopyTests: BinTestCase {
 
         let output = try await convert(input: input, outputExtension: "mp3")
 
-        #expect(StoredXMPPacketWrite.storedPacket(in: output) == nil, "XMP PRIV frame is stripped — copyTags only copies the PropertyMap")
+        #expect(StoredXMPPacketWrite.storedPacket(in: output) == nil, "XMP PRIV frame is stripped - copyTags only copies the PropertyMap")
     }
 
     // MARK: - Failures reach the caller

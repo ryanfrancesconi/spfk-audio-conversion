@@ -18,7 +18,7 @@ public actor BatchAudioFormatConverterData {
     /// Number of conversions completed so far.
     public private(set) var completed: Int = 0
 
-    /// Fraction of conversions completed (0.0–1.0).
+    /// Fraction of conversions completed (0.0-1.0).
     public var percent: UnitInterval {
         guard count > 0 else { return 0 }
 

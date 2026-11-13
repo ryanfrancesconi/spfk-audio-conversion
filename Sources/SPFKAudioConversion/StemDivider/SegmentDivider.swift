@@ -12,7 +12,7 @@ import SPFKMetadata
 /// or read back from "In NN" region markers), then call ``divide()`` to render each segment
 /// to its own file. Up to 4 segments render concurrently.
 ///
-/// Output files are named `{stem}_{index:03d}.{ext}` — e.g. `FX_Hits_001.wav`, `FX_Hits_002.wav`.
+/// Output files are named `{stem}_{index:03d}.{ext}` - e.g. `FX_Hits_001.wav`, `FX_Hits_002.wav`.
 ///
 /// Pass ``markers`` to carry through any cue markers (those without an `endTime`) from the
 /// source file. Each cue that falls within a segment's time window is written to that segment's
@@ -38,7 +38,7 @@ public actor SegmentDivider {
 
     /// - Parameters:
     ///   - sourceURL: The audio file to divide.
-    ///   - segments: Detected segments — each becomes one output file.
+    ///   - segments: Detected segments - each becomes one output file.
     ///   - outputDirectory: Where to write output files. Pass `nil` to use the source file's directory.
     ///   - options: Processing and format options.
     ///   - markers: Markers from the source. Cue markers within each segment are written to that

@@ -82,7 +82,7 @@ extension AudioFormatConverter {
             )
         }
 
-        // A source hands back deinterleaved float32 whatever the track's own depth is — that is
+        // A source hands back deinterleaved float32 whatever the track's own depth is - that is
         // what `commonFormat` and `interleaved` describe. `settings` describes the file on disk.
         var file: AVAudioFile? = try AVAudioFile(
             forWriting: output,

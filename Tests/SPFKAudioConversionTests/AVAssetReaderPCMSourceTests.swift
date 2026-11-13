@@ -15,7 +15,7 @@ struct AVAssetReaderPCMSourceTests {
     private var url: URL { TestBundleResources.shared.sample_dualaudio_mov }
 
     /// The fixture's two tracks are a 440 Hz and an 880 Hz tone, so the dominant frequency says
-    /// *which* track was decoded — where two arbitrary tracks would only support "these differ".
+    /// *which* track was decoded - where two arbitrary tracks would only support "these differ".
     private func dominantFrequency(
         of source: AVAssetReaderPCMSource,
         seconds: Double = 1
@@ -97,7 +97,7 @@ struct AVAssetReaderPCMSourceTests {
         #expect(try abs(dominantFrequency(of: source) - 440) < 15)
     }
 
-    /// The track's own format, not a resample — a waveform drawn at the wrong rate is the wrong
+    /// The track's own format, not a resample - a waveform drawn at the wrong rate is the wrong
     /// shape.
     @Test func reportsTheTracksOwnFormatAndLength() async throws {
         let source = try await AVAssetReaderPCMSource(url: url)

@@ -36,7 +36,7 @@ class LameConverterTests: BinTestCase {
         let file = try AVAudioFile(forWriting: url, settings: format.settings)
         try file.write(from: buffer)
         return url
-        // file is deallocated here — WAV headers are finalized before the caller passes the path to LAME
+        // file is deallocated here - WAV headers are finalized before the caller passes the path to LAME
     }
 
     // MARK: - Basic conversion
@@ -118,7 +118,7 @@ class LameConverterTests: BinTestCase {
 
     /// Less than one MPEG frame (1152 samples at 44100 Hz). lame_encode_flush() must produce output.
     @Test func shortClipProducesNonEmptyOutput() throws {
-        let frames = Int(44100 * 0.02) // 20 ms — well under one MPEG frame
+        let frames = Int(44100 * 0.02) // 20 ms - well under one MPEG frame
         let input = try makeWAV(frames: frames, name: "lame_short_in")
         let output = bin.appending(component: "lame_short_out.mp3", directoryHint: .notDirectory)
 

@@ -33,7 +33,7 @@ struct MatroskaLongFileSeekTests {
         channels \(decoder.processingFormat.channelCount)  codec \(decoder.track.codecID)
         """)
 
-        #expect(duration > 600, "not a long file — this suite measures nothing")
+        #expect(duration > 600, "not a long file - this suite measures nothing")
     }
 
     /// The operation a scrubber performs. Random rather than swept, so an unlucky region cannot be
@@ -60,7 +60,7 @@ struct MatroskaLongFileSeekTests {
 
             samples.append((target, elapsed))
 
-            // The landing has to be exact, not merely fast — a cheap seek to the wrong place is a
+            // The landing has to be exact, not merely fast - a cheap seek to the wrong place is a
             // worse answer than a slow one.
             #expect(decoder.framePosition == frame, "landed at \(decoder.framePosition), asked for \(frame)")
         }
@@ -184,7 +184,7 @@ struct MatroskaLongFileSeekBreakdownTests {
                 try reader.seek(to: max(0, target - 0.5), trackNumber: track.number)
             }
 
-            // How far before the target the index actually landed — this is what has to be decoded
+            // How far before the target the index actually landed - this is what has to be decoded
             // and thrown away.
             let firstFrame = try reader.nextFrame()
             let landed = firstFrame?.timestamp ?? 0

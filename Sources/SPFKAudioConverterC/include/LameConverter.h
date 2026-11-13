@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// Converts PCM audio to MP3 using LAME.
-/// Each instance is independent — safe for concurrent use across threads.
+/// Each instance is independent - safe for concurrent use across threads.
 @interface LameConverter : NSObject
 
 /// Convert a file libsndfile reads (WAV, AIFF, FLAC) to MP3.

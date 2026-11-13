@@ -91,7 +91,7 @@ class AssetWriterErrorTests: BinTestCase {
 
     /// Runs the conversion onto a volume with less free space than the output needs.
     ///
-    /// The reader completes normally in this case and `append` keeps returning `true` — only
+    /// The reader completes normally in this case and `append` keeps returning `true` - only
     /// `finishWriting()` reports the failure, and the file it leaves at the destination is removed.
     @Test func fullDiskConversionThrows() async throws {
         deleteBinOnExit = true

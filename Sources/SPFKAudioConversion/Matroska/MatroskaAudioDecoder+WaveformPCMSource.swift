@@ -7,7 +7,7 @@ import SPFKAudioBase
 /// Lets a waveform scan read Matroska audio.
 ///
 /// ``SeekablePCMSource`` is the same samples with a movable playhead, which is what makes the file
-/// playable rather than only drawable. Both are the adapter's whole job — the decoder emits
+/// playable rather than only drawable. Both are the adapter's whole job - the decoder emits
 /// whatever a whole number of compressed packets produced, while a caller asks for an exact frame
 /// count, and `consume` buffers the difference.
 extension MatroskaAudioDecoder: SeekablePCMSource {
