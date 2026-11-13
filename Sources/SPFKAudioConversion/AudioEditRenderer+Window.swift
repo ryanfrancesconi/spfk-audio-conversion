@@ -159,7 +159,7 @@ extension AudioEditRenderer {
     ///
     /// The decoder reports what the container declares, which a lossless track undershoots and a
     /// lossy one overshoots, so the read stops at the first empty chunk rather than at a count.
-    func readWindow(from decoder: some SeekablePCMSource) throws -> RenderWindow {
+    func readWindow(from decoder: some SeekablePCMSource) async throws -> RenderWindow {
         let format = decoder.processingFormat
         let totalFrames = try AVAudioFrameCount.checked(max(0, decoder.totalFrameCount), for: sourceURL)
 
@@ -174,7 +174,7 @@ extension AudioEditRenderer {
         let readFrames = context.before + window.frameCount + context.after
 
         if readStart > 0 {
-            try decoder.seek(toFrame: AVAudioFramePosition(readStart))
+            try await decoder.seek(toFrame: AVAudioFramePosition(readStart))
         }
 
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: readFrames),
@@ -187,7 +187,7 @@ extension AudioEditRenderer {
             try Task.checkCancellation()
 
             let wanted = min(Self.decodeChunkFrames, readFrames - buffer.frameLength)
-            let read = try decoder.readNextChunk(into: chunk, frameCount: wanted)
+            let read = try await decoder.readNextChunk(into: chunk, frameCount: wanted)
 
             guard read > 0 else { break }
 

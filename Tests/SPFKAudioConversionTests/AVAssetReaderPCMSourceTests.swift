@@ -19,7 +19,7 @@ struct AVAssetReaderPCMSourceTests {
     private func dominantFrequency(
         of source: AVAssetReaderPCMSource,
         seconds: Double = 1
-    ) throws -> Double {
+    ) async throws -> Double {
         let wanted = AVAudioFrameCount(source.processingFormat.sampleRate * seconds)
 
         guard let buffer = AVAudioPCMBuffer(pcmFormat: source.processingFormat, frameCapacity: wanted) else {
@@ -29,7 +29,7 @@ struct AVAssetReaderPCMSourceTests {
         var samples: [Float] = []
 
         while samples.count < Int(wanted) {
-            let written = try source.readNextChunk(into: buffer, frameCount: wanted)
+            let written = try await source.readNextChunk(into: buffer, frameCount: wanted)
 
             guard written > 0, let data = buffer.floatChannelData else { break }
 
@@ -75,15 +75,18 @@ struct AVAssetReaderPCMSourceTests {
         let first = try await AVAssetReaderPCMSource(url: url, audioTrack: english.id)
         let second = try await AVAssetReaderPCMSource(url: url, audioTrack: japanese.id)
 
-        #expect(try abs(dominantFrequency(of: first) - 440) < 15)
-        #expect(try abs(dominantFrequency(of: second) - 880) < 25)
+        let firstFrequency = try await dominantFrequency(of: first)
+        #expect(abs(firstFrequency - 440) < 15)
+        let secondFrequency = try await dominantFrequency(of: second)
+        #expect(abs(secondFrequency - 880) < 25)
     }
 
     /// No selection takes the first track, matching every other entry point's default.
     @Test func defaultsToTheFirstTrack() async throws {
         let source = try await AVAssetReaderPCMSource(url: url)
 
-        #expect(try abs(dominantFrequency(of: source) - 440) < 15)
+        let sourceFrequency = try await dominantFrequency(of: source)
+        #expect(abs(sourceFrequency - 440) < 15)
     }
 
     /// A selection can outlive the file it was made against; falling back beats throwing, and beats
@@ -94,7 +97,8 @@ struct AVAssetReaderPCMSourceTests {
             audioTrack: AudioTrackDescription.ID(rawValue: 999999)
         )
 
-        #expect(try abs(dominantFrequency(of: source) - 440) < 15)
+        let sourceFrequency = try await dominantFrequency(of: source)
+        #expect(abs(sourceFrequency - 440) < 15)
     }
 
     /// The track's own format, not a resample - a waveform drawn at the wrong rate is the wrong
@@ -117,16 +121,17 @@ struct AVAssetReaderPCMSourceTests {
     @Test(arguments: [0.5, 1.0, 1.37])
     func seekingLandsExactlyWhereAsked(seconds: Double) async throws {
         let source = try await AVAssetReaderPCMSource(url: url)
-        let reference = try decode(source)
+        let reference = try await decode(source)
         let target = AVAudioFramePosition(source.processingFormat.sampleRate * seconds)
-        try source.seek(toFrame: target)
+        try await source.seek(toFrame: target)
 
         let window = 2048
         let buffer = try #require(AVAudioPCMBuffer(
             pcmFormat: source.processingFormat,
             frameCapacity: AVAudioFrameCount(window)
         ))
-        #expect(try source.readNextChunk(into: buffer, frameCount: AVAudioFrameCount(window)) == AVAudioFrameCount(window))
+        let landed = try await source.readNextChunk(into: buffer, frameCount: AVAudioFrameCount(window))
+        #expect(landed == AVAudioFrameCount(window))
 
         let afterSeek = try Array(UnsafeBufferPointer(start: #require(buffer.floatChannelData)[0], count: window))
 
@@ -144,12 +149,12 @@ struct AVAssetReaderPCMSourceTests {
         #expect(best == 0, "landed \(best) frames from \(target)")
     }
 
-    private func decode(_ source: AVAssetReaderPCMSource) throws -> [Float] {
+    private func decode(_ source: AVAssetReaderPCMSource) async throws -> [Float] {
         let chunk: AVAudioFrameCount = 4096
         let buffer = try #require(AVAudioPCMBuffer(pcmFormat: source.processingFormat, frameCapacity: chunk))
         var samples: [Float] = []
 
-        while try source.readNextChunk(into: buffer, frameCount: chunk) > 0 {
+        while try await source.readNextChunk(into: buffer, frameCount: chunk) > 0 {
             let channel = try #require(buffer.floatChannelData)[0]
             samples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
         }
@@ -179,16 +184,17 @@ struct AVAssetReaderPCMSourceTests {
 
         let source = try await AVAssetReaderPCMSource(url: url, audioTrack: japanese.id)
 
-        try source.seek(toFrame: AVAudioFramePosition(source.processingFormat.sampleRate * 0.5))
+        try await source.seek(toFrame: AVAudioFramePosition(source.processingFormat.sampleRate * 0.5))
 
-        #expect(try abs(dominantFrequency(of: source, seconds: 0.5) - 880) < 30)
+        let sourceFrequency = try await dominantFrequency(of: source, seconds: 0.5)
+        #expect(abs(sourceFrequency - 880) < 30)
     }
 
     /// Reading past the end stops rather than spinning or repeating the tail.
     @Test func reportsExhaustionAtTheEnd() async throws {
         let source = try await AVAssetReaderPCMSource(url: url)
 
-        try source.seek(toFrame: source.totalFrameCount)
+        try await source.seek(toFrame: source.totalFrameCount)
 
         guard let buffer = AVAudioPCMBuffer(pcmFormat: source.processingFormat, frameCapacity: 4096) else {
             return
@@ -197,7 +203,7 @@ struct AVAssetReaderPCMSourceTests {
         var total = 0
 
         for _ in 0 ..< 8 {
-            try total += Int(source.readNextChunk(into: buffer, frameCount: 4096))
+            try await total += Int(source.readNextChunk(into: buffer, frameCount: 4096))
         }
 
         // Priming can leave a little past the declared length; what matters is that it terminates.

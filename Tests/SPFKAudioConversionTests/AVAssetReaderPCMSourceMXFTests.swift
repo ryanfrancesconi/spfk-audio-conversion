@@ -43,7 +43,7 @@ struct AVAssetReaderPCMSourceMXFTests {
         var peak: Float = 0
 
         while read < wanted {
-            let written = try source.readNextChunk(into: buffer, frameCount: wanted)
+            let written = try await source.readNextChunk(into: buffer, frameCount: wanted)
 
             guard written > 0, let data = buffer.floatChannelData else { break }
 
@@ -68,7 +68,7 @@ struct AVAssetReaderPCMSourceMXFTests {
         var total: AVAudioFramePosition = 0
 
         while true {
-            let written = try source.readNextChunk(into: buffer, frameCount: chunk)
+            let written = try await source.readNextChunk(into: buffer, frameCount: chunk)
 
             guard written > 0 else { break }
 

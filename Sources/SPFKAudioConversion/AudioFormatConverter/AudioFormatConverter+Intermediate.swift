@@ -19,11 +19,12 @@ extension AudioFormatConverter {
     ///
     /// Metadata is copied from the original rather than the intermediate, which carries none.
     func convertViaIntermediate(
-        pcmSource: some SequentialPCMSource,
+        pcmSource: some SequentialPCMSource & Sendable,
         sampleFormat: (bitDepth: Int, isFloat: Bool)
     ) async throws {
-        let intermediate = try writeIntermediateFile(
+        let intermediate = try await Self.writeIntermediateFile(
             from: pcmSource,
+            of: source.input,
             sampleFormat: sampleFormat,
             directory: source.output.deletingLastPathComponent()
         )
@@ -55,15 +56,18 @@ extension AudioFormatConverter {
     ///
     /// The downmix reads the intermediate's layout. WAV can state only its own channel order, and
     /// writes any other layout as discrete with the samples left where they were; CAF keeps it.
-    private func writeIntermediateFile(
-        from pcmSource: some SequentialPCMSource,
+    ///
+    /// Off the actor, so the source's reads suspend this call and not the converter.
+    private nonisolated static func writeIntermediateFile(
+        from pcmSource: some SequentialPCMSource & Sendable,
+        of input: URL,
         sampleFormat: (bitDepth: Int, isFloat: Bool),
         directory: URL
-    ) throws -> URL {
+    ) async throws -> URL {
         let processingFormat = pcmSource.processingFormat
         let pathExtension = processingFormat.channelCount > 2 ? "caf" : "wav"
 
-        let name = source.input.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + "." + pathExtension
+        let name = input.deletingPathExtension().lastPathComponent + "_" + Entropy.uniqueId + "." + pathExtension
         let output = directory.appending(component: name, directoryHint: .notDirectory)
 
         var settings: [String: Any] = [
@@ -93,11 +97,11 @@ extension AudioFormatConverter {
 
         guard let buffer = AVAudioPCMBuffer(
             pcmFormat: processingFormat,
-            frameCapacity: Self.intermediateChunkFrames
+            frameCapacity: intermediateChunkFrames
         ) else {
             file = nil
             try? output.delete()
-            throw NSError(description: "Unable to allocate a decode buffer for \(source.input.lastPathComponent)")
+            throw NSError(description: "Unable to allocate a decode buffer for \(input.lastPathComponent)")
         }
 
         var writtenFrames: AVAudioFramePosition = 0
@@ -106,7 +110,7 @@ extension AudioFormatConverter {
             while true {
                 try Task.checkCancellation()
 
-                let read = try pcmSource.readNextChunk(into: buffer, frameCount: Self.intermediateChunkFrames)
+                let read = try await pcmSource.readNextChunk(into: buffer, frameCount: intermediateChunkFrames)
                 guard read > 0 else { break }
 
                 try file?.write(from: buffer)
@@ -124,7 +128,7 @@ extension AudioFormatConverter {
 
         guard writtenFrames > 0 else {
             try? output.delete()
-            throw NSError(description: "No audio could be decoded from \(source.input.lastPathComponent)")
+            throw NSError(description: "No audio could be decoded from \(input.lastPathComponent)")
         }
 
         return output

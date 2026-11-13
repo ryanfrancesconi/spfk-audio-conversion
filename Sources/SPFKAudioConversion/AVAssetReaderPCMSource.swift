@@ -64,13 +64,24 @@ public final class AVAssetReaderPCMSource: @unchecked Sendable {
 
     private let frameCount: AVAudioFramePosition
 
+    /// How each read and seek is admitted: both block their thread inside `copyNextSampleBuffer`.
+    private let admission: BlockingCallAdmission
+
     /// Opens `url` and prepares to decode one of its audio tracks.
     ///
-    /// - Parameter audioTrack: which track, or `nil` for the first. An identifier the file does not
-    ///   carry falls back to the first rather than throwing - a selection can outlive the file it
-    ///   was made against.
-    public init(url: URL, audioTrack: AudioTrackDescription.ID? = nil) async throws {
+    /// - Parameters:
+    ///   - audioTrack: which track, or `nil` for the first. An identifier the file does not
+    ///     carry falls back to the first rather than throwing - a selection can outlive the file it
+    ///     was made against.
+    ///   - admission: `.ownThread` for a source a player feeds from, where queueing for a slot is
+    ///     an audible dropout.
+    public init(
+        url: URL,
+        audioTrack: AudioTrackDescription.ID? = nil,
+        admission: BlockingCallAdmission = .limited
+    ) async throws {
         self.url = url
+        self.admission = admission
 
         let asset = AVURLAsset(url: url)
         self.asset = asset
@@ -310,10 +321,15 @@ extension AVAssetReaderPCMSource: SeekablePCMSource {
     public func readNextChunk(
         into buffer: AVAudioPCMBuffer,
         frameCount: AVAudioFrameCount
-    ) throws -> AVAudioFrameCount {
+    ) async throws -> AVAudioFrameCount {
         buffer.frameLength = 0
 
-        let written = try consume(frameCount: frameCount, into: buffer)
+        // The caller is suspended for the length of the call, so nothing else touches the buffer.
+        nonisolated(unsafe) let destination = buffer
+
+        let written = try await admission.admit {
+            try self.consume(frameCount: frameCount, into: destination)
+        }
 
         buffer.frameLength = written
 
@@ -325,7 +341,11 @@ extension AVAssetReaderPCMSource: SeekablePCMSource {
     /// **Landing exactly is the contract.** The reader is built slightly early and the surplus
     /// decoded and thrown away, as `MatroskaAudioDecoder` does, so the landing does not depend on
     /// where `AVAssetReader.timeRange` starts for a given codec.
-    public func seek(toFrame frame: AVAudioFramePosition) throws {
+    public func seek(toFrame frame: AVAudioFramePosition) async throws {
+        try await admission.admit { try self.reposition(toFrame: frame) }
+    }
+
+    private func reposition(toFrame frame: AVAudioFramePosition) throws {
         let target = max(0, frame)
 
         let preroll = AVAudioFramePosition(processingFormat.sampleRate * Self.seekPrerollSeconds)

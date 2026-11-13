@@ -51,9 +51,9 @@ struct SurroundPCMSourceTests {
     }
 
     /// Reads one second from a quarter second in, past any priming.
-    static func read(_ source: some SeekablePCMSource) throws -> AVAudioPCMBuffer {
+    static func read(_ source: some SeekablePCMSource) async throws -> AVAudioPCMBuffer {
         let rate = source.processingFormat.sampleRate
-        try source.seek(toFrame: AVAudioFramePosition(rate / 4))
+        try await source.seek(toFrame: AVAudioFramePosition(rate / 4))
 
         let buffer = try #require(AVAudioPCMBuffer(pcmFormat: source.processingFormat, frameCapacity: AVAudioFrameCount(rate)))
         let destination = try #require(buffer.floatChannelData)
@@ -61,7 +61,7 @@ struct SurroundPCMSourceTests {
 
         while filled < buffer.frameCapacity {
             let chunk = try #require(AVAudioPCMBuffer(pcmFormat: source.processingFormat, frameCapacity: buffer.frameCapacity - filled))
-            let read = try source.readNextChunk(into: chunk, frameCount: chunk.frameCapacity)
+            let read = try await source.readNextChunk(into: chunk, frameCount: chunk.frameCapacity)
 
             guard read > 0 else { break }
 
@@ -78,12 +78,12 @@ struct SurroundPCMSourceTests {
         return buffer
     }
 
-    static func expectTonesByLabel(_ source: some SeekablePCMSource) throws {
+    static func expectTonesByLabel(_ source: some SeekablePCMSource) async throws {
         let format = source.processingFormat
         try #require(format.channelCount == 6)
 
         let labels = try labels(of: format)
-        let buffer = try read(source)
+        let buffer = try await read(source)
         let data = try #require(buffer.floatChannelData)
         try #require(buffer.frameLength > 0)
 
@@ -107,8 +107,8 @@ struct SurroundPCMSourceTests {
     ]
 
     @Test(arguments: matroskaFixtures)
-    func matroskaDecoderDeliversEveryChannel(url: URL) throws {
-        try Self.expectTonesByLabel(MatroskaAudioDecoder(url: url))
+    func matroskaDecoderDeliversEveryChannel(url: URL) async throws {
+        try await Self.expectTonesByLabel(MatroskaAudioDecoder(url: url))
     }
 
     @Test func stereoMatroskaKeepsTheStandardFormat() throws {
@@ -120,8 +120,8 @@ struct SurroundPCMSourceTests {
     // MARK: - libsndfile
 
     @Test(arguments: [TestBundleResources.shared.surround_vorbis_ogg, TestBundleResources.shared.surround_opus_opus])
-    func sndFileSourceDeliversEveryChannel(url: URL) throws {
-        try Self.expectTonesByLabel(SndFilePCMSource(url: url))
+    func sndFileSourceDeliversEveryChannel(url: URL) async throws {
+        try await Self.expectTonesByLabel(SndFilePCMSource(url: url))
     }
 
     // MARK: - AVAssetReader
@@ -134,7 +134,7 @@ struct SurroundPCMSourceTests {
         #expect(source.processingFormat.channelCount == 6)
         #expect(source.processingFormat.channelLayout?.channelCount == 6)
 
-        let buffer = try Self.read(source)
+        let buffer = try await Self.read(source)
         let data = try #require(buffer.floatChannelData)
 
         let file = try AVAudioFile(forReading: url)

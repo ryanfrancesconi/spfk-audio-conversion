@@ -75,8 +75,8 @@ public enum ReversedAudioBuilder {
         progress: (Double) -> Void
     ) async throws -> (frameCount: Int, sampleRate: Double) {
         let reader = try await TrackPCMSource.reader(for: source, audioTrack: audioTrack)
-        return try decode(format: reader.processingFormat, declaredFrames: reader.totalFrameCount, into: forward, chunkFrames: chunkFrames, progress: progress) { chunk, wanted in
-            chunk.frameLength = try trapping { try reader.readNextChunk(into: chunk, frameCount: wanted) }
+        return try await decode(format: reader.processingFormat, declaredFrames: reader.totalFrameCount, into: forward, chunkFrames: chunkFrames, progress: progress) { chunk, wanted in
+            chunk.frameLength = try await reader.readNextChunk(into: chunk, frameCount: wanted)
         }
     }
 
@@ -87,8 +87,8 @@ public enum ReversedAudioBuilder {
         into forward: URL,
         chunkFrames: AVAudioFrameCount,
         progress: (Double) -> Void,
-        read: (AVAudioPCMBuffer, AVAudioFrameCount) throws -> Void
-    ) throws -> (frameCount: Int, sampleRate: Double) {
+        read: (AVAudioPCMBuffer, AVAudioFrameCount) async throws -> Void
+    ) async throws -> (frameCount: Int, sampleRate: Double) {
         guard let chunk = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: chunkFrames) else {
             throw NSError(description: "Failed to allocate a decode buffer")
         }
@@ -99,7 +99,7 @@ public enum ReversedAudioBuilder {
         while true {
             try Task.checkCancellation()
 
-            try read(chunk, chunkFrames)
+            try await read(chunk, chunkFrames)
             guard chunk.frameLength > 0 else { break }
 
             try ExceptionTrap.withThrowing { try output.write(from: chunk) }

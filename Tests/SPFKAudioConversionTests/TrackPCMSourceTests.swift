@@ -45,7 +45,7 @@ struct TrackPCMSourceTests {
 
         let buffer = try #require(AVAudioPCMBuffer(pcmFormat: reader.processingFormat, frameCapacity: 4096))
         var total: AVAudioFramePosition = 0
-        while case let read = try reader.readNextChunk(into: buffer, frameCount: 4096), read > 0 {
+        while case let read = try await reader.readNextChunk(into: buffer, frameCount: 4096), read > 0 {
             total += AVAudioFramePosition(read)
         }
 

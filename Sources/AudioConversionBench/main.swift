@@ -228,7 +228,7 @@ if let buffer = AVAudioPCMBuffer(pcmFormat: scanFormat, frameCapacity: 16384) {
 
     try await measure("scan to the end") {
         while true {
-            let read = try scanSource.readNextChunk(into: buffer, frameCount: 16384)
+            let read = try await scanSource.readNextChunk(into: buffer, frameCount: 16384)
             guard read > 0 else { break }
             frames += AVAudioFramePosition(read)
         }

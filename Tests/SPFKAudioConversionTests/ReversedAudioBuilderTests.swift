@@ -34,7 +34,7 @@ final class ReversedAudioBuilderTests: BinTestCase {
         if let decoder = try await TrackPCMSource.source(for: url, audioTrack: nil) {
             let chunk = try #require(AVAudioPCMBuffer(pcmFormat: decoder.processingFormat, frameCapacity: 4096))
             while true {
-                chunk.frameLength = try decoder.readNextChunk(into: chunk, frameCount: 4096)
+                chunk.frameLength = try await decoder.readNextChunk(into: chunk, frameCount: 4096)
                 guard chunk.frameLength > 0 else { break }
                 try append(chunk)
             }
